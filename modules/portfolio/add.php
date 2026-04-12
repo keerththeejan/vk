@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
+require_once dirname(__DIR__, 2) . '/includes/web_portfolio_schema.php';
+vk_ensure_web_portfolio_tables($pdo);
 
 if (!db_table_exists($pdo, 'web_portfolio_posts')) {
-    flash_set('error', 'Portfolio tables missing.');
+    flash_set('error', 'Portfolio tables missing. Import sql/patch_portfolio_if_missing.sql or ensure repair/CCTV job tables exist.');
     redirect('/modules/dashboard.php');
 }
 

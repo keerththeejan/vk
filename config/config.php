@@ -4,6 +4,10 @@
  */
 declare(strict_types=1);
 
+require_once __DIR__ . '/env_bootstrap.php';
+vk_load_dotenv();
+require_once __DIR__ . '/mail.php';
+
 define('APP_NAME', 'VK IT Network — Service & Billing');
 define('ROOT_PATH', dirname(__DIR__));
 

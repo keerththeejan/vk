@@ -1,0 +1,49 @@
+.vk-booking-map {
+    min-height: 640px;
+    border-radius: 14px;
+    border: 1px solid var(--vk-pub-border);
+}
+
+.vk-step-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--vk-pub-primary-mid);
+    font-weight: 600;
+}
+
+.vk-price-box {
+    border: 1px solid var(--vk-pub-border);
+    border-radius: 12px;
+    background: var(--vk-pub-surface);
+    padding: 0.75rem 0.9rem;
+}
+
+.vk-location-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    border: 1px solid var(--vk-pub-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--vk-pub-surface);
+    box-shadow: var(--vk-shadow-card);
+}
+
+.vk-location-option {
+    display: block;
+    width: 100%;
+    border: 0;
+    text-align: left;
+    background: transparent;
+    color: var(--vk-pub-text);
+    padding: 0.55rem 0.65rem;
+    font-size: 0.9rem;
+}
+
+.vk-location-option:hover {
+    background: rgba(99, 102, 241, 0.08);
+}

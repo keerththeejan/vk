@@ -29,6 +29,7 @@ DROP TABLE IF EXISTS accounts;
 DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS settings;
+DROP TABLE IF EXISTS menus;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -72,11 +73,15 @@ CREATE TABLE technicians (
 CREATE TABLE users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(64) NOT NULL UNIQUE,
+  email VARCHAR(150) DEFAULT NULL,
+  phone VARCHAR(32) DEFAULT NULL,
   password_hash VARCHAR(255) NOT NULL,
   fullname VARCHAR(128) DEFAULT NULL,
-  role ENUM('admin','technician') NOT NULL DEFAULT 'admin',
+  role ENUM('admin','staff','technician') NOT NULL DEFAULT 'admin',
   technician_id INT UNSIGNED DEFAULT NULL,
+  status ENUM('active','inactive') NOT NULL DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_users_email (email),
   CONSTRAINT fk_users_technician FOREIGN KEY (technician_id) REFERENCES technicians(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -106,6 +111,26 @@ INSERT INTO settings (key_name, value) VALUES
 ('smtp_username', ''),
 ('smtp_password', ''),
 ('email_from', '');
+
+CREATE TABLE menus (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) NOT NULL,
+  url VARCHAR(255) NOT NULL,
+  icon VARCHAR(100) DEFAULT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  status ENUM('active','inactive') NOT NULL DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_menus_slug (slug),
+  INDEX idx_menus_status_sort (status, sort_order, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO menus (name, slug, url, icon, sort_order, status) VALUES
+('Home', 'home', 'index.php', 'lucide:home', 10, 'active'),
+('Book Service', 'book', 'book.php', 'lucide:calendar-plus', 20, 'active'),
+('Vehicle Booking', 'vehicle', 'vehicle/index.php', 'lucide:car-front', 30, 'active'),
+('Track Status', 'track', 'track.php', 'lucide:search', 40, 'active'),
+('Our Work', 'portfolio', 'portfolio.php', 'lucide:images', 50, 'active');
 
 CREATE TABLE service_templates (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -326,8 +351,10 @@ CREATE TABLE service_gallery (
   service_id INT UNSIGNED NOT NULL,
   image_path VARCHAR(512) NOT NULL,
   title VARCHAR(255) DEFAULT NULL,
+  original_filename VARCHAR(255) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_service_gallery_service (service_id, id),
+  INDEX idx_service_gallery_created (created_at),
   CONSTRAINT fk_service_gallery_service FOREIGN KEY (service_id) REFERENCES web_services(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -469,8 +496,8 @@ INSERT INTO technicians (name, phone, specialization, active) VALUES
 ('Field Engineer', NULL, 'CCTV & networking', 1);
 
 INSERT INTO users (username, password_hash, fullname, role, technician_id) VALUES
-('admin', '$2y$10$BGEhYIpixUVOKYrM/q9fkuaqFRksgWBcbXujTGMxeOOJaRULRrGPW', 'Administrator', 'admin', NULL),
-('tech', '$2y$10$BGEhYIpixUVOKYrM/q9fkuaqFRksgWBcbXujTGMxeOOJaRULRrGPW', 'Field Technician', 'technician', 1);
+('admin', '$2y$10$dLw60EEU/LS0xpHi4k0Qgu3f3VHIOQBf/.dg/y/vgMyKE9WM//VPa', 'Administrator', 'admin', NULL),
+('tech', '$2y$10$dLw60EEU/LS0xpHi4k0Qgu3f3VHIOQBf/.dg/y/vgMyKE9WM//VPa', 'Field Technician', 'technician', 1);
 
 INSERT INTO service_templates (name, category, default_amount, description) VALUES
 ('Printer — Cartridge / toner service', 'printer', 2500.00, 'Cartridge check, cleaning, test print'),

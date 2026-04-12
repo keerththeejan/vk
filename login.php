@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/includes/init.php';
+require_once __DIR__ . '/includes/users_schema.php';
+
+$pdoBoot = db();
+vk_ensure_users_management_schema($pdoBoot);
+unset($pdoBoot);
 
 if (!empty($_SESSION['user_id'])) {
     $dest = (($_SESSION['user_role'] ?? 'admin') === 'technician')
@@ -19,25 +24,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $pdo = db();
+            vk_ensure_users_management_schema($pdo);
             $cols = users_has_role_column($pdo)
-                ? 'id, password_hash, role, technician_id'
+                ? 'id, password_hash, role, technician_id, status'
                 : 'id, password_hash';
+            if (!str_contains($cols, 'status') && db_column_exists($pdo, 'users', 'status')) {
+                $cols .= ', status';
+            }
             $st = $pdo->prepare("SELECT $cols FROM users WHERE username = ? LIMIT 1");
             $st->execute([$username]);
             $row = $st->fetch();
             if ($row && password_verify($password, (string) $row['password_hash'])) {
-                session_regenerate_id(true);
-                $_SESSION['user_id'] = (int) $row['id'];
-                $_SESSION['user_role'] = $row['role'] ?? 'admin';
-                $_SESSION['technician_id'] = isset($row['technician_id']) && $row['technician_id'] !== null
-                    ? (int) $row['technician_id']
-                    : null;
-                if (($_SESSION['user_role'] ?? 'admin') === 'technician') {
-                    header('Location: ' . BASE_URL . '/tech/index.php');
+                if (isset($row['status']) && (string) $row['status'] === 'inactive') {
+                    $error = 'This account is inactive. Contact an administrator.';
                 } else {
-                    header('Location: ' . BASE_URL . '/modules/dashboard.php');
+                    session_regenerate_id(true);
+                    $_SESSION['user_id'] = (int) $row['id'];
+                    $_SESSION['user_role'] = $row['role'] ?? 'admin';
+                    $_SESSION['technician_id'] = isset($row['technician_id']) && $row['technician_id'] !== null
+                        ? (int) $row['technician_id']
+                        : null;
+                    if (($_SESSION['user_role'] ?? 'admin') === 'technician') {
+                        header('Location: ' . BASE_URL . '/tech/index.php');
+                    } else {
+                        header('Location: ' . BASE_URL . '/modules/dashboard.php');
+                    }
+                    exit;
                 }
-                exit;
             }
         } catch (Throwable $e) {
             if (APP_DEBUG) {

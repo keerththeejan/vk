@@ -30,7 +30,11 @@ $byTab = [
     'general' => ['site_name', 'analytics_domain', 'analytics_script_src'],
     'seo' => ['seo_site_title', 'seo_meta_description', 'seo_meta_keywords', 'seo_og_image', 'seo_auto_enabled', 'seo_locations', 'seo_service_slugs'],
     'whatsapp' => ['whatsapp_number', 'whatsapp_default_message'],
-    'email' => ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'email_from'],
+    'email' => ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_secure', 'email_from', 'from_name'],
+    'email_hub' => [
+        'imap_host', 'imap_port', 'imap_username', 'imap_password', 'imap_poll_enabled',
+        'email_autoresponder_enabled', 'email_autoresponder_subject', 'email_autoresponder_body',
+    ],
 ];
 
 if (!isset($byTab[$tab])) {
@@ -56,10 +60,63 @@ foreach ($settings as $key => $value) {
         continue;
     }
     $str = (string) $value;
+    if ($key === 'smtp_password' || $key === 'imap_password') {
+        $str = trim($str);
+    }
     if ($key === 'smtp_password' && $str === '') {
         continue;
     }
+    if ($key === 'imap_password' && $str === '') {
+        continue;
+    }
     vk_settings_set($pdo, $key, $str);
+}
+
+if ($tab === 'email') {
+    $smtpIn = [
+        'smtp_host' => trim((string) ($settings['smtp_host'] ?? '')),
+        'smtp_port' => (int) ($settings['smtp_port'] ?? 587),
+        'smtp_user' => trim((string) ($settings['smtp_username'] ?? '')),
+        'smtp_pass' => trim((string) ($settings['smtp_password'] ?? '')),
+        'smtp_secure' => (string) ($settings['smtp_secure'] ?? 'tls'),
+        'from_email' => trim((string) ($settings['email_from'] ?? '')),
+        'from_name' => trim((string) ($settings['from_name'] ?? '')),
+    ];
+    if ($smtpIn['smtp_host'] === '' && $smtpIn['smtp_user'] !== '') {
+        $guess = vk_smtp_guess_defaults((string) $smtpIn['smtp_user']);
+        $smtpIn['smtp_host'] = (string) $guess['smtp_host'];
+        $smtpIn['smtp_port'] = (int) $guess['smtp_port'];
+        $smtpIn['smtp_secure'] = (string) $guess['smtp_secure'];
+    }
+    vk_smtp_settings_save($pdo, $smtpIn);
+    vk_autoresponder_settings_save($pdo, [
+        'email_autoresponder_enabled' => ((string) ($settings['email_autoresponder_enabled'] ?? '0')) === '1' ? '1' : '0',
+        'email_autoresponder_subject' => (string) ($settings['email_autoresponder_subject'] ?? ''),
+        'email_autoresponder_body' => (string) ($settings['email_autoresponder_body'] ?? ''),
+    ]);
+    $cfgAfter = vk_smtp_settings_get($pdo);
+    echo json_encode([
+        'ok' => true,
+        'saved' => $byTab[$tab],
+        'smtp_password_configured' => ((string) ($cfgAfter['smtp_user'] ?? '')) === ''
+            || trim((string) ($cfgAfter['smtp_pass'] ?? '')) !== '',
+    ], JSON_THROW_ON_ERROR);
+    exit;
+}
+
+if ($tab === 'email_hub') {
+    vk_imap_settings_save($pdo, [
+        'imap_host' => trim((string) ($settings['imap_host'] ?? '')),
+        'imap_port' => (int) ($settings['imap_port'] ?? 993),
+        'imap_username' => trim((string) ($settings['imap_username'] ?? '')),
+        'imap_password' => trim((string) ($settings['imap_password'] ?? '')),
+        'imap_poll_enabled' => ((string) ($settings['imap_poll_enabled'] ?? '0')) === '1' ? '1' : '0',
+    ]);
+    vk_autoresponder_settings_save($pdo, [
+        'email_autoresponder_enabled' => ((string) ($settings['email_autoresponder_enabled'] ?? '0')) === '1' ? '1' : '0',
+        'email_autoresponder_subject' => (string) ($settings['email_autoresponder_subject'] ?? ''),
+        'email_autoresponder_body' => (string) ($settings['email_autoresponder_body'] ?? ''),
+    ]);
 }
 
 echo json_encode(['ok' => true, 'saved' => $byTab[$tab]], JSON_THROW_ON_ERROR);

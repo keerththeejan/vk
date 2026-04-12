@@ -1,4 +1,11 @@
 vendor/
 node_modules/
-uploads/
+uploads/*
+!uploads/services/
+uploads/services/*
+!uploads/services/gallery/
+uploads/services/gallery/*
+!uploads/services/gallery/.htaccess
 .env
+# Local scratch / credentials — do not commit
+note

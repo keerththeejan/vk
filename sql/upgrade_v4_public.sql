@@ -80,7 +80,7 @@ ALTER TABLE repair_jobs ADD INDEX idx_repair_emergency (emergency_priority);
 ALTER TABLE repair_jobs ADD INDEX idx_repair_field (field_status);
 
 INSERT INTO users (username, password_hash, fullname, role, technician_id)
-SELECT 'tech', '$2y$10$BGEhYIpixUVOKYrM/q9fkuaqFRksgWBcbXujTGMxeOOJaRULRrGPW', 'Field Technician', 'technician', 1
+SELECT 'tech', '$2y$10$dLw60EEU/LS0xpHi4k0Qgu3f3VHIOQBf/.dg/y/vgMyKE9WM//VPa', 'Field Technician', 'technician', 1
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'tech' LIMIT 1);
 
 UPDATE users SET role = 'admin' WHERE role IS NULL OR username = 'admin';

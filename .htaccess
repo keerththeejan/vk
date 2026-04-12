@@ -5,6 +5,9 @@
     RewriteEngine On
     RewriteBase /VK/
 
+    # Serve uploaded files directly (do not rewrite to front controllers)
+    RewriteRule ^uploads/ - [L]
+
     # Dynamic robots.txt
     RewriteRule ^robots\.txt$ robots.php [L]
 

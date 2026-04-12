@@ -8,6 +8,13 @@ $seoTitlePrefix = vk_app_setting('seo_site_title');
 $titleBase = ($seoTitlePrefix !== null && $seoTitlePrefix !== '') ? $seoTitlePrefix : $seoBrand;
 $htmlTitle = $seoDocumentTitle ?? ($titleBase . ' | ' . $pageTitle);
 $GLOBALS['seoFullTitle'] = $htmlTitle;
+
+require_once __DIR__ . '/site_menus.php';
+try {
+    $vkPubNavMenus = vk_site_menus_for_public_nav(db());
+} catch (Throwable $e) {
+    $vkPubNavMenus = vk_site_menus_for_public_nav_fallback();
+}
 if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
     header('Cache-Control: public, max-age=600');
 }
@@ -61,11 +68,20 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
             </button>
         </div>
         <div class="collapse navbar-collapse flex-grow-1 justify-content-lg-end" id="pubNav">
-            <ul class="navbar-nav vk-pub-nav ms-lg-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-2 pt-3 pt-lg-0 border-top border-lg-top-0 mt-2 mt-lg-0">
-                <li class="nav-item"><a class="nav-link vk-pub-nav-link <?= $navActive === 'home' ? 'active' : '' ?>" href="<?= e(BASE_URL) ?>/index.php"<?= $navActive === 'home' ? ' aria-current="page"' : '' ?>>Home</a></li>
-                <li class="nav-item"><a class="nav-link vk-pub-nav-link <?= $navActive === 'book' ? 'active' : '' ?>" href="<?= e(BASE_URL) ?>/book.php"<?= $navActive === 'book' ? ' aria-current="page"' : '' ?>>Book Service</a></li>
-                <li class="nav-item"><a class="nav-link vk-pub-nav-link <?= $navActive === 'track' ? 'active' : '' ?>" href="<?= e(BASE_URL) ?>/track.php"<?= $navActive === 'track' ? ' aria-current="page"' : '' ?>>Track Status</a></li>
-                <li class="nav-item"><a class="nav-link vk-pub-nav-link <?= $navActive === 'portfolio' ? 'active' : '' ?>" href="<?= e(BASE_URL) ?>/portfolio.php"<?= $navActive === 'portfolio' ? ' aria-current="page"' : '' ?>>Our Work</a></li>
+            <ul class="navbar-nav vk-pub-nav ms-lg-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-2 pt-3 pt-lg-0 border-top border-lg-top-0 mt-2 mt-lg-0" id="vkPubNavMenus">
+                <?php foreach ($vkPubNavMenus as $m): ?>
+                    <?php
+                    $mslug = (string) ($m['slug'] ?? '');
+                    $isActive = $navActive !== '' && $navActive === $mslug;
+                    $href = vk_site_menus_href((string) ($m['url'] ?? ''));
+                    $ic = vk_site_menus_icon_html($m['icon'] ?? null);
+                    ?>
+                    <li class="nav-item" data-menu-id="<?= (int) ($m['id'] ?? 0) ?>">
+                        <a class="nav-link vk-pub-nav-link d-inline-flex align-items-center <?= $isActive ? 'active' : '' ?>" href="<?= e($href) ?>"<?= $isActive ? ' aria-current="page"' : '' ?>>
+                            <?= $ic ?><?= e((string) ($m['name'] ?? '')) ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
                 <li class="nav-item ms-lg-1 mt-2 mt-lg-0 w-100 w-lg-auto">
                     <a class="btn btn-staff d-inline-flex align-items-center justify-content-center w-100 w-lg-auto" href="<?= e(BASE_URL) ?>/login.php"><span class="vk-lucide-nav me-2" aria-hidden="true"><i data-lucide="shield-check"></i></span>Staff Login</a>
                 </li>

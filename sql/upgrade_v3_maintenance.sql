@@ -1,6 +1,8 @@
 -- VK Billing upgrade v2 → v3 (maintenance, warranties, technicians, repair/CCTV extensions)
 -- Backup first. Run after upgrade_v2_service.sql on existing databases.
 -- If a statement fails with "Duplicate column", skip that line and continue.
+-- Partial installs: run `mysql --force ... < upgrade_v3_maintenance.sql` so later statements
+-- (e.g. warranty_records) still apply. Or import only sql/patch_warranty_if_missing.sql if that table alone is missing.
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;

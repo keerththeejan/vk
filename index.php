@@ -42,7 +42,6 @@ require __DIR__ . '/includes/public_header.php';
         <div class="row align-items-center g-4 g-lg-5">
             <div class="col-lg-7" data-aos="fade-right" data-aos-duration="700">
                 <div>
-                    <p class="vk-hero-eyebrow mb-0">Multi-service · Field-ready · Transparent billing</p>
                     <h1 class="vk-hero-title"><?= $seoAuto ? 'Computer repair Jaffna · Laptop service Kilinochchi · IT repair Vavuniya · Printer repair Mullaitivu' : 'Repairs, installations & maintenance — done right.' ?></h1>
                     <p class="vk-hero-lead">Computer and printer service, CCTV systems, automobile breakdown help, AC repair, electrical (DC wiring), and scheduled maintenance for homes and businesses.</p>
                     <div class="vk-hero-actions d-flex flex-wrap gap-3">

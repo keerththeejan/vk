@@ -1,10 +1,13 @@
 <?php
 declare(strict_types=1);
 $pageTitle = 'Portfolio posts';
+require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
+require_once dirname(__DIR__, 2) . '/includes/web_portfolio_schema.php';
+vk_ensure_web_portfolio_tables($pdo);
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 
 if (!db_table_exists($pdo, 'web_portfolio_posts')) {
-    echo '<div class="alert alert-warning">Run database upgrade for portfolio tables.</div>';
+    echo '<div class="alert alert-danger">Portfolio tables could not be created. Ensure <code>repair_jobs</code> and <code>cctv_installations</code> exist, then run <code>sql/patch_portfolio_if_missing.sql</code> on your database.</div>';
     require_once dirname(__DIR__, 2) . '/includes/layout_end.php';
     exit;
 }

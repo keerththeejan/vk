@@ -14,20 +14,145 @@ function vk_service_gallery_table_exists(PDO $pdo): bool
 
 function vk_service_gallery_auto_migrate(PDO $pdo): void
 {
-    if (vk_service_gallery_table_exists($pdo)) {
-        return;
-    }
-    $pdo->exec(
-        "CREATE TABLE IF NOT EXISTS service_gallery (
+    if (!vk_service_gallery_table_exists($pdo)) {
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS service_gallery (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             service_id INT UNSIGNED NOT NULL,
             image_path VARCHAR(512) NOT NULL,
             title VARCHAR(255) DEFAULT NULL,
+            original_filename VARCHAR(255) DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_service_gallery_service (service_id, id),
+            INDEX idx_service_gallery_created (created_at),
             CONSTRAINT fk_service_gallery_service FOREIGN KEY (service_id) REFERENCES web_services(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-    );
+        );
+    }
+    vk_service_gallery_upgrade_schema($pdo);
+}
+
+/**
+ * Add columns on older databases (idempotent).
+ */
+function vk_service_gallery_upgrade_schema(PDO $pdo): void
+{
+    if (!vk_service_gallery_table_exists($pdo)) {
+        return;
+    }
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    try {
+        $db = $pdo->query('SELECT DATABASE()')->fetchColumn();
+        if (!is_string($db) || $db === '') {
+            return;
+        }
+        $chk = $pdo->prepare(
+            'SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+        );
+        $chk->execute([$db, 'service_gallery', 'original_filename']);
+        if ((int) $chk->fetchColumn() === 0) {
+            $pdo->exec(
+                'ALTER TABLE service_gallery ADD COLUMN original_filename VARCHAR(255) NULL DEFAULT NULL AFTER title'
+            );
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+    try {
+        $pdo->exec('CREATE INDEX idx_service_gallery_created ON service_gallery (created_at)');
+    } catch (Throwable $e) {
+        // duplicate name: ignore
+    }
+}
+
+/**
+ * Sanitize stored original filename for display/search (no path components).
+ */
+function vk_service_gallery_sanitize_original_name(string $name): string
+{
+    $base = basename(str_replace(["\0", '\\'], '', $name));
+    $base = preg_replace('/[^a-zA-Z0-9._\- ]+/u', '_', $base) ?? '';
+    return trim(mb_substr($base, 0, 255));
+}
+
+/**
+ * Normalize image_path from DB for disk checks and public URLs (handles /VK/, full URLs, Windows paths).
+ */
+function vk_service_gallery_normalize_db_path(string $raw): string
+{
+    $p = vk_normalize_upload_relative_path($raw);
+    if ($p === '') {
+        return '';
+    }
+    $marker = 'uploads/services/gallery/';
+    $pos = stripos($p, $marker);
+    if ($pos !== false) {
+        $p = substr($p, $pos);
+    }
+    while (str_contains($p, 'uploads/services/gallery/uploads/services/gallery/')) {
+        $p = str_replace('uploads/services/gallery/uploads/services/gallery/', 'uploads/services/gallery/', $p);
+    }
+    if (!str_contains($p, '/') && preg_match('/\.(jpe?g|png|webp)$/i', $p)) {
+        $p = $marker . $p;
+    }
+
+    return $p;
+}
+
+/**
+ * Return a normalized gallery path that exists on disk, or null.
+ */
+function vk_service_gallery_resolve_existing_path(string $raw): ?string
+{
+    $p = vk_service_gallery_normalize_db_path($raw);
+    if ($p === '') {
+        return null;
+    }
+    if (public_asset_file_exists($p)) {
+        return $p;
+    }
+    $bn = basename($p);
+    if ($bn !== '' && $bn !== '.' && $bn !== '..') {
+        $try = 'uploads/services/gallery/' . $bn;
+        if ($try !== $p && public_asset_file_exists($try)) {
+            return $try;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Delete one gallery row and its file under uploads/services/gallery/.
+ *
+ * @return array{ok:bool,error:?string}
+ */
+function vk_service_gallery_delete_by_id(PDO $pdo, int $imgId): array
+{
+    if ($imgId <= 0) {
+        return ['ok' => false, 'error' => 'Invalid image.'];
+    }
+    $st = $pdo->prepare('SELECT id, image_path FROM service_gallery WHERE id = ? LIMIT 1');
+    $st->execute([$imgId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return ['ok' => false, 'error' => 'Image not found.'];
+    }
+    $path = trim((string) ($row['image_path'] ?? ''));
+    if ($path !== '' && str_starts_with(str_replace('\\', '/', $path), 'uploads/services/gallery/')) {
+        $full = ROOT_PATH . '/' . ltrim(str_replace('\\', '/', $path), '/');
+        if (is_file($full)) {
+            @unlink($full);
+        }
+    }
+    $pdo->prepare('DELETE FROM service_gallery WHERE id = ?')->execute([$imgId]);
+
+    return ['ok' => true, 'error' => null];
 }
 
 /**
@@ -52,13 +177,13 @@ function vk_service_gallery_fetch(PDO $pdo, int $serviceId, array $serviceRow): 
 
     $valid = [];
     foreach ($rows as $r) {
-        $p = trim((string) ($r['image_path'] ?? ''));
-        if ($p === '' || !public_asset_file_exists($p)) {
+        $resolved = vk_service_gallery_resolve_existing_path((string) ($r['image_path'] ?? ''));
+        if ($resolved === null) {
             continue;
         }
         $valid[] = [
             'id' => (int) ($r['id'] ?? 0),
-            'image_path' => $p,
+            'image_path' => $resolved,
             'title' => trim((string) ($r['title'] ?? '')),
         ];
     }
@@ -153,6 +278,15 @@ function vk_service_gallery_process_upload(array $file, int $serviceId): array
     if ($info === false || !in_array($info[2] ?? 0, [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
         $out['error'] = 'Use JPG, PNG, or WebP images.';
         return $out;
+    }
+    if (class_exists('finfo')) {
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mime = is_object($finfo) ? $finfo->file($tmp) : false;
+        $allowedMime = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!is_string($mime) || !in_array($mime, $allowedMime, true)) {
+            $out['error'] = 'Invalid image MIME type.';
+            return $out;
+        }
     }
 
     $src = match ((int) $info[2]) {

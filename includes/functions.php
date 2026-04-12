@@ -42,13 +42,46 @@ function require_login(): void
     }
 }
 
-/** Block technician accounts from admin modules (they use /tech/). */
+/** Block technician accounts from admin modules (they use /tech/). Sync role/status from DB. */
 function require_admin(): void
 {
     require_login();
-    if (($_SESSION['user_role'] ?? 'admin') === 'technician') {
+    $pdo = db();
+    require_once __DIR__ . '/users_schema.php';
+    vk_ensure_users_management_schema($pdo);
+
+    $uid = (int) $_SESSION['user_id'];
+    $st = $pdo->prepare('SELECT role, status FROM users WHERE id = ? LIMIT 1');
+    $st->execute([$uid]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        $_SESSION = [];
+        session_destroy();
+        flash_set('error', 'Account not found.');
+        redirect('/login.php');
+    }
+    $status = isset($row['status']) ? (string) $row['status'] : 'active';
+    if ($status === 'inactive') {
+        $_SESSION = [];
+        session_destroy();
+        flash_set('warning', 'Your account is inactive.');
+        redirect('/login.php');
+    }
+    $role = (string) ($row['role'] ?? 'admin');
+    $_SESSION['user_role'] = $role;
+    if ($role === 'technician') {
         flash_set('warning', 'Use the technician mobile dashboard for your account.');
         redirect('/tech/index.php');
+    }
+}
+
+/** Only role admin may access user management routes and APIs. */
+function require_users_admin(PDO $pdo): void
+{
+    require_admin();
+    if (($_SESSION['user_role'] ?? 'admin') !== 'admin') {
+        flash_set('error', 'Only administrators can manage user accounts.');
+        redirect('/modules/dashboard.php');
     }
 }
 
@@ -72,7 +105,13 @@ function current_user(PDO $pdo): ?array
         return null;
     }
     if (users_has_role_column($pdo)) {
-        $st = $pdo->prepare('SELECT id, username, fullname, role, technician_id FROM users WHERE id = ? LIMIT 1');
+        $extra = '';
+        if (db_column_exists($pdo, 'users', 'email')) {
+            $extra .= ', email, phone, status';
+        }
+        $st = $pdo->prepare(
+            'SELECT id, username, fullname, role, technician_id' . $extra . ' FROM users WHERE id = ? LIMIT 1'
+        );
     } else {
         $st = $pdo->prepare('SELECT id, username, fullname FROM users WHERE id = ? LIMIT 1');
     }
@@ -81,6 +120,9 @@ function current_user(PDO $pdo): ?array
     if ($u && !isset($u['role'])) {
         $u['role'] = 'admin';
         $u['technician_id'] = null;
+    }
+    if ($u && !isset($u['status'])) {
+        $u['status'] = 'active';
     }
     return $u ?: null;
 }
@@ -365,19 +407,48 @@ function warranty_expiry_badge_class(?string $endDate): string
     return 'success';
 }
 
-/** Public static asset URL (e.g. assets/images/...). */
+/**
+ * Normalize stored web-relative paths: strip scheme/host, leading slashes, accidental BASE_URL prefix.
+ */
+function vk_normalize_upload_relative_path(string $path): string
+{
+    $path = trim(str_replace('\\', '/', $path));
+    if ($path === '') {
+        return '';
+    }
+    if (preg_match('#^https?://[^/]+(/.*)?$#i', $path, $m)) {
+        $path = ltrim((string) ($m[1] ?? ''), '/');
+    }
+    $path = ltrim($path, '/');
+    $base = trim(BASE_URL, '/');
+    if ($base !== '' && str_starts_with(strtolower($path), strtolower($base) . '/')) {
+        $path = substr($path, strlen($base) + 1);
+    }
+
+    return $path;
+}
+
+/** Public static asset URL (e.g. assets/images/... or uploads/...). */
 function public_asset_url(string $relativePath): string
 {
-    $relativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
+    $relativePath = vk_normalize_upload_relative_path($relativePath);
+    if ($relativePath === '') {
+        return BASE_URL . '/';
+    }
+
     return BASE_URL . '/' . $relativePath;
 }
 
 /** True if a file exists under project root at the given web-relative path. */
 function public_asset_file_exists(string $relativePath): bool
 {
-    $relativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
+    $relativePath = vk_normalize_upload_relative_path($relativePath);
+    if ($relativePath === '') {
+        return false;
+    }
     $full = ROOT_PATH . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
-    return is_file($full) && is_readable($full);
+
+    return is_file($full);
 }
 
 /**

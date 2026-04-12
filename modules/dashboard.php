@@ -187,6 +187,7 @@ try {
 }
 
 $schemaNeedsV3 = !$hasMaintContracts || !$hasWarrantyRecords;
+$smtpCfg = vk_smtp_settings_get($pdo);
 
 $emergencyBookings = [];
 $emergencyRepairs = [];
@@ -217,6 +218,25 @@ if (db_table_exists($pdo, 'repair_jobs') && db_column_exists($pdo, 'repair_jobs'
     }
 }
 ?>
+<?php if (!($smtpCfg['configured'] ?? false)): ?>
+<div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span><i class="bi bi-envelope-exclamation me-2"></i>Email system not configured. Registration and booking emails may fail.</span>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-sm btn-outline-warning" href="<?= e(BASE_URL) ?>/modules/settings/index.php#pane-mail">Open Email Settings</a>
+        <a class="btn btn-sm btn-outline-secondary" href="<?= e(BASE_URL) ?>/modules/settings/email.php">Email &amp; Inbox</a>
+    </div>
+</div>
+<?php
+elseif (
+    trim((string) ($smtpCfg['smtp_pass'] ?? '')) === ''
+    && !vk_smtp_env_key_set('VK_SMTP_PASS')
+    && vk_smtp_env_value('MAIL_PASSWORD') === null
+): ?>
+<div class="alert alert-info d-flex flex-wrap justify-content-between align-items-center gap-2 small">
+    <span><i class="bi bi-key me-2"></i>SMTP host and sender are set, but no password is stored. Add the mailbox password under <strong>Email</strong> settings, or set <code>VK_SMTP_PASS</code> / <code>MAIL_PASSWORD</code> in <code>.env</code>, or sending will fail.</span>
+    <a class="btn btn-sm btn-outline-primary" href="<?= e(BASE_URL) ?>/modules/settings/index.php#pane-mail">Add password</a>
+</div>
+<?php endif; ?>
 <?php if ($emergencyBookings || $emergencyRepairs): ?>
 <div class="card border-danger mb-3 shadow-sm">
     <div class="card-header bg-danger text-white fw-semibold"><i class="bi bi-exclamation-octagon me-2"></i>Emergency &amp; high priority</div>

@@ -34,12 +34,20 @@ function nav_active(string $needle): string
             <a class="nav-link px-3 py-2 <?= nav_active('/technicians/') ?>" href="<?= e(BASE_URL) ?>/modules/technicians/list.php"><i class="bi bi-person-badge me-2"></i>Technicians</a>
             <a class="nav-link px-3 py-2 <?= nav_active('/service_templates/') ?>" href="<?= e(BASE_URL) ?>/modules/service_templates/list.php"><i class="bi bi-tags me-2"></i>Service templates</a>
             <a class="nav-link px-3 py-2 <?= nav_active('/web_services/gallery') ?>" href="<?= e(BASE_URL) ?>/modules/web_services/gallery.php"><i class="bi bi-images me-2"></i>Service gallery</a>
+            <a class="nav-link px-3 py-2 <?= nav_active('/vehicle_bookings/') ?>" href="<?= e(BASE_URL) ?>/modules/vehicle_bookings/list.php"><i class="bi bi-car-front me-2"></i>Vehicle bookings</a>
+            <a class="nav-link px-3 py-2 <?= nav_active('/vehicles/') ?>" href="<?= e(BASE_URL) ?>/modules/vehicles/list.php"><i class="bi bi-truck me-2"></i>Vehicles</a>
+            <a class="nav-link px-3 py-2 <?= nav_active('/drivers/') ?>" href="<?= e(BASE_URL) ?>/modules/drivers/list.php"><i class="bi bi-person-vcard me-2"></i>Drivers</a>
             <a class="nav-link px-3 py-2 <?= nav_active('/products/') ?>" href="<?= e(BASE_URL) ?>/modules/products/list.php"><i class="bi bi-cpu me-2"></i>Parts &amp; products</a>
             <a class="nav-link px-3 py-2 <?= nav_active('/invoices/') ?>" href="<?= e(BASE_URL) ?>/modules/invoices/list.php"><i class="bi bi-receipt me-2"></i>Invoices</a>
             <a class="nav-link px-3 py-2 <?= nav_active('/payments/') ?>" href="<?= e(BASE_URL) ?>/modules/payments/list.php"><i class="bi bi-cash-coin me-2"></i>Payments</a>
             <a class="nav-link px-3 py-2 <?= nav_active('/accounts/') ?>" href="<?= e(BASE_URL) ?>/modules/accounts/list.php"><i class="bi bi-wallet2 me-2"></i>Accounts</a>
             <a class="nav-link px-3 py-2 <?= nav_active('/accounts/transfer') ?>" href="<?= e(BASE_URL) ?>/modules/accounts/transfer.php"><i class="bi bi-arrow-left-right me-2"></i>Transfer</a>
-            <a class="nav-link px-3 py-2 <?= nav_active('/modules/settings/') ?>" href="<?= e(BASE_URL) ?>/modules/settings/index.php"><i class="bi bi-gear-wide-connected me-2"></i>System Settings</a>
+            <?php if ((($currentUser ?? [])['role'] ?? 'admin') === 'admin'): ?>
+            <a class="nav-link px-3 py-2 <?= nav_active('/modules/users/') ?>" href="<?= e(BASE_URL) ?>/modules/users/index.php"><i class="bi bi-people me-2"></i>Users</a>
+            <?php endif; ?>
+            <a class="nav-link px-3 py-2 <?= nav_active('/modules/menus/') ?>" href="<?= e(BASE_URL) ?>/modules/menus/index.php"><i class="bi bi-list-nested me-2"></i>Site menus</a>
+            <a class="nav-link px-3 py-2 <?= nav_active('/modules/settings/index.php') ?>" href="<?= e(BASE_URL) ?>/modules/settings/index.php"><i class="bi bi-gear-wide-connected me-2"></i>System Settings</a>
+            <a class="nav-link px-3 py-2 <?= nav_active('/modules/settings/email.php') ?>" href="<?= e(BASE_URL) ?>/modules/settings/email.php"><i class="bi bi-inbox me-2"></i>Email &amp; Inbox</a>
         </nav>
         <div class="p-3 small text-white-50 border-top border-light border-opacity-10">
             <div class="d-flex align-items-start gap-2">

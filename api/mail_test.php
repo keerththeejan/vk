@@ -32,64 +32,20 @@ if (!vk_settings_table_ready($pdo)) {
     exit;
 }
 
-$host = trim((string) vk_settings_get($pdo, 'smtp_host', ''));
-$port = (int) vk_settings_get($pdo, 'smtp_port', '587');
-$user = (string) vk_settings_get($pdo, 'smtp_username', '');
-$pass = (string) vk_settings_get($pdo, 'smtp_password', '');
-$from = trim((string) vk_settings_get($pdo, 'email_from', ''));
-
-if ($host === '') {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Configure SMTP host in Email settings first'], JSON_THROW_ON_ERROR);
-    exit;
-}
-if ($from === '' || !filter_var($from, FILTER_VALIDATE_EMAIL)) {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Configure a valid From email'], JSON_THROW_ON_ERROR);
-    exit;
-}
-
-$autoload = dirname(__DIR__) . '/vendor/autoload.php';
-if (!is_file($autoload)) {
-    http_response_code(503);
-    echo json_encode([
-        'ok' => false,
-        'error' => 'PHPMailer not installed. Run: composer install in the project root.',
-    ], JSON_THROW_ON_ERROR);
-    exit;
-}
-
-require_once $autoload;
-
-use PHPMailer\PHPMailer\Exception as MailException;
-use PHPMailer\PHPMailer\PHPMailer;
-
-$mail = new PHPMailer(true);
-try {
-    $mail->isSMTP();
-    $mail->Host = $host;
-    $mail->Port = $port > 0 ? $port : 587;
-    $mail->SMTPAuth = $user !== '';
-    if ($mail->SMTPAuth) {
-        $mail->Username = $user;
-        $mail->Password = $pass;
-    }
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    if ($port === 465) {
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-    }
-    $mail->CharSet = 'UTF-8';
-    $mail->setFrom($from, vk_settings_get($pdo, 'site_name', 'VK Network') ?? 'VK Network');
-    $mail->addAddress($to);
-    $mail->Subject = 'VK Network — test email';
-    $mail->Body = "This is a test message from your VK admin panel.\r\n\r\nSent at " . date('c');
-
-    $mail->send();
-    echo json_encode(['ok' => true, 'message' => 'Test email sent'], JSON_THROW_ON_ERROR);
-} catch (MailException $e) {
+$res = vk_mailer_send(
+    $pdo,
+    $to,
+    'VK Network — test email',
+    "This is a test message from your VK admin panel.\r\n\r\nSent at " . date('c'),
+    null,
+    [
+        'template_type' => 'mail_test',
+        'fallback_tls' => true,
+    ]
+);
+if (!$res['ok']) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => $mail->ErrorInfo ?: $e->getMessage()], JSON_THROW_ON_ERROR);
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => $e->getMessage()], JSON_THROW_ON_ERROR);
+    echo json_encode(['ok' => false, 'error' => $res['error'] ?? 'Send failed'], JSON_THROW_ON_ERROR);
+    exit;
 }
+echo json_encode(['ok' => true, 'message' => 'Test email sent'], JSON_THROW_ON_ERROR);

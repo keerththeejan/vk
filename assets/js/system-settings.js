@@ -24,11 +24,16 @@
             out.smtp_host = document.getElementById('smtp_host')?.value ?? '';
             out.smtp_port = String(document.getElementById('smtp_port')?.value ?? '587');
             out.smtp_username = document.getElementById('smtp_username')?.value ?? '';
+            out.smtp_secure = document.getElementById('smtp_secure')?.value ?? 'tls';
             const pw = document.getElementById('smtp_password')?.value ?? '';
             if (pw !== '') {
                 out.smtp_password = pw;
             }
             out.email_from = document.getElementById('email_from')?.value ?? '';
+            out.from_name = document.getElementById('from_name')?.value ?? '';
+            out.email_autoresponder_enabled = document.getElementById('email_autoresponder_enabled')?.checked ? '1' : '0';
+            out.email_autoresponder_subject = document.getElementById('email_autoresponder_subject')?.value ?? '';
+            out.email_autoresponder_body = document.getElementById('email_autoresponder_body')?.value ?? '';
         }
         return out;
     }
@@ -46,6 +51,7 @@
         if (!res.ok || !data.ok) {
             throw new Error(data.error || 'Save failed');
         }
+        return data;
     }
 
     document.querySelectorAll('.btn-save-tab').forEach(function (btn) {
@@ -54,9 +60,16 @@
             if (!tab) return;
             btn.disabled = true;
             try {
-                await saveTab(tab);
+                const data = await saveTab(tab);
                 if (typeof window.showToast === 'function') {
-                    window.showToast('Settings saved successfully', 'success');
+                    if (tab === 'email' && data && data.smtp_password_configured === false) {
+                        window.showToast(
+                            'Saved. SMTP password is still missing — type the mailbox password and save again, or set VK_SMTP_PASS / MAIL_PASSWORD in .env (quoted if it contains $).',
+                            'warning'
+                        );
+                    } else {
+                        window.showToast('Settings saved successfully', 'success');
+                    }
                 }
                 const pw = document.getElementById('smtp_password');
                 if (pw && tab === 'email') {
@@ -135,4 +148,70 @@
             if (btn) btn.disabled = false;
         }
     });
+
+    function applySmtpPreset(kind) {
+        const host = document.getElementById('smtp_host');
+        const port = document.getElementById('smtp_port');
+        const secure = document.getElementById('smtp_secure');
+        const from = document.getElementById('email_from');
+        const user = document.getElementById('smtp_username');
+        if (!host || !port || !secure) return;
+        const email = (from?.value || user?.value || '').trim().toLowerCase();
+        if (kind === 'gmail') {
+            host.value = 'smtp.gmail.com';
+            port.value = '587';
+            secure.value = 'tls';
+        } else if (kind === 'outlook') {
+            host.value = 'smtp.office365.com';
+            port.value = '587';
+            secure.value = 'tls';
+        } else if (kind === 'cpanel') {
+            if (email.includes('@')) {
+                host.value = 'mail.' + email.split('@')[1];
+            }
+            port.value = '587';
+            secure.value = 'tls';
+        }
+    }
+
+    document.getElementById('btnSmtpPresetVkitnet')?.addEventListener('click', function () {
+        const host = document.getElementById('smtp_host');
+        const port = document.getElementById('smtp_port');
+        const secure = document.getElementById('smtp_secure');
+        const from = document.getElementById('email_from');
+        const user = document.getElementById('smtp_username');
+        const fname = document.getElementById('from_name');
+        if (!host || !port || !secure) return;
+        host.value = 'vkitnet.info';
+        port.value = '465';
+        secure.value = 'ssl';
+        const u = 'info@vkitnet.info';
+        if (from && (!from.value || !from.value.trim())) from.value = u;
+        if (user && (!user.value || !user.value.trim())) user.value = u;
+        if (fname && (!fname.value || !fname.value.trim())) fname.value = 'VK IT';
+    });
+    document.getElementById('btnSmtpPresetGmail')?.addEventListener('click', function () { applySmtpPreset('gmail'); });
+    document.getElementById('btnSmtpPresetOutlook')?.addEventListener('click', function () { applySmtpPreset('outlook'); });
+    document.getElementById('btnSmtpPresetCpanel')?.addEventListener('click', function () { applySmtpPreset('cpanel'); });
+    document.getElementById('btnSmtpPresetSsl465')?.addEventListener('click', function () {
+        const host = document.getElementById('smtp_host');
+        const port = document.getElementById('smtp_port');
+        const secure = document.getElementById('smtp_secure');
+        const from = document.getElementById('email_from');
+        const user = document.getElementById('smtp_username');
+        if (!host || !port || !secure) return;
+        const email = (from?.value || user?.value || '').trim().toLowerCase();
+        if (email.includes('@')) {
+            host.value = email.split('@')[1];
+        }
+        port.value = '465';
+        secure.value = 'ssl';
+    });
+
+    if (window.location.hash === '#pane-mail') {
+        const trigger = document.querySelector('[data-bs-target="#pane-mail"]');
+        if (trigger && window.bootstrap && window.bootstrap.Tab) {
+            new window.bootstrap.Tab(trigger).show();
+        }
+    }
 })();

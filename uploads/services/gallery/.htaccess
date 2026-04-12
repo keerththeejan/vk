@@ -1,14 +1,7 @@
-# Block executable scripts, but allow normal image/file access.
+# Block script execution in gallery uploads (images only)
 <IfModule mod_authz_core.c>
-    <FilesMatch "\.(php|phtml|php3|php4|php5|phar)$">
+    <FilesMatch "(?i)\.(php|phtml|php[0-9]|phar|pl|py|jsp|asp|aspx|sh|cgi)$">
         Require all denied
     </FilesMatch>
 </IfModule>
-
-# Apache 2.2 fallback
-<IfModule !mod_authz_core.c>
-    <FilesMatch "\.(php|phtml|php3|php4|php5|phar)$">
-        Order allow,deny
-        Deny from all
-    </FilesMatch>
-</IfModule>
+Options -Indexes

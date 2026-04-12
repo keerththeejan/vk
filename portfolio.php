@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/includes/init.php';
+require_once __DIR__ . '/includes/web_portfolio_schema.php';
 
 $pageTitle = 'Our work';
 $navActive = 'portfolio';
@@ -8,6 +9,7 @@ $seoCanonicalPath = BASE_URL . '/portfolio.php';
 $seoDescription = 'Completed projects and recent work from VK Network — repairs, CCTV, and field services in Sri Lanka.';
 $posts = [];
 $pdo = db();
+vk_ensure_web_portfolio_tables($pdo);
 if (db_table_exists($pdo, 'web_portfolio_posts')) {
     $posts = $pdo->query(
         'SELECT p.* FROM web_portfolio_posts p WHERE p.published = 1 ORDER BY p.display_date DESC, p.id DESC LIMIT 60'
