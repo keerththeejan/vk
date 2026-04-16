@@ -190,16 +190,36 @@
         const thumbUrl = it.image_url || '';
         const title = it.title || '—';
         const svc = it.service_name || '';
+        const isSample = !!it.is_sample;
         const when = (it.created_at || '').replace('T', ' ').slice(0, 16);
         const fileHint = it.original_filename || it.image_path.split('/').pop() || '';
+        const badgeInline = isSample
+            ? '<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle mb-2">Sample</span>'
+            : '';
+        const badgeCorner = isSample
+            ? '<span class="position-absolute top-0 end-0 m-2 badge bg-info-subtle text-info-emphasis border border-info-subtle">Sample</span>'
+            : '';
+        const checkboxHtml =
+            '<input type="checkbox" class="form-check-input m-0" value="' +
+            it.id +
+            (isSample ? '" disabled aria-disabled="true" aria-label="Sample image">' : '" aria-label="Select image">');
+        const actionButtons = isSample
+            ? '<button type="button" class="btn btn-outline-primary vk-sg-view">View</button>' +
+              '<button type="button" class="btn btn-outline-secondary" disabled>Demo only</button>'
+            : '<button type="button" class="btn btn-outline-primary vk-sg-view">View</button>' +
+              '<button type="button" class="btn btn-outline-secondary vk-sg-edit" data-id="' +
+              it.id +
+              '">Edit</button>' +
+              '<button type="button" class="btn btn-outline-danger vk-sg-del" data-id="' +
+              it.id +
+              '">Delete</button>';
 
         article.innerHTML =
             '<div class="position-relative vk-sg-thumb-wrap">' +
             '<label class="vk-sg-bulk-cb position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 align-items-center gap-1" style="z-index:2">' +
-            '<input type="checkbox" class="form-check-input m-0" value="' +
-            it.id +
-            '" aria-label="Select image">' +
+            checkboxHtml +
             '</label>' +
+            badgeCorner +
             (thumbUrl
                 ? '<img class="vk-sg-thumb vk-sg-lazy" src="' +
                   esc(thumbUrl) +
@@ -207,6 +227,7 @@
                 : '<div class="vk-sg-skeleton w-100 h-100"></div>') +
             '</div>' +
             '<div class="card-body py-2 px-3">' +
+            badgeInline +
             '<div class="fw-semibold small text-truncate" title="' +
             esc(title) +
             '">' +
@@ -216,19 +237,13 @@
             esc(svc) +
             '</div>' +
             '<div class="text-muted small">' +
-            esc(when) +
+            esc(when || (isSample ? 'Demo preview' : '')) +
             '</div>' +
             (fileHint ? '<div class="text-muted small text-truncate" title="' + esc(fileHint) + '">' + esc(fileHint) + '</div>' : '') +
             '</div>' +
             '<div class="card-footer bg-transparent border-0 pt-0 pb-3 px-3">' +
             '<div class="btn-group btn-group-sm w-100" role="group">' +
-            '<button type="button" class="btn btn-outline-primary vk-sg-view">View</button>' +
-            '<button type="button" class="btn btn-outline-secondary vk-sg-edit" data-id="' +
-            it.id +
-            '">Edit</button>' +
-            '<button type="button" class="btn btn-outline-danger vk-sg-del" data-id="' +
-            it.id +
-            '">Delete</button>' +
+            actionButtons +
             '</div></div>';
 
         return article;

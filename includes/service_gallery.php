@@ -247,6 +247,75 @@ function vk_service_gallery_default_rows(array $serviceRow): array
     return $out;
 }
 
+/**
+ * Demo-only items for the admin gallery when no real gallery rows exist yet.
+ *
+ * @return list<array{id:int,service_id:int,image_path:string,image_url:string,title:string,original_filename:string,created_at:string,service_name:string,service_slug:string,is_sample:bool}>
+ */
+function vk_service_gallery_admin_sample_items(): array
+{
+    $samples = [
+        [
+            'service_name' => 'Computer Repair',
+            'service_slug' => 'computer-repair',
+            'title' => 'Laptop repair bench',
+            'image_path' => 'assets/images/gallery/laptop-repair.svg',
+        ],
+        [
+            'service_name' => 'Computer Repair',
+            'service_slug' => 'computer-repair',
+            'title' => 'Motherboard repair work',
+            'image_path' => 'assets/images/gallery/motherboard-repair.svg',
+        ],
+        [
+            'service_name' => 'Maintenance',
+            'service_slug' => 'maintenance',
+            'title' => 'Preventive cleaning service',
+            'image_path' => 'assets/images/gallery/pc-cleaning.svg',
+        ],
+        [
+            'service_name' => 'Printer Repair',
+            'service_slug' => 'printer-repair',
+            'title' => 'Printer repair sample',
+            'image_path' => 'assets/images/gallery/printer-repair.svg',
+        ],
+        [
+            'service_name' => 'Printer Repair',
+            'service_slug' => 'printer-repair',
+            'title' => 'Toner refill sample',
+            'image_path' => 'assets/images/gallery/toner-refill.svg',
+        ],
+        [
+            'service_name' => 'CCTV Installation',
+            'service_slug' => 'cctv-installation',
+            'title' => 'Camera setup sample',
+            'image_path' => 'assets/images/gallery/camera-setup.svg',
+        ],
+    ];
+
+    $items = [];
+    foreach ($samples as $index => $sample) {
+        $path = (string) ($sample['image_path'] ?? '');
+        if ($path === '' || !public_asset_file_exists($path)) {
+            continue;
+        }
+        $items[] = [
+            'id' => -1000 - $index,
+            'service_id' => 0,
+            'image_path' => $path,
+            'image_url' => public_asset_url($path),
+            'title' => (string) ($sample['title'] ?? ''),
+            'original_filename' => basename($path),
+            'created_at' => '',
+            'service_name' => (string) ($sample['service_name'] ?? 'Sample service'),
+            'service_slug' => (string) ($sample['service_slug'] ?? 'sample-service'),
+            'is_sample' => true,
+        ];
+    }
+
+    return $items;
+}
+
 function vk_service_gallery_process_upload(array $file, int $serviceId): array
 {
     $out = ['path' => null, 'error' => null];

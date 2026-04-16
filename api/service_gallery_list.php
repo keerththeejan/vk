@@ -93,7 +93,13 @@ foreach ($rows as $r) {
         'created_at' => (string) ($r['created_at'] ?? ''),
         'service_name' => (string) ($r['service_name'] ?? ''),
         'service_slug' => (string) ($r['service_slug'] ?? ''),
+        'is_sample' => false,
     ];
+}
+
+if ($total === 0 && $page === 1) {
+    $items = vk_service_gallery_admin_sample_items();
+    $total = count($items);
 }
 
 echo json_encode([
@@ -102,5 +108,5 @@ echo json_encode([
     'total' => $total,
     'page' => $page,
     'per_page' => $perPage,
-    'has_more' => ($offset + count($items)) < $total,
+    'has_more' => $total > 0 ? ($offset + count($items)) < $total : false,
 ], JSON_THROW_ON_ERROR);
