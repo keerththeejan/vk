@@ -32,6 +32,7 @@ function nav_active(string $needle): string
             <a class="nav-link px-3 py-2 <?= nav_active('/maintenance/') ?>" href="<?= e(BASE_URL) ?>/modules/maintenance/list.php"><i class="bi bi-calendar-check me-2"></i>Maintenance</a>
             <a class="nav-link px-3 py-2 <?= nav_active('/warranties/') ?>" href="<?= e(BASE_URL) ?>/modules/warranties/list.php"><i class="bi bi-shield-check me-2"></i>Warranties</a>
             <a class="nav-link px-3 py-2 <?= nav_active('/technicians/') ?>" href="<?= e(BASE_URL) ?>/modules/technicians/list.php"><i class="bi bi-person-badge me-2"></i>Technicians</a>
+            <a class="nav-link px-3 py-2 <?= nav_active('/modules/staff/') ?>" href="<?= e(BASE_URL) ?>/modules/staff/list.php"><i class="bi bi-person-lines-fill me-2"></i>Staff portfolio</a>
             <a class="nav-link px-3 py-2 <?= nav_active('/service_templates/') ?>" href="<?= e(BASE_URL) ?>/modules/service_templates/list.php"><i class="bi bi-tags me-2"></i>Service templates</a>
             <a class="nav-link px-3 py-2 <?= nav_active('/web_services/gallery') ?>" href="<?= e(BASE_URL) ?>/modules/web_services/gallery.php"><i class="bi bi-images me-2"></i>Service gallery</a>
             <a class="nav-link px-3 py-2 <?= nav_active('/vehicle_bookings/') ?>" href="<?= e(BASE_URL) ?>/modules/vehicle_bookings/list.php"><i class="bi bi-car-front me-2"></i>Vehicle bookings</a>

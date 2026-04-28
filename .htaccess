@@ -29,6 +29,8 @@ Options -Indexes
     RewriteRule ^book/?$ book.php [L]
     RewriteRule ^track/?$ track.php [L]
     RewriteRule ^portfolio/?$ portfolio.php [L]
+    RewriteRule ^staff/?$ staff.php [L,QSA]
+    RewriteRule ^staff/([0-9]+)/?$ staff.php?id=$1 [L,QSA]
 
     # CodeIgniter-style fallback if this app is later moved behind a front controller.
     # Existing files and folders continue to load normally.
