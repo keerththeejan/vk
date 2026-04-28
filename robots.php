@@ -6,8 +6,7 @@ require_once __DIR__ . '/includes/init.php';
 header('Content-Type: text/plain; charset=utf-8');
 header('Cache-Control: public, max-age=86400');
 
-$origin = vk_site_origin();
-$base = rtrim($origin . (BASE_URL === '' ? '' : BASE_URL), '/');
+$base = rtrim(base_url(), '/');
 $sitemap = $base . '/sitemap.php';
 
 echo "User-agent: *\n";

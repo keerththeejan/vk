@@ -3,7 +3,7 @@
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /VK/
+    RewriteBase /
 
     # Serve uploaded files directly (do not rewrite to front controllers)
     RewriteRule ^uploads/ - [L]

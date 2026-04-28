@@ -260,7 +260,7 @@ $pageTitle = 'Create invoice';
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 
 $products = $pdo->query('SELECT id, name, price, stock, category FROM products ORDER BY name')->fetchAll();
-$extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/invoice_create.js"></script>';
+$extraScripts = '<script src="' . e(base_url('assets/js/invoice_create.js')) . '"></script>';
 ?>
 <div class="mb-3">
     <a href="<?= e(BASE_URL) ?>/modules/invoices/list.php" class="text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Back</a>

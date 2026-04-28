@@ -299,7 +299,7 @@ require __DIR__ . '/includes/public_header.php';
 $extraScripts = '';
 if (!$successBooking) {
     $extraScripts .= '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>';
-    $extraScripts .= '<script src="' . e(BASE_URL) . '/assets/js/book-location-map.js" defer></script>';
+    $extraScripts .= '<script src="' . e(base_url('assets/js/book-location-map.js')) . '" defer></script>';
 }
 require __DIR__ . '/includes/public_footer.php';
 ?>

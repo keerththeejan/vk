@@ -9,6 +9,17 @@ function e(?string $s): string
     return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+/**
+ * Build a public URL from the configured app base, similar to CodeIgniter's base_url().
+ */
+function base_url(string $path = ''): string
+{
+    $base = rtrim(BASE_URL, '/');
+    $path = ltrim($path, '/');
+
+    return $path === '' ? $base . '/' : $base . '/' . $path;
+}
+
 function redirect(string $path): void
 {
     if (str_starts_with($path, 'http')) {

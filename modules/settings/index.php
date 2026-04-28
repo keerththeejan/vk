@@ -227,5 +227,5 @@ $hasTable = vk_settings_table_ready($pdo);
 </div>
 
 <?php
-$extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/system-settings.js"></script>';
+$extraScripts = '<script src="' . e(base_url('assets/js/system-settings.js')) . '"></script>';
 require_once dirname(__DIR__, 2) . '/includes/layout_end.php';

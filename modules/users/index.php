@@ -173,5 +173,5 @@ $roleBadge = static function (string $r): string {
 </div>
 
 <?php
-$extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/users-admin.js" defer></script>';
+$extraScripts = '<script src="' . e(base_url('assets/js/users-admin.js')) . '" defer></script>';
 require_once dirname(__DIR__, 2) . '/includes/layout_end.php';

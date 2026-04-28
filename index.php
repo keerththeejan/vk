@@ -13,6 +13,7 @@ try {
 } catch (Throwable $e) {
     if (defined('APP_DEBUG') && APP_DEBUG) {
         error_log('index.php: database unavailable — ' . $e->getMessage());
+        echo '<div style="background:#fee;border:1px solid #c00;padding:15px;margin:20px;color:#800;font-family:monospace;">Database Error: ' . htmlspecialchars($e->getMessage()) . '</div>';
     }
 }
 if (!$services) {

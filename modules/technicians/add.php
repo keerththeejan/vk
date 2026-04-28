@@ -44,9 +44,9 @@ $extraHead = $extraHead ?? '';
 $extraScripts = $extraScripts ?? '';
 if ($hasGeo) {
     $extraHead .= '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>';
-    $extraHead .= '<link href="' . e(BASE_URL) . '/assets/css/technician-map.css" rel="stylesheet">';
+    $extraHead .= '<link href="' . e(base_url('assets/css/technician-map.css')) . '" rel="stylesheet">';
     $extraScripts .= '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>';
-    $extraScripts .= '<script src="' . e(BASE_URL) . '/assets/js/technician-location-picker.js" defer></script>';
+    $extraScripts .= '<script src="' . e(base_url('assets/js/technician-location-picker.js')) . '" defer></script>';
 }
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 ?>

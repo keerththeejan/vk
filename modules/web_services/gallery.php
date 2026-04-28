@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
 
 $pageTitle = 'Service gallery';
-$extraHead = '<link href="' . e(BASE_URL) . '/assets/css/service-gallery-admin.css" rel="stylesheet">';
+$extraHead = '<link href="' . e(base_url('assets/css/service-gallery-admin.css')) . '" rel="stylesheet">';
 $extraHead .= '<style id="hoverfx">#gridcss .vk-sg-admin-card:hover .vk-sg-thumb{transform:scale(1.05);transition:transform .3s ease}</style>';
 
 if (!db_table_exists($pdo, 'web_services')) {
@@ -185,5 +185,5 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 </div>
 
 <?php
-$extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/service-gallery-admin.js" defer></script>';
+$extraScripts = '<script src="' . e(base_url('assets/js/service-gallery-admin.js')) . '" defer></script>';
 require_once dirname(__DIR__, 2) . '/includes/layout_end.php';

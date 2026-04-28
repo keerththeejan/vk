@@ -18,9 +18,17 @@ function vk_site_origin(): string
 /** Absolute URL for a path under BASE_URL (e.g. /VK/book.php). */
 function vk_public_absolute_url(string $path): string
 {
+    if (preg_match('#^https?://#i', $path)) {
+        return $path;
+    }
+
     $path = $path === '' ? '/' : $path;
     if ($path[0] !== '/') {
         $path = '/' . $path;
+    }
+
+    if (preg_match('#^https?://#i', BASE_URL)) {
+        return rtrim(BASE_URL, '/') . $path;
     }
 
     return vk_site_origin() . (BASE_URL === '' ? '' : BASE_URL) . $path;
@@ -229,7 +237,7 @@ function vk_json_ld_local_business(): string
         '@context' => 'https://schema.org',
         '@type' => 'LocalBusiness',
         'name' => $name,
-        'url' => vk_public_absolute_url(BASE_URL . '/index.php'),
+        'url' => vk_public_absolute_url('/index.php'),
         'telephone' => $phone,
         'address' => [
             '@type' => 'PostalAddress',

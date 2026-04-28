@@ -11,8 +11,21 @@ require_once __DIR__ . '/mail.php';
 define('APP_NAME', 'VK IT Network — Service & Billing');
 define('ROOT_PATH', dirname(__DIR__));
 
-// Change if your project URL is not http://localhost/VK/
-define('BASE_URL', '/VK');
+// Public base URL/path without a trailing slash. Examples:
+//   https://vkintet.info
+//   https://vkintet.info/vk
+//   /VK
+$configuredBaseUrl = trim((string) (getenv('APP_BASE_URL') ?: 'https://vkintet.info/'));
+$baseUrl = rtrim($configuredBaseUrl, '/');
+if ($baseUrl === '') {
+    $scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+    if (str_starts_with($scriptDir, '/VK/') || $scriptDir === '/VK') {
+        $baseUrl = '/VK';
+    } elseif (str_starts_with($scriptDir, '/vk/') || $scriptDir === '/vk') {
+        $baseUrl = '/vk';
+    }
+}
+define('BASE_URL', $baseUrl);
 
 // Session cookie name
 define('SESSION_NAME', 'vk_billing_sess');
