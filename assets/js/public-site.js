@@ -54,7 +54,12 @@
     }
 
     function initAOS() {
-        if (typeof AOS === "undefined") return;
+        if (typeof AOS === "undefined") {
+            document.querySelectorAll("[data-aos]").forEach(function (el) {
+                el.classList.add("aos-animate");
+            });
+            return;
+        }
         var reduce = false;
         try {
             reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

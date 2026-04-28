@@ -25,7 +25,7 @@ if (db_table_exists($pdo, 'email_outbound_queue')) {
 
 $hasSettings = vk_settings_table_ready($pdo);
 $cronSecretSet = vk_email_env_str('VK_CRON_SECRET', '') !== '' || (string) (getenv('VK_CRON_SECRET') ?: '') !== '';
-$cronUrl = base_url('api/cron_email.php?token=YOUR_VK_CRON_SECRET');
+$cronUrl = rtrim(vk_site_origin(), '/') . BASE_URL . '/api/cron_email.php?token=YOUR_VK_CRON_SECRET';
 ?>
 <?php if (!$hasSettings): ?>
 <div class="alert alert-danger">Import <code>sql/upgrade_settings.sql</code> first.</div>
@@ -183,5 +183,5 @@ $cronUrl = base_url('api/cron_email.php?token=YOUR_VK_CRON_SECRET');
 <?php endif; ?>
 
 <?php
-$extraScripts = '<script src="' . e(base_url('assets/js/email-hub.js')) . '"></script>';
+$extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/email-hub.js"></script>';
 require_once dirname(__DIR__, 2) . '/includes/layout_end.php';

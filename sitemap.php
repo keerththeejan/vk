@@ -9,7 +9,8 @@ require_once __DIR__ . '/includes/init.php';
 header('Content-Type: application/xml; charset=utf-8');
 header('Cache-Control: public, max-age=3600');
 
-$base = rtrim(base_url(), '/');
+$origin = vk_site_origin();
+$base = rtrim($origin . (BASE_URL === '' ? '' : BASE_URL), '/');
 
 $urls = [
     ['loc' => $base . '/index.php', 'changefreq' => 'weekly', 'priority' => '1.0'],

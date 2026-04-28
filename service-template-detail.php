@@ -56,9 +56,9 @@ $extraHead = '';
 $extraScripts = '';
 if ($hasMap) {
     $extraHead .= '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">';
-    $extraHead .= '<link href="' . e(base_url('assets/css/service-location.css')) . '" rel="stylesheet">';
+    $extraHead .= '<link href="' . e(BASE_URL) . '/assets/css/service-location.css" rel="stylesheet">';
     $extraScripts .= '<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous" defer></script>';
-    $extraScripts .= '<script src="' . e(base_url('assets/js/service-location-public.js')) . '" defer></script>';
+    $extraScripts .= '<script src="' . e(BASE_URL) . '/assets/js/service-location-public.js" defer></script>';
 }
 
 require __DIR__ . '/includes/public_header.php';

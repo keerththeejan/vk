@@ -105,8 +105,8 @@ $vehicles = $pdo->query("SELECT * FROM vehicles WHERE status = 'available' ORDER
 $pageTitle = 'Book Vehicle';
 $navActive = 'vehicle';
 $seoCanonicalPath = BASE_URL . '/vehicle/book.php';
-$extraHead = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"><link rel="stylesheet" href="' . e(base_url('assets/css/vehicle-booking.css')) . '">';
-$extraScripts = '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script><script src="' . e(base_url('assets/js/vehicle-booking.js')) . '" defer></script>';
+$extraHead = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"><link rel="stylesheet" href="' . e(BASE_URL) . '/assets/css/vehicle-booking.css">';
+$extraScripts = '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script><script src="' . e(BASE_URL) . '/assets/js/vehicle-booking.js" defer></script>';
 require dirname(__DIR__) . '/includes/public_header.php';
 ?>
 <section class="py-5">

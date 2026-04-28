@@ -1,17 +1,27 @@
-# VK Network — optional pretty URLs + caching (Apache + mod_rewrite)
-# If you get 500 errors, ensure AllowOverride is enabled for this directory.
+# VK Network - shared hosting rewrite + caching rules.
+# Works in public_html on cPanel and in /vk on localhost.
+
+DirectoryIndex index.php
+Options -Indexes
+
+<FilesMatch "^(\.env|\.env\..*|composer\.(json|lock)|README\.md)$">
+    Require all denied
+</FilesMatch>
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /
 
-    # Serve uploaded files directly (do not rewrite to front controllers)
+    # Uncomment on production after SSL is active.
+    # RewriteCond %{HTTPS} !=on
+    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Serve uploaded files directly; do not rewrite user media.
     RewriteRule ^uploads/ - [L]
 
-    # Dynamic robots.txt
+    # Dynamic robots.txt.
     RewriteRule ^robots\.txt$ robots.php [L]
 
-    # /VK/service/my-slug → service.php?slug=... (dynamic SEO/local pages)
+    # /service/my-slug -> service.php?slug=my-slug.
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^service/(.*)$ service.php?slug=$1 [L,QSA]
@@ -19,6 +29,12 @@
     RewriteRule ^book/?$ book.php [L]
     RewriteRule ^track/?$ track.php [L]
     RewriteRule ^portfolio/?$ portfolio.php [L]
+
+    # CodeIgniter-style fallback if this app is later moved behind a front controller.
+    # Existing files and folders continue to load normally.
+    # RewriteCond %{REQUEST_FILENAME} !-f
+    # RewriteCond %{REQUEST_FILENAME} !-d
+    # RewriteRule ^(.*)$ index.php/$1 [L,QSA]
 </IfModule>
 
 <IfModule mod_headers.c>

@@ -30,7 +30,7 @@ if (!$services) {
 
 $pageTitle = 'Home';
 $navActive = 'home';
-$seoCanonicalPath = BASE_URL . '/index.php';
+$seoCanonicalPath = '/index.php';
 $seoAuto = vk_app_setting('seo_auto_enabled', '1') !== '0';
 $localKeywords = $seoAuto ? vk_local_keyword_pack('Computer repair') : [];
 $seoDescription = $seoAuto ? vk_local_meta_description('Computer repair and laptop service') : vk_seo_default_description();

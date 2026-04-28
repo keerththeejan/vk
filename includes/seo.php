@@ -18,7 +18,7 @@ function vk_site_origin(): string
 /** Absolute URL for a path under BASE_URL (e.g. /VK/book.php). */
 function vk_public_absolute_url(string $path): string
 {
-    if (preg_match('#^https?://#i', $path)) {
+    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
         return $path;
     }
 
@@ -27,11 +27,22 @@ function vk_public_absolute_url(string $path): string
         $path = '/' . $path;
     }
 
-    if (preg_match('#^https?://#i', BASE_URL)) {
-        return rtrim(BASE_URL, '/') . $path;
+    if (str_starts_with(BASE_URL, 'http://') || str_starts_with(BASE_URL, 'https://')) {
+        $base = rtrim(BASE_URL, '/');
+        $basePath = (string) (parse_url($base, PHP_URL_PATH) ?: '');
+        if ($basePath !== '' && ($path === $basePath || str_starts_with($path, $basePath . '/'))) {
+            return vk_site_origin() . $path;
+        }
+
+        return $base . $path;
     }
 
-    return vk_site_origin() . (BASE_URL === '' ? '' : BASE_URL) . $path;
+    $base = BASE_URL === '' ? '' : '/' . trim(BASE_URL, '/');
+    if ($base !== '' && ($path === $base || str_starts_with($path, $base . '/'))) {
+        return vk_site_origin() . $path;
+    }
+
+    return vk_site_origin() . $base . $path;
 }
 
 /**

@@ -157,7 +157,7 @@ function vk_vehicle_generate_password(int $length = 10): string
 
 function vk_vehicle_login_url(): string
 {
-    return base_url('vehicle/login.php');
+    return rtrim(vk_site_origin(), '/') . BASE_URL . '/vehicle/login.php';
 }
 
 /**

@@ -129,5 +129,5 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 </div>
 
 <?php
-$extraScripts = '<script src="' . e(base_url('assets/js/menus-admin.js')) . '" defer></script>';
+$extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/menus-admin.js" defer></script>';
 require_once dirname(__DIR__, 2) . '/includes/layout_end.php';

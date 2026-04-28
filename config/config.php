@@ -11,18 +11,44 @@ require_once __DIR__ . '/mail.php';
 define('APP_NAME', 'VK IT Network — Service & Billing');
 define('ROOT_PATH', dirname(__DIR__));
 
+function vk_config_bool(string $name, bool $default): bool
+{
+    $value = getenv($name);
+    if ($value === false || trim((string) $value) === '') {
+        return $default;
+    }
+
+    return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'on'], true);
+}
+
+$hostName = strtolower((string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+$isLocalHost = $hostName === 'localhost'
+    || str_starts_with($hostName, 'localhost:')
+    || $hostName === '127.0.0.1'
+    || str_starts_with($hostName, '127.0.0.1:')
+    || $hostName === '::1'
+    || str_starts_with($hostName, '[::1]:');
+
+$configuredEnv = strtolower(trim((string) (getenv('APP_ENV') ?: '')));
+$appEnv = $configuredEnv !== '' ? $configuredEnv : ($isLocalHost ? 'local' : 'production');
+define('APP_ENV', $appEnv);
+
 // Public base URL/path without a trailing slash. Examples:
 //   https://vkintet.info
 //   https://vkintet.info/vk
 //   /VK
-$configuredBaseUrl = trim((string) (getenv('APP_BASE_URL') ?: 'https://vkintet.info/'));
+//
+// Keep production domains in APP_BASE_URL. When it is not set, infer the
+// local folder so localhost installs do not emit production asset URLs.
+$configuredBaseUrl = trim((string) (getenv('APP_BASE_URL') ?: ''));
 $baseUrl = rtrim($configuredBaseUrl, '/');
 if ($baseUrl === '') {
-    $scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '');
-    if (str_starts_with($scriptDir, '/VK/') || $scriptDir === '/VK') {
-        $baseUrl = '/VK';
-    } elseif (str_starts_with($scriptDir, '/vk/') || $scriptDir === '/vk') {
-        $baseUrl = '/vk';
+    $scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+    $scriptDir = str_replace('\\', '/', dirname($scriptName));
+    $rootFolder = trim($scriptDir, '/');
+    if ($rootFolder !== '') {
+        $firstSegment = strtok($rootFolder, '/');
+        $baseUrl = $firstSegment !== false ? '/' . $firstSegment : '';
     }
 }
 define('BASE_URL', $baseUrl);
@@ -31,7 +57,7 @@ define('BASE_URL', $baseUrl);
 define('SESSION_NAME', 'vk_billing_sess');
 
 // Display errors in development only — set false on production
-define('APP_DEBUG', true);
+define('APP_DEBUG', vk_config_bool('APP_DEBUG', APP_ENV !== 'production'));
 
 // Dashboard / warranty highlight: days ahead to treat as “expiring soon”
 define('WARRANTY_ALERT_DAYS', 30);

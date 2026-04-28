@@ -13,11 +13,17 @@ function db(): PDO
         return $pdo;
     }
 
-    $host = getenv('VK_DB_HOST') ?: '127.0.0.1';
-    $name = getenv('VK_DB_NAME') ?: 'vk_billing';
-    $user = getenv('VK_DB_USER') ?: 'root';
-    $pass = getenv('VK_DB_PASS') ?: '1234';
+    $isProduction = defined('APP_ENV') && APP_ENV === 'production';
+
+    $host = getenv('VK_DB_HOST') ?: ($isProduction ? 'localhost' : '127.0.0.1');
+    $name = getenv('VK_DB_NAME') ?: ($isProduction ? '' : 'vk_billing');
+    $user = getenv('VK_DB_USER') ?: ($isProduction ? '' : 'root');
+    $pass = getenv('VK_DB_PASS') ?: ($isProduction ? '' : '1234');
     $charset = 'utf8mb4';
+
+    if ($name === '' || $user === '') {
+        throw new RuntimeException('Database is not configured. Set VK_DB_NAME, VK_DB_USER, and VK_DB_PASS.');
+    }
 
     $dsn = "mysql:host={$host};dbname={$name};charset={$charset}";
     $options = [
