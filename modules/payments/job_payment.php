@@ -69,11 +69,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $label = $kind === 'repair' ? 'Repair job' : 'CCTV job';
 
             $pdo->prepare(
-                'INSERT INTO payments (invoice_id, repair_job_id, cctv_job_id, customer_account_id, amount, method, note)
-                 VALUES (NULL,?,?,?,?,?,?)'
+                'INSERT INTO payments (invoice_id, repair_job_id, cctv_job_id, customer_id, customer_account_id, amount, method, note)
+                 VALUES (NULL,?,?,?,?,?,?,?)'
             )->execute([
                 $repairJobId,
                 $cctvJobId,
+                (int) $job['customer_id'] ?? null,
                 $custAcc,
                 $amount,
                 $method,

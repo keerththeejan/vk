@@ -8,6 +8,15 @@ declare(strict_types=1);
 function vk_ensure_payments_table(PDO $pdo): void
 {
     if (db_table_exists($pdo, 'payments')) {
+        // Add customer_id column if missing (existing installs)
+        if (!db_column_exists($pdo, 'payments', 'customer_id')) {
+            try {
+                $pdo->exec('ALTER TABLE payments ADD COLUMN customer_id INT UNSIGNED DEFAULT NULL AFTER cctv_job_id');
+                $pdo->exec('CREATE INDEX idx_payments_customer ON payments (customer_id)');
+            } catch (Throwable $e) {
+                error_log('vk_ensure_payments_table add customer_id: ' . $e->getMessage());
+            }
+        }
         return;
     }
     try {
@@ -19,6 +28,7 @@ function vk_ensure_payments_table(PDO $pdo): void
               invoice_id INT UNSIGNED DEFAULT NULL,
               repair_job_id INT UNSIGNED DEFAULT NULL,
               cctv_job_id INT UNSIGNED DEFAULT NULL,
+              customer_id INT UNSIGNED DEFAULT NULL,
               customer_account_id INT UNSIGNED NOT NULL,
               amount DECIMAL(14,2) NOT NULL,
               method ENUM(\'cash\',\'card\',\'bank\',\'online\') NOT NULL DEFAULT \'cash\',
@@ -27,9 +37,11 @@ function vk_ensure_payments_table(PDO $pdo): void
               INDEX idx_payments_invoice (invoice_id),
               INDEX idx_payments_repair (repair_job_id),
               INDEX idx_payments_cctv (cctv_job_id),
+              INDEX idx_payments_customer (customer_id),
               CONSTRAINT fk_payments_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE RESTRICT,
               CONSTRAINT fk_payments_repair FOREIGN KEY (repair_job_id) REFERENCES repair_jobs(id) ON DELETE RESTRICT,
               CONSTRAINT fk_payments_cctv FOREIGN KEY (cctv_job_id) REFERENCES cctv_installations(id) ON DELETE RESTRICT,
+              CONSTRAINT fk_payments_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT,
               CONSTRAINT fk_payments_account FOREIGN KEY (customer_account_id) REFERENCES accounts(id) ON DELETE RESTRICT
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
         );

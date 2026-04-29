@@ -226,6 +226,62 @@ CREATE TABLE IF NOT EXISTS `invoices` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `invoice_items`
+--
+
+DROP TABLE IF EXISTS `invoice_items`;
+CREATE TABLE IF NOT EXISTS `invoice_items` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `invoice_id` int UNSIGNED NOT NULL,
+  `item_type` enum('product','service') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'product',
+  `product_id` int UNSIGNED DEFAULT NULL,
+  `line_description` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `quantity` int UNSIGNED NOT NULL DEFAULT 1,
+  `unit_price` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `line_total` decimal(14,2) NOT NULL DEFAULT '0.00',
+  PRIMARY KEY (`id`),
+  KEY `idx_invoice_items_invoice` (`invoice_id`),
+  KEY `idx_invoice_items_product` (`product_id`),
+  CONSTRAINT `fk_items_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_items_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `account_ledger`
+--
+
+DROP TABLE IF EXISTS `account_ledger`;
+CREATE TABLE IF NOT EXISTS `account_ledger` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `account_id` int UNSIGNED NOT NULL,
+  `customer_id` int UNSIGNED DEFAULT NULL,
+  `invoice_id` int UNSIGNED DEFAULT NULL,
+  `payment_id` int UNSIGNED DEFAULT NULL,
+  `transfer_id` int UNSIGNED DEFAULT NULL,
+  `entry_type` enum('debit','credit') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `amount` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `debit` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `credit` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `balance` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `description` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `entry_datetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ledger_account` (`account_id`,`entry_datetime`),
+  KEY `idx_ledger_customer` (`customer_id`,`created_at`),
+  KEY `idx_ledger_invoice` (`invoice_id`),
+  KEY `idx_ledger_payment` (`payment_id`),
+  KEY `idx_ledger_type_date` (`entry_type`,`created_at`),
+  CONSTRAINT `fk_ledger_account` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_ledger_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ledger_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `maintenance_contracts`
 --
 
@@ -320,6 +376,7 @@ CREATE TABLE IF NOT EXISTS `payments` (
   `invoice_id` int UNSIGNED DEFAULT NULL,
   `repair_job_id` int UNSIGNED DEFAULT NULL,
   `cctv_job_id` int UNSIGNED DEFAULT NULL,
+  `customer_id` int UNSIGNED DEFAULT NULL,
   `customer_account_id` int UNSIGNED NOT NULL,
   `amount` decimal(14,2) NOT NULL,
   `method` enum('cash','card','bank','online') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cash',
@@ -329,6 +386,7 @@ CREATE TABLE IF NOT EXISTS `payments` (
   KEY `idx_payments_invoice` (`invoice_id`),
   KEY `idx_payments_repair` (`repair_job_id`),
   KEY `idx_payments_cctv` (`cctv_job_id`),
+  KEY `idx_payments_customer` (`customer_id`),
   KEY `fk_payments_account` (`customer_account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -533,6 +591,32 @@ INSERT INTO `settings` (`id`, `key_name`, `value`, `updated_at`) VALUES
 (15, 'smtp_username', '', NULL),
 (16, 'smtp_password', '', NULL),
 (17, 'email_from', '', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `staff`
+--
+
+DROP TABLE IF EXISTS `staff`;
+CREATE TABLE IF NOT EXISTS `staff` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role` varchar(80) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `image` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `skills` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `experience` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `social_links` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `sort_order` int NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_staff_active_sort` (`active`,`sort_order`,`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -961,6 +1045,7 @@ ALTER TABLE `maintenance_visits`
 ALTER TABLE `payments`
   ADD CONSTRAINT `fk_payments_account` FOREIGN KEY (`customer_account_id`) REFERENCES `accounts` (`id`) ON DELETE RESTRICT,
   ADD CONSTRAINT `fk_payments_cctv` FOREIGN KEY (`cctv_job_id`) REFERENCES `cctv_installations` (`id`) ON DELETE RESTRICT,
+  ADD CONSTRAINT `fk_payments_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE RESTRICT,
   ADD CONSTRAINT `fk_payments_invoice` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE RESTRICT,
   ADD CONSTRAINT `fk_payments_repair` FOREIGN KEY (`repair_job_id`) REFERENCES `repair_jobs` (`id`) ON DELETE RESTRICT;
 
@@ -1041,6 +1126,13 @@ ALTER TABLE `web_portfolio_posts`
 --
 ALTER TABLE `web_service_images`
   ADD CONSTRAINT `fk_web_svc_img_service` FOREIGN KEY (`service_id`) REFERENCES `web_services` (`id`) ON DELETE CASCADE;
+
+--
+-- Data for table `accounts` (system account required for ledger)
+--
+INSERT INTO `accounts` (`code`, `name`, `current_balance`) VALUES
+('SYS-MAIN', 'System / Cash Account', 0.00);
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

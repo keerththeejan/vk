@@ -47,8 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sysId = system_account_id($pdo);
 
             $pdo->prepare(
-                'INSERT INTO payments (invoice_id, customer_account_id, amount, method, note) VALUES (?,?,?,?,?)'
-            )->execute([$invoiceId, $custAcc, $amount, $method, $note ?: null]);
+                'INSERT INTO payments (invoice_id, customer_id, customer_account_id, amount, method, note) VALUES (?,?,?,?,?,?)'
+            )->execute([$invoiceId, (int) $inv['customer_id'], $custAcc, $amount, $method, $note ?: null]);
             $paymentId = (int) $pdo->lastInsertId();
 
             $newPaid = (float) $row['paid_amount'] + $amount;

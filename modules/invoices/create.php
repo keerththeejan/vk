@@ -164,6 +164,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/modules/invoices/create.php');
     }
 
+    // ─── Parse payment rows ──────────────────────────────────────────
+    $payAmounts = $_POST['pay_amount'] ?? [];
+    $payMethods = $_POST['pay_method'] ?? [];
+    $payNotes   = $_POST['pay_note'] ?? [];
+    $paymentRows = [];
+    $totalPaid = 0.0;
+
+    $nPay = is_array($payAmounts) ? count($payAmounts) : 0;
+    for ($i = 0; $i < $nPay; $i++) {
+        $amt = round((float) ($payAmounts[$i] ?? 0), 2);
+        $method = trim((string) ($payMethods[$i] ?? ''));
+        $note = trim((string) ($payNotes[$i] ?? ''));
+        if ($amt <= 0) {
+            continue;
+        }
+        if (!in_array($method, ['cash', 'card', 'bank', 'online'], true)) {
+            flash_set('error', 'Select a valid payment method for each payment row with an amount.');
+            redirect('/modules/invoices/create.php');
+        }
+        $totalPaid += $amt;
+        $paymentRows[] = ['amount' => $amt, 'method' => $method, 'note' => $note];
+    }
+
+    if ($totalPaid > $grand + 0.01) {
+        flash_set('error', 'Total payment (' . number_format($totalPaid, 2) . ') exceeds grand total (' . number_format($grand, 2) . ').');
+        redirect('/modules/invoices/create.php');
+    }
+
     $source = 'manual';
     if ($repairJobId > 0) {
         $source = 'repair';
@@ -175,9 +203,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $pdo->beginTransaction();
         $invNo = next_invoice_number($pdo);
+
+        // Determine initial status based on payment
+        $initialStatus = 'unpaid';
+        if ($totalPaid > 0 && $totalPaid >= $grand - 0.01) {
+            $initialStatus = 'paid';
+        } elseif ($totalPaid > 0) {
+            $initialStatus = 'partial';
+        }
+
         $stInv = $pdo->prepare(
             'INSERT INTO invoices (invoice_number, customer_id, invoice_date, subtotal, discount, tax, grand_total, paid_amount, status, notes, source, repair_job_id, cctv_job_id)
-             VALUES (?,?,?,?,?,?,?,0,\'unpaid\',?,?,?,?)'
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
         );
         $stInv->execute([
             $invNo,
@@ -187,6 +224,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $discount,
             $tax,
             $grand,
+            round($totalPaid, 2),
+            $initialStatus,
             $notes ?: null,
             $source,
             $repairJobId > 0 ? $repairJobId : null,
@@ -235,6 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare('UPDATE cctv_installations SET invoice_id = ? WHERE id = ?')->execute([$invoiceId, $cctvJobId]);
         }
 
+        // DEBIT entry: invoice amount due (increases customer balance)
         ledger_apply(
             $pdo,
             $customerAccountId,
@@ -246,8 +286,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             null
         );
 
+        // Insert payment rows + CREDIT ledger entries
+        if ($paymentRows) {
+            $sysId = system_account_id($pdo);
+            $stPay = $pdo->prepare(
+                'INSERT INTO payments (invoice_id, repair_job_id, cctv_job_id, customer_id, customer_account_id, amount, method, note)
+                 VALUES (?,?,?,?,?,?,?,?)'
+            );
+
+            foreach ($paymentRows as $pr) {
+                $stPay->execute([
+                    $invoiceId,
+                    $repairJobId > 0 ? $repairJobId : null,
+                    $cctvJobId > 0 ? $cctvJobId : null,
+                    $customerId,
+                    $customerAccountId,
+                    $pr['amount'],
+                    $pr['method'],
+                    $pr['note'] ?: null,
+                ]);
+                $paymentId = (int) $pdo->lastInsertId();
+
+                // CREDIT entry: payment received (decreases customer balance)
+                ledger_apply(
+                    $pdo,
+                    $customerAccountId,
+                    0,
+                    $pr['amount'],
+                    'Invoice ' . $invNo . ' — payment (' . $pr['method'] . ')',
+                    $invoiceId,
+                    $paymentId,
+                    null
+                );
+
+                // DEBIT to system account: cash received
+                ledger_apply(
+                    $pdo,
+                    $sysId,
+                    $pr['amount'],
+                    0,
+                    'Receipt — invoice ' . $invNo . ' (' . $pr['method'] . ')',
+                    $invoiceId,
+                    $paymentId,
+                    null
+                );
+            }
+        }
+
         $pdo->commit();
-        flash_set('success', 'Invoice ' . $invNo . ' created.');
+        flash_set('success', 'Invoice ' . $invNo . ' created' . ($totalPaid > 0 ? ' with ' . $initialStatus . ' payment.' : '.'));
         redirect('/modules/invoices/view.php?id=' . $invoiceId);
     } catch (Throwable $e) {
         $pdo->rollBack();
@@ -363,8 +450,70 @@ $extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/invoice_create.js"><
             </div>
         </div>
     </div>
+    <!-- Payment Section (POS-style) -->
     <div class="col-12">
-        <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check2-circle me-1"></i>Save invoice</button>
+        <div class="card vk-card border-primary">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="fw-semibold"><i class="bi bi-cash-coin me-1"></i>Payment</span>
+                <button type="button" class="btn btn-sm btn-outline-success" id="addPaymentRow"><i class="bi bi-plus-lg"></i> Add payment row</button>
+            </div>
+            <div class="card-body">
+                <div id="paymentRows">
+                    <div class="row g-2 align-items-end payment-row mb-2" data-payment-row="0">
+                        <div class="col-12 col-sm-3">
+                            <label class="form-label small mb-1">Amount</label>
+                            <input type="number" step="0.01" min="0" class="form-control form-control-sm pay-amount" name="pay_amount[]" id="pay_amount_0" placeholder="0.00">
+                        </div>
+                        <div class="col-12 col-sm-3">
+                            <label class="form-label small mb-1">Method</label>
+                            <select class="form-select form-select-sm pay-method" name="pay_method[]" id="pay_method_0">
+                                <option value="">— Select —</option>
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
+                                <option value="bank">Bank</option>
+                                <option value="online">Online</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-4">
+                            <label class="form-label small mb-1">Note</label>
+                            <input type="text" class="form-control form-control-sm pay-note" name="pay_note[]" id="pay_note_0" maxlength="255" placeholder="Optional note">
+                        </div>
+                        <div class="col-12 col-sm-2 text-end">
+                            <button type="button" class="btn btn-sm btn-outline-danger rm-pay-row d-none" title="Remove"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Summary Panel -->
+                <div class="row g-3 mt-1">
+                    <div class="col-12 col-md-6 col-lg-4 ms-auto">
+                        <div class="card bg-light border-0">
+                            <div class="card-body py-2 px-3">
+                                <dl class="row small mb-0">
+                                    <dt class="col-7">Total Items</dt>
+                                    <dd class="col-5 text-end" id="pay_total_items">0</dd>
+                                    <dt class="col-7">Total Payable</dt>
+                                    <dd class="col-5 text-end fw-semibold" id="pay_total_payable">0.00</dd>
+                                    <dt class="col-7">Total Paying</dt>
+                                    <dd class="col-5 text-end text-success fw-bold" id="pay_total_paying">0.00</dd>
+                                    <dt class="col-7">Change Return</dt>
+                                    <dd class="col-5 text-end text-info fw-semibold" id="pay_change_return">0.00</dd>
+                                    <dt class="col-7">Balance Due</dt>
+                                    <dd class="col-5 text-end text-danger fw-bold" id="pay_balance_due">0.00</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                <span class="small text-muted">Leave payment empty to create invoice as "Unpaid"</span>
+                <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check2-circle me-1"></i>Finalize Payment &amp; Save</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-outline-secondary btn-lg"><i class="bi bi-check2-circle me-1"></i>Save invoice (no payment)</button>
     </div>
 </form>
 
