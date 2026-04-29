@@ -38,8 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ledger_apply(
                 $pdo,
                 $from,
-                $amount,
                 0,
+                $amount,
                 'Transfer out' . ($note ? ': ' . $note : ''),
                 null,
                 null,
@@ -48,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ledger_apply(
                 $pdo,
                 $to,
-                0,
                 $amount,
+                0,
                 'Transfer in' . ($note ? ': ' . $note : ''),
                 null,
                 null,

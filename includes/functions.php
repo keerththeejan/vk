@@ -230,7 +230,7 @@ function next_cctv_job_number(PDO $pdo): string
 }
 
 /**
- * Apply ledger movement. Customer debt: credit increases amount owed, debit decreases (e.g. payment).
+ * Apply ledger movement. Customer debt: debit increases amount owed, credit decreases it.
  * Must be called inside an active transaction; locks the account row.
  */
 function ledger_apply(
@@ -243,21 +243,50 @@ function ledger_apply(
     ?int $paymentId = null,
     ?int $transferId = null
 ): void {
-    $st = $pdo->prepare('SELECT current_balance FROM accounts WHERE id = ? FOR UPDATE');
+    if ($accountId <= 0) {
+        throw new InvalidArgumentException('Invalid account.');
+    }
+    if ($debit < 0 || $credit < 0) {
+        throw new InvalidArgumentException('Ledger amounts cannot be negative.');
+    }
+    if (($debit <= 0 && $credit <= 0) || ($debit > 0 && $credit > 0)) {
+        throw new InvalidArgumentException('Ledger entry must contain either a debit or a credit amount.');
+    }
+    if (function_exists('vk_ensure_account_ledger_table') && !db_table_exists($pdo, 'account_ledger')) {
+        vk_ensure_account_ledger_table($pdo);
+    }
+
+    $st = $pdo->prepare('SELECT customer_id, current_balance FROM accounts WHERE id = ? FOR UPDATE');
     $st->execute([$accountId]);
     $row = $st->fetch();
     if (!$row) {
         throw new RuntimeException('Account not found.');
     }
     $prev = (float) $row['current_balance'];
-    $newBalance = $prev + $credit - $debit;
+    $newBalance = $prev + $debit - $credit;
+    $entryType = $debit > 0 ? 'debit' : 'credit';
+    $amount = $debit > 0 ? $debit : $credit;
 
     $pdo->prepare('UPDATE accounts SET current_balance = ? WHERE id = ?')->execute([$newBalance, $accountId]);
     $ins = $pdo->prepare(
-        'INSERT INTO account_ledger (account_id, debit, credit, balance, description, invoice_id, payment_id, transfer_id)
-         VALUES (?,?,?,?,?,?,?,?)'
+        'INSERT INTO account_ledger
+            (account_id, customer_id, invoice_id, payment_id, transfer_id, entry_type, amount, debit, credit, balance, description)
+         VALUES
+            (?,?,?,?,?,?,?,?,?,?,?)'
     );
-    $ins->execute([$accountId, $debit, $credit, $newBalance, $description, $invoiceId, $paymentId, $transferId]);
+    $ins->execute([
+        $accountId,
+        $row['customer_id'] !== null ? (int) $row['customer_id'] : null,
+        $invoiceId,
+        $paymentId,
+        $transferId,
+        $entryType,
+        $amount,
+        $debit,
+        $credit,
+        $newBalance,
+        $description !== '' ? $description : null,
+    ]);
 }
 
 function invoice_recalc_status(PDO $pdo, int $invoiceId): void

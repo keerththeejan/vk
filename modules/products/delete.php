@@ -3,6 +3,8 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/init.php';
 require_admin();
 $pdo = db();
+require_once dirname(__DIR__, 2) . '/includes/invoices_schema.php';
+vk_ensure_invoice_items_table($pdo);
 $id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) {
     flash_set('error', 'Invalid product.');

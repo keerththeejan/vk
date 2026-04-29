@@ -3,6 +3,10 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/init.php';
 require_admin();
 $pdo = db();
+require_once dirname(__DIR__, 2) . '/includes/invoices_schema.php';
+require_once dirname(__DIR__, 2) . '/includes/accounting_schema.php';
+vk_ensure_invoice_items_table($pdo);
+vk_ensure_account_ledger_table($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect('/modules/cctv/list.php');
@@ -80,8 +84,8 @@ try {
     ledger_apply(
         $pdo,
         $customerAccountId,
-        0,
         $grand,
+        0,
         'Invoice ' . $invNo . ' — CCTV installation',
         $invoiceId,
         null,

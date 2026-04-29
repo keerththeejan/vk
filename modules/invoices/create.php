@@ -238,8 +238,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ledger_apply(
             $pdo,
             $customerAccountId,
-            0,
             $grand,
+            0,
             'Invoice ' . $invNo . ' — amount due',
             $invoiceId,
             null,

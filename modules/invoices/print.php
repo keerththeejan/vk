@@ -3,6 +3,8 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/init.php';
 require_admin();
 $pdo = db();
+require_once dirname(__DIR__, 2) . '/includes/invoices_schema.php';
+vk_ensure_invoice_items_table($pdo);
 
 $id = (int) ($_GET['id'] ?? 0);
 $st = $pdo->prepare(
@@ -28,6 +30,11 @@ $items = $pdo->prepare(
 $items->execute([$id]);
 $lines = $items->fetchAll();
 $due = (float) $inv['grand_total'] - (float) $inv['paid_amount'];
+$businessName = defined('VK_BUSINESS_NAME') ? VK_BUSINESS_NAME : 'VK IT Network';
+$businessPhone = defined('VK_BUSINESS_PHONE_E164') ? ltrim(VK_BUSINESS_PHONE_E164, '+') : '0778870135';
+$businessEmail = 'keerththeejan@gmail.com';
+$businessWebsite = 'www.vkitnet.info';
+$businessAddress = '26/3 Thiruvaiyaru, Kilinochchi, Sri Lanka';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -65,14 +72,14 @@ $due = (float) $inv['grand_total'] - (float) $inv['paid_amount'];
             <div class="col-md-6 d-flex align-items-center gap-3">
                 <span class="vk-logo text-white">VK</span>
                 <div>
-                    <div class="vk-red">IT Network</div>
+                    <div class="vk-red"><?= e($businessName) ?></div>
                     <div class="text-white-50 text-uppercase" style="font-size:0.65rem;letter-spacing:.12em;">Software development solutions</div>
                 </div>
             </div>
             <div class="col-md-6 small text-md-end">
-                <div>0778870135</div>
-                <div>kserththeejan@gmail.com</div>
-                <div>www.vkitnet.info</div>
+                <div><?= e($businessPhone) ?></div>
+                <div><?= e($businessEmail) ?></div>
+                <div><?= e($businessWebsite) ?></div>
             </div>
         </div>
     </div>

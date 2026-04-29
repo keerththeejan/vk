@@ -37,7 +37,7 @@ $entries = $ledger->fetchAll();
     <div class="text-end">
         <div class="small text-muted">Current balance</div>
         <div class="fs-4 fw-bold"><?= e(number_format((float) $acc['current_balance'], 2)) ?></div>
-        <div class="small text-muted">Customer: credit increases amount due · debit reduces it.</div>
+        <div class="small text-muted">Customer: debit increases amount due · credit reduces it.</div>
     </div>
 </div>
 <div class="card vk-card">

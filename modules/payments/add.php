@@ -58,8 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ledger_apply(
                 $pdo,
                 $custAcc,
-                $amount,
                 0,
+                $amount,
                 'Payment for invoice ' . $inv['invoice_number'] . ' (' . $method . ')',
                 null,
                 $paymentId,
@@ -68,8 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ledger_apply(
                 $pdo,
                 $sysId,
-                0,
                 $amount,
+                0,
                 'Receipt — invoice ' . $inv['invoice_number'] . ' (' . $method . ')',
                 null,
                 $paymentId,
