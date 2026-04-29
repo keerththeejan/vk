@@ -2,6 +2,7 @@
 declare(strict_types=1);
 $isEdit = !empty($data['id']);
 $imageUrl = vk_staff_image_url($data['image'] ?? null);
+$imageOnError = vk_staff_image_onerror_attr();
 ?>
 <div class="card vk-card" style="max-width: 920px;">
     <div class="card-body">
@@ -43,8 +44,8 @@ $imageUrl = vk_staff_image_url($data['image'] ?? null);
                 </div>
                 <div class="col-md-6">
                     <label class="form-label" for="image">Profile image</label>
-                    <input class="form-control" type="file" id="image" name="image" accept="image/jpeg,image/png">
-                    <div class="form-text">JPG or PNG, max 2 MB. Uploads to <code>uploads/staff</code>.</div>
+                    <input class="form-control" type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp">
+                    <div class="form-text">JPG, PNG, or WebP, max 2 MB. Uploads to <code>uploads/staff</code>.</div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label" for="sort_order">Sort order</label>
@@ -59,7 +60,7 @@ $imageUrl = vk_staff_image_url($data['image'] ?? null);
                 <?php if ($imageUrl !== ''): ?>
                     <div class="col-12">
                         <div class="d-flex align-items-center gap-3">
-                            <img src="<?= e($imageUrl) ?>" alt="" class="rounded object-fit-cover" style="width:96px;height:96px;">
+                            <img src="<?= e($imageUrl) ?>" alt="" class="img-fluid rounded object-fit-cover" style="width:96px;height:96px;" width="96" height="96" loading="lazy" decoding="async" onerror="<?= $imageOnError ?>">
                             <span class="small text-muted">Current profile image</span>
                         </div>
                     </div>

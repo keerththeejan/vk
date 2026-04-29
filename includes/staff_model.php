@@ -23,6 +23,25 @@ function vk_staff_ensure_table(PDO $pdo): void
             KEY idx_staff_active_sort (active, sort_order, id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+
+    $columns = [
+        'image' => "ALTER TABLE staff ADD COLUMN image VARCHAR(255) DEFAULT NULL AFTER role",
+        'description' => "ALTER TABLE staff ADD COLUMN description TEXT DEFAULT NULL AFTER image",
+        'skills' => "ALTER TABLE staff ADD COLUMN skills TEXT DEFAULT NULL AFTER description",
+        'experience' => "ALTER TABLE staff ADD COLUMN experience VARCHAR(150) DEFAULT NULL AFTER skills",
+        'email' => "ALTER TABLE staff ADD COLUMN email VARCHAR(150) DEFAULT NULL AFTER experience",
+        'phone' => "ALTER TABLE staff ADD COLUMN phone VARCHAR(40) DEFAULT NULL AFTER email",
+        'social_links' => "ALTER TABLE staff ADD COLUMN social_links TEXT DEFAULT NULL AFTER phone",
+        'active' => "ALTER TABLE staff ADD COLUMN active TINYINT(1) NOT NULL DEFAULT 1 AFTER social_links",
+        'sort_order' => "ALTER TABLE staff ADD COLUMN sort_order INT NOT NULL DEFAULT 0 AFTER active",
+        'created_at' => "ALTER TABLE staff ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER sort_order",
+        'updated_at' => "ALTER TABLE staff ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP AFTER created_at",
+    ];
+    foreach ($columns as $column => $sql) {
+        if (!db_column_exists($pdo, 'staff', $column)) {
+            $pdo->exec($sql);
+        }
+    }
 }
 
 /** @return list<array<string,mixed>> */
@@ -160,15 +179,88 @@ function vk_staff_social_links(?string $raw): array
 
 function vk_staff_image_url(?string $image): string
 {
-    $image = trim((string) $image);
+    $path = vk_staff_image_path($image);
+    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+        return $path;
+    }
+
+    return public_asset_url($path !== '' ? $path : vk_staff_default_avatar_path());
+}
+
+function vk_staff_default_avatar_path(): string
+{
+    return 'assets/images/default-avatar.svg';
+}
+
+function vk_staff_default_avatar_url(): string
+{
+    return public_asset_url(vk_staff_default_avatar_path());
+}
+
+function vk_staff_image_onerror_attr(): string
+{
+    return "this.onerror=null;this.src='" . e(vk_staff_default_avatar_url()) . "';";
+}
+
+function vk_staff_image_path(?string $image): string
+{
+    $image = trim(str_replace('\\', '/', (string) $image));
     if ($image === '') {
         return '';
     }
-    if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://')) {
-        return $image;
+
+    if (preg_match('#^https?://([^/]+)(/.*)?$#i', $image, $m)) {
+        $host = strtolower((string) ($m[1] ?? ''));
+        $path = ltrim((string) ($m[2] ?? ''), '/');
+        $isLocal = $host === 'localhost'
+            || str_starts_with($host, 'localhost:')
+            || $host === '127.0.0.1'
+            || str_starts_with($host, '127.0.0.1:')
+            || $host === '::1'
+            || str_starts_with($host, '[::1]:');
+
+        if (!$isLocal && $host !== strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''))) {
+            return $image;
+        }
+
+        $image = $path;
     }
 
-    return base_url($image);
+    $image = vk_normalize_upload_relative_path($image);
+    $image = preg_replace('#^(?:VK|vk)/#', '', $image) ?? $image;
+
+    $markerPaths = ['uploads/staff/', 'assets/images/staff/'];
+    foreach ($markerPaths as $marker) {
+        $pos = stripos($image, $marker);
+        if ($pos !== false) {
+            $image = substr($image, $pos);
+            break;
+        }
+    }
+
+    if (!str_contains($image, '/')) {
+        $basename = basename($image);
+        foreach (['uploads/staff/' . $basename, 'assets/images/staff/' . $basename] as $candidate) {
+            if (vk_staff_public_file_is_readable($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+
+    return vk_staff_public_file_is_readable($image) ? $image : '';
+}
+
+function vk_staff_public_file_is_readable(string $relativePath): bool
+{
+    $relativePath = vk_normalize_upload_relative_path($relativePath);
+    if ($relativePath === '') {
+        return false;
+    }
+    $full = ROOT_PATH . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+
+    return is_file($full) && is_readable($full);
 }
 
 function vk_staff_validate(array $input): array
@@ -218,10 +310,11 @@ function vk_staff_upload_image(string $field, ?string $existing = null): ?string
     $ext = match ($mime) {
         'image/jpeg' => 'jpg',
         'image/png' => 'png',
+        'image/webp' => 'webp',
         default => '',
     };
     if ($ext === '') {
-        throw new RuntimeException('Only JPG and PNG profile images are allowed.');
+        throw new RuntimeException('Only JPG, PNG, and WebP profile images are allowed.');
     }
 
     $dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'staff';

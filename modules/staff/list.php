@@ -37,11 +37,7 @@ $rows = vk_staff_get_all($pdo, false);
                     <tr>
                         <td>
                             <div class="d-flex align-items-center gap-3">
-                                <?php if ($img !== ''): ?>
-                                    <img src="<?= e($img) ?>" alt="" class="rounded-circle object-fit-cover" style="width:48px;height:48px;">
-                                <?php else: ?>
-                                    <span class="rounded-circle bg-body-secondary d-inline-flex align-items-center justify-content-center fw-semibold" style="width:48px;height:48px;"><?= e(strtoupper(substr((string) $r['name'], 0, 1))) ?></span>
-                                <?php endif; ?>
+                                <img src="<?= e($img) ?>" alt="" class="img-fluid rounded-circle object-fit-cover" style="width:48px;height:48px;" width="48" height="48" loading="lazy" decoding="async" onerror="<?= vk_staff_image_onerror_attr() ?>">
                                 <div>
                                     <div class="fw-semibold"><?= e((string) $r['name']) ?></div>
                                     <div class="small text-muted"><?= e(substr(trim((string) ($r['description'] ?? '')), 0, 90)) ?></div>

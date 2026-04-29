@@ -3,10 +3,11 @@ declare(strict_types=1);
 ini_set('display_errors', '1');
 error_reporting(E_ALL);
 require_once __DIR__ . '/includes/init.php';
+require_once __DIR__ . '/includes/staff_model.php';
 
 $requestPath = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '');
 if (preg_match('#/index\.php/staff/?$#i', $requestPath)) {
-    require __DIR__ . '/Staff.php';
+    require __DIR__ . '/staff.php';
     exit;
 }
 
@@ -35,36 +36,58 @@ if (!$services) {
     ];
 }
 
-$teamMembers = [
+$teamFallbackMembers = [
     [
         'name' => 'Vijay Keerththeejan',
-        'role' => 'Founder / Owner',
-        'image' => base_url('assets/images/staff/owner.svg'),
+        'role' => 'Owner',
+        'image' => 'assets/images/staff/owner.svg',
         'description' => 'Leads service strategy, networking solutions, AI systems, and customer experience.',
-        'skills' => ['Networking', 'AI Systems', 'Web Development'],
+        'skills' => 'Networking, AI Systems, Web Development',
+        'social_links' => 'Profile|' . BASE_URL . '/index.php/staff',
     ],
     [
         'name' => 'John Silva',
         'role' => 'Technician',
-        'image' => base_url('assets/images/staff/staff1.svg'),
+        'image' => 'assets/images/staff/staff1.svg',
         'description' => 'Handles diagnostics, hardware repairs, printer service, and site visits.',
-        'skills' => ['Hardware Repair', 'Printer Service', 'CCTV'],
+        'skills' => 'Hardware Repair, Printer Service, CCTV',
+        'social_links' => 'Book|' . BASE_URL . '/book.php',
     ],
     [
         'name' => 'Nimal Perera',
         'role' => 'System Admin',
-        'image' => base_url('assets/images/staff/staff2.svg'),
+        'image' => 'assets/images/staff/staff2.svg',
         'description' => 'Maintains servers, network reliability, backup routines, and security checks.',
-        'skills' => ['Servers', 'Network Management', 'Security'],
+        'skills' => 'Servers, Network Management, Security',
+        'social_links' => 'Profile|' . BASE_URL . '/index.php/staff',
     ],
     [
         'name' => 'Nisha Raj',
         'role' => 'Customer Support',
-        'image' => base_url('assets/images/staff/nisha.svg'),
+        'image' => 'assets/images/staff/nisha.svg',
         'description' => 'Coordinates bookings, customer updates, tracking requests, and follow ups.',
-        'skills' => ['Support', 'Scheduling', 'Customer Care'],
+        'skills' => 'Support, Scheduling, Customer Care',
+        'social_links' => 'Book|' . BASE_URL . '/book.php',
     ],
 ];
+
+$teamMembers = [];
+try {
+    $pdo = $pdo ?? db();
+    if (db_table_exists($pdo, 'staff')) {
+        $teamMembers = array_slice(vk_staff_get_all($pdo, true), 0, 4);
+    }
+} catch (Throwable $e) {
+    if (defined('APP_DEBUG') && APP_DEBUG) {
+        error_log('index.php: staff unavailable - ' . $e->getMessage());
+    }
+}
+
+if (!$teamMembers) {
+    $teamMembers = $teamFallbackMembers;
+} elseif (count($teamMembers) < 4) {
+    $teamMembers = array_slice(array_merge($teamMembers, $teamFallbackMembers), 0, 4);
+}
 
 $stats = [
     ['value' => '7+', 'label' => 'Service categories'],
@@ -245,25 +268,55 @@ require __DIR__ . '/includes/public_header.php';
         <div class="text-center mb-5" data-aos="fade-up">
             <span class="vk-section-kicker">Staff &amp; Owner Portfolio</span>
             <h2 class="vk-section-title mb-2">Meet the team behind the service.</h2>
-            <p class="vk-section-lead mx-auto mb-0">A sample staff and owner portfolio page for demonstrating the public UI.</p>
+            <p class="vk-section-lead mx-auto mb-0">Owners, technicians, and support staff presented with clear skills, roles, and quick actions.</p>
         </div>
-        <div class="row g-4">
-            <?php foreach ($teamMembers as $i => $member): ?>
-                <div class="col-md-6 col-xl-3" data-aos="fade-up" data-aos-delay="<?= (int) min(180, $i * 55) ?>">
+        <div class="row g-4 justify-content-center">
+            <?php foreach ($teamMembers as $i => $member):
+                $skills = $member['skills'] ?? [];
+                $skillsArray = is_array($skills) ? $skills : vk_staff_skills_list((string) $skills);
+                if (!$skillsArray) {
+                    $skillsArray = ['Diagnostics', 'Field Service', 'Customer Care'];
+                }
+                $imgUrl = vk_staff_image_url((string) ($member['image'] ?? ''));
+                $socialLinks = vk_staff_social_links((string) ($member['social_links'] ?? ''));
+                if (!$socialLinks) {
+                    $socialLinks = [
+                        ['label' => 'Profile', 'url' => BASE_URL . '/index.php/staff'],
+                        ['label' => 'Book', 'url' => BASE_URL . '/book.php'],
+                    ];
+                }
+                $role = (string) ($member['role'] ?? 'Team Member');
+                $roleClass = str_contains(strtolower($role), 'owner') ? 'text-bg-primary' : 'text-bg-info';
+                ?>
+                <div class="col-lg-3 col-md-6 col-sm-12" data-aos="fade-up" data-aos-delay="<?= (int) min(180, $i * 55) ?>">
                     <article class="vk-team-card h-100">
-                        <img src="<?= e((string) $member['image']) ?>" alt="<?= e((string) $member['name']) ?>" loading="lazy">
+                        <div class="vk-team-card-media">
+                            <img
+                                src="<?= e($imgUrl) ?>"
+                                alt="<?= e((string) ($member['name'] ?? 'Team member')) ?> profile image"
+                                width="132"
+                                height="132"
+                                loading="lazy"
+                                decoding="async"
+                                onerror="<?= vk_staff_image_onerror_attr() ?>"
+                            >
+                        </div>
                         <div class="vk-team-card-body">
-                            <span class="badge text-bg-primary mb-2"><?= e((string) $member['role']) ?></span>
-                            <h3><?= e((string) $member['name']) ?></h3>
-                            <p><?= e((string) $member['description']) ?></p>
-                            <div class="d-flex flex-wrap gap-2 mb-3">
-                                <?php foreach ($member['skills'] as $skill): ?>
+                            <span class="badge <?= e($roleClass) ?> rounded-pill mb-2"><?= e($role) ?></span>
+                            <h3><?= e((string) ($member['name'] ?? 'Team member')) ?></h3>
+                            <p><?= e(trim((string) ($member['description'] ?? '')) !== '' ? (string) $member['description'] : 'Experienced support professional focused on clean, reliable customer service.') ?></p>
+                            <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                                <?php foreach ($skillsArray as $skill): ?>
                                     <span class="badge rounded-pill text-bg-light border"><?= e((string) $skill) ?></span>
                                 <?php endforeach; ?>
                             </div>
                             <div class="d-flex justify-content-center gap-2">
-                                <a class="vk-social-btn" href="<?= e(BASE_URL) ?>/index.php/staff" aria-label="View <?= e((string) $member['name']) ?> profile"><i data-lucide="user-round"></i></a>
-                                <a class="vk-social-btn" href="<?= e(BASE_URL) ?>/book.php" aria-label="Book service with VK Network"><i data-lucide="calendar-plus"></i></a>
+                                <?php foreach (array_slice($socialLinks, 0, 3) as $link):
+                                    $label = (string) ($link['label'] ?? 'Profile');
+                                    $icon = str_contains(strtolower($label), 'book') ? 'calendar-plus' : 'user-round';
+                                    ?>
+                                    <a class="vk-social-btn" href="<?= e((string) $link['url']) ?>" aria-label="<?= e($label) ?> for <?= e((string) ($member['name'] ?? 'team member')) ?>"><i data-lucide="<?= e($icon) ?>"></i></a>
+                                <?php endforeach; ?>
                             </div>
                         </div>
                     </article>
