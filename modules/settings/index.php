@@ -41,6 +41,9 @@ $hasTable = vk_settings_table_ready($pdo);
         <button class="nav-link active" id="tab-general" data-bs-toggle="tab" data-bs-target="#pane-general" type="button" role="tab">General</button>
     </li>
     <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-branding" data-bs-toggle="tab" data-bs-target="#pane-branding" type="button" role="tab">Branding</button>
+    </li>
+    <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-seo" data-bs-toggle="tab" data-bs-target="#pane-seo" type="button" role="tab">SEO</button>
     </li>
     <li class="nav-item" role="presentation">
@@ -69,6 +72,55 @@ $hasTable = vk_settings_table_ready($pdo);
                     <input type="text" class="form-control" id="analytics_script_src" value="<?= e($defaults('analytics_script_src', 'https://plausible.io/js/script.js')) ?>">
                 </div>
                 <button type="button" class="btn btn-primary btn-save-tab" data-tab="general">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="pane-branding" role="tabpanel">
+        <div class="card vk-card vk-settings-card">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Site Branding</h2>
+                <form id="brandingForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label" for="site_title">Site Title</label>
+                        <input type="text" class="form-control" id="site_title" name="site_title" value="<?= e($defaults('site_title', $defaults('site_name', 'VK Network'))) ?>" maxlength="255" placeholder="Your Site Name">
+                        <div class="form-text">Displayed in browser tab and header.</div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="site_logo">Site Logo</label>
+                            <input type="file" class="form-control" id="site_logo" name="site_logo" accept="image/png,image/jpeg,image/svg+xml">
+                            <div class="form-text">PNG, JPG, SVG (max 2MB). Recommended: 200x60px</div>
+                            <?php if ($defaults('site_logo')): ?>
+                            <div class="mt-2">
+                                <img src="<?= e(base_url($defaults('site_logo'))) ?>" alt="Current Logo" class="img-thumbnail" style="max-height:60px;max-width:200px;">
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="checkbox" id="remove_logo" name="remove_logo" value="1">
+                                    <label class="form-check-label small text-danger" for="remove_logo">Remove logo</label>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="site_favicon">Favicon</label>
+                            <input type="file" class="form-control" id="site_favicon" name="site_favicon" accept="image/x-icon,image/png">
+                            <div class="form-text">ICO or PNG (max 1MB). Recommended: 32x32px or 64x64px</div>
+                            <?php if ($defaults('site_favicon')): ?>
+                            <div class="mt-2">
+                                <img src="<?= e(base_url($defaults('site_favicon'))) ?>" alt="Current Favicon" class="img-thumbnail" style="max-height:32px;max-width:32px;">
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="checkbox" id="remove_favicon" name="remove_favicon" value="1">
+                                    <label class="form-check-label small text-danger" for="remove_favicon">Remove favicon</label>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div id="brandingAlert" class="alert d-none" role="alert"></div>
+                    <button type="submit" class="btn btn-primary">Save Branding</button>
+                </form>
             </div>
         </div>
     </div>

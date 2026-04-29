@@ -3,11 +3,14 @@ declare(strict_types=1);
 $pageTitle = $pageTitle ?? 'Home';
 $navActive = $navActive ?? '';
 $extraHead = $extraHead ?? '';
-$seoBrand = vk_app_setting('site_name') ?: 'VK Network';
+$siteTitle = vk_app_setting('site_title');
+$seoBrand = $siteTitle ?: vk_app_setting('site_name') ?: 'VK Network';
 $seoTitlePrefix = vk_app_setting('seo_site_title');
 $titleBase = ($seoTitlePrefix !== null && $seoTitlePrefix !== '') ? $seoTitlePrefix : $seoBrand;
 $htmlTitle = $seoDocumentTitle ?? ($titleBase . ' | ' . $pageTitle);
 $GLOBALS['seoFullTitle'] = $htmlTitle;
+$siteLogo = vk_app_setting('site_logo');
+$siteFavicon = vk_app_setting('site_favicon');
 
 require_once __DIR__ . '/site_menus.php';
 try {
@@ -47,16 +50,24 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
     <link href="<?= e(base_url('assets/css/style.css')) ?>" rel="stylesheet">
     <link href="<?= e(base_url('assets/css/public-premium.css')) ?>" rel="stylesheet">
     <?= $extraHead ?>
+    <?php if ($siteFavicon): ?>
+    <link rel="icon" type="image/<?= strpos($siteFavicon, '.png') !== false ? 'png' : 'x-icon' ?>" href="<?= e(base_url($siteFavicon)) ?>">
+    <link rel="shortcut icon" href="<?= e(base_url($siteFavicon)) ?>">
+    <?php endif; ?>
 </head>
 <body class="vk-public-site d-flex flex-column min-vh-100">
 <nav class="navbar navbar-expand-lg sticky-top vk-navbar-premium">
     <div class="container d-flex flex-wrap align-items-center justify-content-between">
         <a class="navbar-brand d-flex align-items-center gap-3 py-2 mb-0 text-decoration-none" href="<?= e(BASE_URL) ?>/index.php">
-            <span class="vk-public-logo-circle rounded-circle text-white d-inline-flex align-items-center justify-content-center" aria-hidden="true">VK</span>
-            <span class="d-flex flex-column align-items-start text-start lh-sm">
-                <span class="vk-public-brand-title"><?= e($seoBrand) ?></span>
-                <span class="vk-public-brand-sub">Multi-Service Solutions</span>
-            </span>
+            <?php if ($siteLogo): ?>
+                <img src="<?= e(base_url($siteLogo)) ?>" alt="<?= e($seoBrand) ?>" class="vk-public-logo-img" style="max-height:48px;max-width:160px;width:auto;height:auto;">
+            <?php else: ?>
+                <span class="vk-public-logo-circle rounded-circle text-white d-inline-flex align-items-center justify-content-center" aria-hidden="true">VK</span>
+                <span class="d-flex flex-column align-items-start text-start lh-sm">
+                    <span class="vk-public-brand-title"><?= e($seoBrand) ?></span>
+                    <span class="vk-public-brand-sub">Multi-Service Solutions</span>
+                </span>
+            <?php endif; ?>
         </a>
         <div class="d-flex align-items-center gap-2 order-lg-last flex-shrink-0">
             <button type="button" class="btn vk-theme-toggle" data-vk-theme-toggle aria-label="Toggle color theme" aria-pressed="false" title="Light / dark mode">

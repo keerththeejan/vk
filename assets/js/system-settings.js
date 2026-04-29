@@ -214,4 +214,54 @@
             new window.bootstrap.Tab(trigger).show();
         }
     }
+
+    // Branding form handler
+    const brandingForm = document.getElementById('brandingForm');
+    if (brandingForm) {
+        brandingForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const alertBox = document.getElementById('brandingAlert');
+            const btn = brandingForm.querySelector('button[type="submit"]');
+            const originalText = btn?.textContent || 'Save Branding';
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            if (alertBox) {
+                alertBox.className = 'alert d-none';
+                alertBox.textContent = '';
+            }
+
+            const formData = new FormData(brandingForm);
+            try {
+                const res = await fetch(BASE + '/api/branding_save.php', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const data = await res.json().catch(function () {
+                    return { ok: false, error: 'Invalid response' };
+                });
+                if (data.ok) {
+                    if (alertBox) {
+                        alertBox.className = 'alert alert-success';
+                        alertBox.textContent = 'Branding saved successfully!';
+                    }
+                    // Reload page after short delay to show updated previews
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    const msg = data.errors?.join(', ') || data.error || 'Save failed';
+                    if (alertBox) {
+                        alertBox.className = 'alert alert-danger';
+                        alertBox.textContent = msg;
+                    }
+                }
+            } catch (err) {
+                if (alertBox) {
+                    alertBox.className = 'alert alert-danger';
+                    alertBox.textContent = err?.message || 'Network error';
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+    }
 })();
