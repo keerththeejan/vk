@@ -11,3 +11,18 @@
         Deny from all
     </FilesMatch>
 </IfModule>
+# Deny all by default
+Order deny,allow
+Deny from all
+
+# Allow only image files
+<FilesMatch "\.(jpg|jpeg|png|gif|svg|ico|webp|bmp)$">
+    Allow from all
+</FilesMatch>
+
+# Block PHP execution completely
+php_flag engine off
+RemoveHandler .php .phtml .php3 .php4 .php5 .phps
+RemoveType .php .phtml .php3 .php4 .php5 .phps
+AddHandler default-handler .php
+
