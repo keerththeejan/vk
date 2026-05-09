@@ -93,6 +93,9 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
                         </a>
                     </li>
                 <?php endforeach; ?>
+                <li class="nav-item">
+                    <a class="nav-link vk-pub-nav-link text-white" href="<?= e(BASE_URL) ?>/landing.php">Landing</a>
+                </li>
                 <li class="nav-item ms-lg-1 mt-2 mt-lg-0 w-100 w-lg-auto">
                     <a class="btn btn-staff d-inline-flex align-items-center justify-content-center w-100 w-lg-auto" href="<?= e(BASE_URL) ?>/login.php"><span class="vk-lucide-nav me-2" aria-hidden="true"><i data-lucide="shield-check"></i></span>Staff Login</a>
                 </li>

@@ -1,18 +1,54 @@
 </main>
 <footer class="vk-public-footer py-5 mt-auto">
     <div class="container">
-        <div class="row g-4 align-items-start" data-aos="fade-up" data-aos-duration="600">
-            <div class="col-md-6">
-                <div class="vk-footer-brand mb-2">VK Network</div>
-                <p class="small mb-0 opacity-90">Computer · Printer · CCTV · Maintenance · Auto · AC · Electrical</p>
+        <div class="row gy-4">
+            <div class="col-lg-4">
+                <a class="vk-footer-logo d-inline-flex align-items-center gap-3 mb-3" href="<?= e(BASE_URL) ?>/index.php">
+                    <span class="vk-footer-mark">VK</span>
+                    <div>
+                        <div class="vk-footer-brand">VK Network</div>
+                        <div class="small text-muted">Multi-Service Solutions</div>
+                    </div>
+                </a>
+                <p class="vk-footer-copy">Premium local service operations with transparent booking, tracking, and field support for homes and businesses.</p>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <a class="vk-social-btn" href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i data-lucide="facebook"></i></a>
+                    <a class="vk-social-btn" href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i data-lucide="twitter"></i></a>
+                    <a class="vk-social-btn" href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i data-lucide="linkedin"></i></a>
+                </div>
             </div>
-            <div class="col-md-6 text-md-end">
-                <div class="small mb-1 d-flex d-md-block justify-content-center justify-content-md-end align-items-center gap-2"><span class="vk-lucide-footer opacity-75" aria-hidden="true"><i data-lucide="map-pin"></i></span>26/3 Thiruvaiyaru, Kilinochchi, Sri Lanka</div>
-                <div class="small d-flex d-md-block justify-content-center justify-content-md-end align-items-center gap-2"><span class="vk-lucide-footer opacity-75" aria-hidden="true"><i data-lucide="phone"></i></span><a class="link-footer" href="tel:+94778870135">077 887 0135</a></div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <h3 class="vk-footer-heading">Quick Links</h3>
+                <ul class="vk-footer-links list-unstyled mb-0">
+                    <li><a href="<?= e(BASE_URL) ?>/index.php">Home</a></li>
+                    <li><a href="<?= e(BASE_URL) ?>/book.php">Book Service</a></li>
+                    <li><a href="<?= e(BASE_URL) ?>/track.php">Track Status</a></li>
+                    <li><a href="<?= e(BASE_URL) ?>/portfolio.php">Our Work</a></li>
+                </ul>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <h3 class="vk-footer-heading">Services</h3>
+                <ul class="vk-footer-links list-unstyled mb-0">
+                    <li><a href="<?= e(BASE_URL) ?>/book.php?type=computer">Computer Repair</a></li>
+                    <li><a href="<?= e(BASE_URL) ?>/book.php?type=cctv">CCTV Installation</a></li>
+                    <li><a href="<?= e(BASE_URL) ?>/book.php?type=electrical">Electrical Service</a></li>
+                    <li><a href="<?= e(BASE_URL) ?>/book.php?type=vehicle">Vehicle Support</a></li>
+                </ul>
+            </div>
+            <div class="col-12 col-md-6 col-lg-4">
+                <h3 class="vk-footer-heading">Contact</h3>
+                <p class="small mb-3">26/3 Thiruvaiyaru, Kilinochchi, Sri Lanka</p>
+                <p class="small mb-3">Phone: <a class="link-footer" href="tel:+94778870135">077 887 0135</a></p>
+                <div class="vk-footer-apps d-flex flex-wrap gap-2">
+                    <a class="vk-app-badge" href="#" aria-label="Download on the App Store"><i data-lucide="apple"></i> App Store</a>
+                    <a class="vk-app-badge" href="#" aria-label="Get it on Google Play"><i data-lucide="android"></i> Google Play</a>
+                </div>
             </div>
         </div>
-        <hr class="border-secondary border-opacity-25 my-4">
-        <p class="small mb-0 text-center opacity-75">&copy; <?= (int) date('Y') ?> VK Network. All rights reserved.</p>
+        <div class="vk-footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 pt-4 mt-4 border-top border-secondary border-opacity-10">
+            <p class="small mb-0 text-muted">&copy; <?= (int) date('Y') ?> VK Network. All rights reserved.</p>
+            <p class="small mb-0 text-muted">Made with ❤️ in Sri Lanka</p>
+        </div>
     </div>
 </footer>
 <?php

@@ -106,68 +106,156 @@ $seoKeywords = vk_seo_default_keywords() . ($localKeywords ? ', ' . implode(', '
 require __DIR__ . '/includes/public_header.php';
 ?>
 <section class="vk-hero-premium vk-home-hero" id="top">
+    <div class="vk-hero-shine"></div>
+    <div class="vk-hero-grain"></div>
     <div class="container vk-hero-inner">
         <div class="row align-items-center g-4 g-lg-5">
             <div class="col-lg-7" data-aos="fade-right" data-aos-duration="700">
+                <div class="vk-hero-topline d-flex flex-wrap align-items-center gap-3 mb-3">
+                    <span class="vk-hero-trust px-3 py-2 rounded-pill">Trusted by 25K+ customers</span>
+                    <span class="vk-hero-badge-mini d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill">Live operations • Premium SLA</span>
+                </div>
                 <span class="vk-hero-eyebrow d-inline-flex align-items-center gap-2">
                     <i data-lucide="sparkles"></i>
-                    Multi-service solutions in Northern Sri Lanka
+                    Premium enterprise service platform
                 </span>
-                <h1 class="vk-hero-title">Professional repairs, installations, and maintenance for homes and businesses.</h1>
-                <p class="vk-hero-lead">Book computer repair, printer service, CCTV installation, vehicle support, AC repair, and electrical service from one responsive local team.</p>
+                <h1 class="vk-hero-title">Smart Service Solutions for modern <span class="vk-gradient-text">Homes &amp; Businesses</span></h1>
+                <p class="vk-hero-lead">Book repairs, installations, maintenance, and technical support with real-time tracking and intelligent workflow management.</p>
                 <div class="vk-hero-actions d-flex flex-wrap gap-3">
                     <a class="vk-btn-hero-primary btn btn-lg px-4" href="<?= e(BASE_URL) ?>/book.php">
                         <span class="vk-hero-btn-ic me-2 d-inline-flex align-items-center" aria-hidden="true"><i data-lucide="calendar-plus"></i></span>
-                        Book service
+                        Book a Service
                     </a>
                     <a class="vk-btn-hero-secondary btn btn-lg px-4" href="<?= e(BASE_URL) ?>/track.php">
                         <span class="vk-hero-btn-ic me-2 d-inline-flex align-items-center" aria-hidden="true"><i data-lucide="search"></i></span>
-                        Track job
+                        Track Your Service
                     </a>
                 </div>
-                <div class="row g-3 mt-4">
-                    <?php foreach ($stats as $stat): ?>
-                        <div class="col-4">
-                            <div class="vk-home-stat">
-                                <strong><?= e($stat['value']) ?></strong>
-                                <span><?= e($stat['label']) ?></span>
-                            </div>
+                <div class="vk-hero-badges d-flex flex-wrap gap-2 mt-4" data-aos="fade-up" data-aos-duration="700" data-aos-delay="150">
+                    <span class="vk-hero-badge">Fast Response</span>
+                    <span class="vk-hero-badge">Certified Experts</span>
+                    <span class="vk-hero-badge">Secure &amp; Safe</span>
+                    <span class="vk-hero-badge">Satisfaction Guarantee</span>
+                </div>
+                <div class="row row-cols-1 row-cols-sm-2 g-3 mt-4" data-aos="fade-up" data-aos-duration="700" data-aos-delay="200">
+                    <div class="col">
+                        <div class="vk-home-stat">
+                            <strong>25K+</strong>
+                            <span>Happy Customers</span>
                         </div>
-                    <?php endforeach; ?>
+                    </div>
+                    <div class="col">
+                        <div class="vk-home-stat">
+                            <strong>98.6%</strong>
+                            <span>Success Rate</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="vk-home-stat">
+                            <strong>4.9★</strong>
+                            <span>Customer Rating</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="vk-home-stat">
+                            <strong>247</strong>
+                            <span>Online Technicians</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="vk-brand-strip d-flex flex-wrap align-items-center gap-3 gap-sm-4 mt-5" data-aos="fade-up" data-aos-duration="700" data-aos-delay="260">
+                    <span class="vk-brand-pill">Dell</span>
+                    <span class="vk-brand-pill">HP</span>
+                    <span class="vk-brand-pill">Lenovo</span>
+                    <span class="vk-brand-pill">ASUS</span>
+                    <span class="vk-brand-pill">Acer</span>
+                    <span class="vk-brand-pill">Canon</span>
+                    <span class="vk-brand-pill">Samsung</span>
                 </div>
             </div>
             <div class="col-lg-5" data-aos="fade-left" data-aos-duration="700" data-aos-delay="100">
-                <div class="vk-home-hero-panel">
-                    <div class="d-flex align-items-center justify-content-between gap-3 mb-4">
+                <div class="vk-dashboard-card p-4 p-xl-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
                         <div>
-                            <span class="small text-uppercase fw-semibold">Live workflow</span>
-                            <h2 class="h4 mb-0">Service operations</h2>
+                            <span class="small text-uppercase text-light opacity-75">Live operations</span>
+                            <h2 class="h5 text-white mb-0">Service tracking dashboard</h2>
                         </div>
-                        <span class="vk-home-pulse" aria-hidden="true"></span>
+                        <span class="badge vk-badge-live">Live</span>
                     </div>
-                    <div class="vk-home-workflow">
-                        <div class="vk-home-workflow-item">
-                            <span><i data-lucide="clipboard-check"></i></span>
-                            <div>
-                                <strong>Online booking</strong>
-                                <small>Capture service type, location, contact, and notes.</small>
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <div class="vk-mini-kpi p-3">
+                                <strong>128</strong>
+                                <span>Active Bookings</span>
+                                <small class="text-success">+12% today</small>
                             </div>
                         </div>
-                        <div class="vk-home-workflow-item">
-                            <span><i data-lucide="user-check"></i></span>
-                            <div>
-                                <strong>Assign technician</strong>
-                                <small>Route jobs to the right field staff.</small>
+                        <div class="col-6">
+                            <div class="vk-mini-kpi p-3">
+                                <strong>48</strong>
+                                <span>In Progress</span>
+                                <small class="text-info">Live tracking</small>
                             </div>
                         </div>
-                        <div class="vk-home-workflow-item">
-                            <span><i data-lucide="receipt"></i></span>
-                            <div>
-                                <strong>Invoice and track</strong>
-                                <small>Keep job history, billing, and customer updates clear.</small>
+                        <div class="col-6">
+                            <div class="vk-mini-kpi p-3">
+                                <strong>2,548</strong>
+                                <span>Completed</span>
+                                <small class="text-success">+8% today</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="vk-mini-kpi p-3">
+                                <strong>Rs. 2.48M</strong>
+                                <span>Revenue</span>
+                                <small class="text-success">+18.6%</small>
                             </div>
                         </div>
                     </div>
+                    <div class="vk-track-panel p-3 mb-4">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="vk-track-avatar"><i data-lucide="user-check"></i></div>
+                            <div>
+                                <strong>Technician: Asela</strong>
+                                <span>En route to site</span>
+                            </div>
+                        </div>
+                        <div class="vk-track-map"></div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div>
+                                <span class="small text-muted">ETA</span>
+                                <strong>18 min</strong>
+                            </div>
+                            <div class="vk-track-progress">
+                                <div class="vk-track-progress-bar" style="width: 62%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="vk-ai-panel p-3 d-flex flex-column gap-3 mb-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="vk-ai-badge">AI Assistant</span>
+                            <span class="text-success small">Online</span>
+                        </div>
+                        <div class="vk-ai-message">“Your service is scheduled and the technician is 18 minutes away. You can reschedule or review the estimate anytime.”</div>
+                        <a class="btn btn-sm btn-outline-light" href="<?= e(BASE_URL) ?>/track.php">View service details</a>
+                    </div>
+                    <div class="vk-rating-card p-3 d-flex align-items-center gap-3">
+                        <div class="vk-rating-score">
+                            <strong>4.9</strong>
+                            <span>/5</span>
+                        </div>
+                        <div>
+                            <div class="vk-stars">
+                                <i data-lucide="star"></i>
+                                <i data-lucide="star"></i>
+                                <i data-lucide="star"></i>
+                                <i data-lucide="star"></i>
+                                <i data-lucide="star"></i>
+                            </div>
+                            <span class="small text-light-opacity">2.4K reviews</span>
+                        </div>
+                    </div>
+                    <div class="vk-dashboard-footer text-center mt-3">25+ services available</div>
                 </div>
             </div>
         </div>
@@ -189,32 +277,35 @@ require __DIR__ . '/includes/public_header.php';
 
 <section class="vk-pub-section py-5" id="services">
     <div class="container py-lg-4">
-        <div class="row align-items-end g-3 mb-4 mb-lg-5">
+        <div class="row justify-content-between align-items-end g-3 mb-5">
             <div class="col-lg-7" data-aos="fade-up">
-                <span class="vk-section-kicker">Services</span>
-                <h2 class="vk-section-title mb-2">Service coverage built for repeat work.</h2>
-                <p class="vk-section-lead mb-0">Organized, trackable support across IT, security, comfort systems, vehicles, and electrical maintenance.</p>
+                <span class="vk-section-kicker">Our Premium Services</span>
+                <h2 class="vk-section-title mb-2">Expert solutions with fast booking and transparent tracking.</h2>
+                <p class="vk-section-lead mb-0">Every service is backed by qualified technicians, instant booking, and a seamless customer experience.</p>
             </div>
-            <div class="col-lg-5 text-lg-end">
-                <a class="btn btn-outline-primary" href="<?= e(BASE_URL) ?>/book.php">Start a booking</a>
+            <div class="col-lg-4 text-lg-end" data-aos="fade-up" data-aos-delay="100">
+                <a class="btn btn-outline-primary btn-lg" href="<?= e(BASE_URL) ?>/service.php">View all services</a>
             </div>
         </div>
         <div class="row g-4">
-            <?php foreach (array_slice($services, 0, 6) as $si => $s):
-                $sid = isset($s['id']) && $s['id'] !== null && (int) $s['id'] > 0 ? (int) $s['id'] : 0;
-                $svcSlug = isset($s['slug']) ? trim((string) $s['slug']) : '';
-                $cardHref = $sid > 0
-                    ? ($svcSlug !== '' ? vk_web_service_public_path($svcSlug, $sid) : BASE_URL . '/service-details.php?id=' . $sid)
-                    : BASE_URL . '/book.php?type=' . rawurlencode((string) $s['slug']);
-                ?>
-                <div class="col-md-6 col-xl-4" data-aos="fade-up" data-aos-duration="650" data-aos-delay="<?= (int) min(200, $si * 45) ?>">
-                    <article class="vk-pub-service-card vk-modern-card p-4 position-relative">
-                        <div class="vk-pub-icon-wrap mb-3">
-                            <i data-lucide="<?= e((string) $s['lucide_icon']) ?>"></i>
-                        </div>
-                        <h3 class="mb-2"><?= e((string) $s['name']) ?></h3>
-                        <p class="text-muted small mb-4"><?= e((string) $s['short_description']) ?></p>
-                        <a class="btn btn-sm btn-outline-primary stretched-link" href="<?= e($cardHref) ?>"><?= $sid > 0 ? 'View details' : 'Book this' ?></a>
+            <?php
+            $homeServices = [
+                ['name' => 'Computer Repair', 'description' => 'Laptop, desktop, OS, upgrade, virus cleanup, and diagnostics.', 'icon' => 'cpu', 'url' => BASE_URL . '/book.php?type=computer'],
+                ['name' => 'CCTV Installation', 'description' => 'Camera setup, DVR/NVR configuration, cabling, and remote access.', 'icon' => 'video', 'url' => BASE_URL . '/book.php?type=cctv'],
+                ['name' => 'AC Repair', 'description' => 'Air conditioner diagnostics, cleaning, and fast cooling restoration.', 'icon' => 'wind', 'url' => BASE_URL . '/book.php?type=ac'],
+                ['name' => 'Electrical Service', 'description' => 'Residential and commercial electrical troubleshooting, wiring, and safety.', 'icon' => 'zap', 'url' => BASE_URL . '/book.php?type=electrical'],
+                ['name' => 'Printer Repair', 'description' => 'Printer jams, refills, cartridges, rollers, and office maintenance.', 'icon' => 'printer', 'url' => BASE_URL . '/book.php?type=printer'],
+                ['name' => 'Vehicle Support', 'description' => 'Emergency breakdown support, vehicle bookings, and technician dispatch.', 'icon' => 'truck', 'url' => BASE_URL . '/book.php?type=automobile'],
+                ['name' => 'Networking Solutions', 'description' => 'Wi-Fi, switches, routing, and secure network setups for offices.', 'icon' => 'wifi', 'url' => BASE_URL . '/book.php?type=networking'],
+                ['name' => 'Smart Home Setup', 'description' => 'Automation, sensors, CCTV control, and connected home device installation.', 'icon' => 'home', 'url' => BASE_URL . '/book.php?type=smart-home'],
+            ];
+            foreach ($homeServices as $si => $service): ?>
+                <div class="col-sm-6 col-xl-3" data-aos="fade-up" data-aos-duration="700" data-aos-delay="<?= (int) min(240, $si * 45) ?>">
+                    <article class="vk-service-card p-4 h-100 position-relative">
+                        <div class="vk-service-card-icon mb-3"><i data-lucide="<?= e($service['icon']) ?>"></i></div>
+                        <h3 class="h5 mb-2"><?= e($service['name']) ?></h3>
+                        <p class="text-muted small mb-4"><?= e($service['description']) ?></p>
+                        <a class="stretched-link text-decoration-none text-primary fw-semibold" href="<?= e($service['url']) ?>">Book now <i data-lucide="arrow-right" class="ms-1"></i></a>
                     </article>
                 </div>
             <?php endforeach; ?>
@@ -222,155 +313,165 @@ require __DIR__ . '/includes/public_header.php';
     </div>
 </section>
 
-<section class="vk-pub-section-alt py-5" id="about">
+<section class="vk-pub-section-alt py-5" id="overview">
     <div class="container py-lg-4">
-        <div class="row g-4 g-lg-5 align-items-center">
+        <div class="row g-4 align-items-center">
             <div class="col-lg-6" data-aos="fade-right">
-                <div class="vk-about-visual">
-                    <img src="<?= e(base_url('assets/images/gallery/laptop-repair.svg')) ?>" alt="Laptop repair service illustration" loading="lazy">
-                    <div class="vk-about-floating">
-                        <i data-lucide="shield-check"></i>
+                <div class="vk-analytics-card p-4 p-xl-5">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
                         <div>
-                            <strong>Trusted local workflow</strong>
-                            <span>Booking, field updates, billing, and history in one place.</span>
+                            <span class="vk-section-kicker">Business overview</span>
+                            <h2 class="vk-section-title mb-1">Track bookings, completion, and customer satisfaction.</h2>
+                        </div>
+                        <span class="badge bg-white text-dark text-uppercase px-3 py-2">Global metrics</span>
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <div class="vk-analytics-kpi"><strong>5,482</strong><span>Total bookings</span></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="vk-analytics-kpi"><strong>4,312</strong><span>Completed jobs</span></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="vk-analytics-kpi"><strong>854</strong><span>In progress</span></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="vk-analytics-kpi"><strong>96</strong><span>Cancelled</span></div>
+                        </div>
+                    </div>
+                    <div class="vk-analytics-chart mb-4">
+                        <div class="vk-chart-line"></div>
+                        <div class="vk-chart-axis d-flex justify-content-between text-muted small">
+                            <span>Mon</span><span>Wed</span><span>Fri</span><span>Sun</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div class="vk-radial-progress">
+                            <span>92%</span>
+                            <small>Customer satisfaction</small>
+                        </div>
+                        <div class="vk-radial-progress vk-radial-progress--secondary">
+                            <span>87%</span>
+                            <small>First-time fix rate</small>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-lg-6" data-aos="fade-left">
-                <span class="vk-section-kicker">About VK Network</span>
-                <h2 class="vk-section-title mb-3">A practical service company with modern digital operations.</h2>
-                <p class="text-muted">We combine field experience with a clear service process, so customers can request help, follow progress, and receive transparent billing without confusion.</p>
-                <div class="row g-3 mt-2">
-                    <div class="col-sm-6">
-                        <div class="vk-feature-mini">
-                            <i data-lucide="map-pin"></i>
-                            <strong>Local coverage</strong>
-                            <span>Jaffna, Kilinochchi, Vavuniya, Mullaitivu, and nearby areas.</span>
+                <div class="row g-3">
+                    <?php $whyCards = [
+                        ['title' => '24/7 Support', 'icon' => 'headphones', 'colorClass' => 'vk-card-glow-blue'],
+                        ['title' => 'Fast Response', 'icon' => 'clock', 'colorClass' => 'vk-card-glow-cyan'],
+                        ['title' => 'Verified Technicians', 'icon' => 'badge-check', 'colorClass' => 'vk-card-glow-purple'],
+                        ['title' => 'Secure Payments', 'icon' => 'shield-check', 'colorClass' => 'vk-card-glow-green'],
+                        ['title' => 'Real-time Updates', 'icon' => 'zap', 'colorClass' => 'vk-card-glow-sky'],
+                        ['title' => 'Warranty Protection', 'icon' => 'award', 'colorClass' => 'vk-card-glow-pink'],
+                    ];
+                    foreach ($whyCards as $card): ?>
+                        <div class="col-md-6">
+                            <article class="vk-why-card p-4 <?= e($card['colorClass']) ?>">
+                                <div class="vk-why-icon mb-3"><i data-lucide="<?= e($card['icon']) ?>"></i></div>
+                                <h3 class="h6 mb-2"><?= e($card['title']) ?></h3>
+                                <p class="small text-muted mb-0">Premium quality, clear communication, and secure service delivery.</p>
+                            </article>
                         </div>
-                    </div>
-                    <div class="col-sm-6">
-                        <div class="vk-feature-mini">
-                            <i data-lucide="badge-check"></i>
-                            <strong>Accountable support</strong>
-                            <span>Service tracking, technician notes, estimates, and invoice history.</span>
-                        </div>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
-                <a class="btn btn-primary mt-4" href="<?= e(BASE_URL) ?>/portfolio.php">See completed work</a>
             </div>
         </div>
     </div>
 </section>
 
-<section class="vk-pub-section py-5" id="team">
+<section class="vk-pub-section py-5" id="testimonials">
     <div class="container py-lg-4">
         <div class="text-center mb-5" data-aos="fade-up">
-            <span class="vk-section-kicker">Staff &amp; Owner Portfolio</span>
-            <h2 class="vk-section-title mb-2">Meet the team behind the service.</h2>
-            <p class="vk-section-lead mx-auto mb-0">Owners, technicians, and support staff presented with clear skills, roles, and quick actions.</p>
+            <span class="vk-section-kicker">Testimonials</span>
+            <h2 class="vk-section-title mb-2">Trusted by customers across Sri Lanka.</h2>
+            <p class="vk-section-lead mx-auto mb-0">Premium reviews from customers who have experienced fast, transparent service delivery.</p>
         </div>
-        <div class="row g-4 justify-content-center">
-            <?php foreach ($teamMembers as $i => $member):
-                $skills = $member['skills'] ?? [];
-                $skillsArray = is_array($skills) ? $skills : vk_staff_skills_list((string) $skills);
-                if (!$skillsArray) {
-                    $skillsArray = ['Diagnostics', 'Field Service', 'Customer Care'];
-                }
-                $imgUrl = vk_staff_image_url((string) ($member['image'] ?? ''));
-                $socialLinks = vk_staff_social_links((string) ($member['social_links'] ?? ''));
-                if (!$socialLinks) {
-                    $socialLinks = [
-                        ['label' => 'Profile', 'url' => BASE_URL . '/index.php/staff'],
-                        ['label' => 'Book', 'url' => BASE_URL . '/book.php'],
-                    ];
-                }
-                $role = (string) ($member['role'] ?? 'Team Member');
-                $roleClass = str_contains(strtolower($role), 'owner') ? 'text-bg-primary' : 'text-bg-info';
-                ?>
-                <div class="col-lg-3 col-md-6 col-sm-12" data-aos="fade-up" data-aos-delay="<?= (int) min(180, $i * 55) ?>">
-                    <article class="vk-team-card h-100">
-                        <div class="vk-team-card-media">
-                            <img
-                                src="<?= e($imgUrl) ?>"
-                                alt="<?= e((string) ($member['name'] ?? 'Team member')) ?> profile image"
-                                width="132"
-                                height="132"
-                                loading="lazy"
-                                decoding="async"
-                                onerror="<?= vk_staff_image_onerror_attr() ?>"
-                            >
-                        </div>
-                        <div class="vk-team-card-body">
-                            <span class="badge <?= e($roleClass) ?> rounded-pill mb-2"><?= e($role) ?></span>
-                            <h3><?= e((string) ($member['name'] ?? 'Team member')) ?></h3>
-                            <p><?= e(trim((string) ($member['description'] ?? '')) !== '' ? (string) $member['description'] : 'Experienced support professional focused on clean, reliable customer service.') ?></p>
-                            <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
-                                <?php foreach ($skillsArray as $skill): ?>
-                                    <span class="badge rounded-pill text-bg-light border"><?= e((string) $skill) ?></span>
-                                <?php endforeach; ?>
+        <div id="vkTestimonialsCarousel" class="carousel slide" data-bs-ride="carousel" data-aos="fade-up" data-aos-duration="700">
+            <div class="carousel-inner">
+                <?php $testimonials = [
+                    ['name' => 'Amali Perera', 'role' => 'Homeowner', 'text' => 'VK Network fixed my laptop and installed CCTV in one day. The tracking interface made it easy to follow every step.', 'stars' => 5],
+                    ['name' => 'Nalin Fernando', 'role' => 'Business owner', 'text' => 'Professional, fast, and secure. Their technician arrived on time and resolved our network outage quickly.', 'stars' => 5],
+                    ['name' => 'Samantha Jayasekara', 'role' => 'IT manager', 'text' => 'Great support for our office printer and AC systems. Clear communication and reliable follow-through.', 'stars' => 5],
+                ];
+                foreach ($testimonials as $i => $review): ?>
+                    <div class="carousel-item <?= $i === 0 ? 'active' : '' ?>">
+                        <div class="vk-testimonial-card p-4 p-lg-5 mx-auto" style="max-width: 730px;">
+                            <p class="mb-4 text-muted">"<?= e($review['text']) ?>"</p>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="vk-testimonial-avatar"><span><?= e(substr($review['name'], 0, 1)) ?></span></div>
+                                <div>
+                                    <strong><?= e($review['name']) ?></strong>
+                                    <div class="small text-muted"><?= e($review['role']) ?></div>
+                                </div>
                             </div>
-                            <div class="d-flex justify-content-center gap-2">
-                                <?php foreach (array_slice($socialLinks, 0, 3) as $link):
-                                    $label = (string) ($link['label'] ?? 'Profile');
-                                    $icon = str_contains(strtolower($label), 'book') ? 'calendar-plus' : 'user-round';
-                                    ?>
-                                    <a class="vk-social-btn" href="<?= e((string) $link['url']) ?>" aria-label="<?= e($label) ?> for <?= e((string) ($member['name'] ?? 'team member')) ?>"><i data-lucide="<?= e($icon) ?>"></i></a>
-                                <?php endforeach; ?>
+                            <div class="vk-testimonial-stars mt-4">
+                                <?php for ($s = 0; $s < 5; $s++): ?>
+                                    <i data-lucide="star" class="<?= $s < $review['stars'] ? 'text-warning' : 'text-muted' ?>"></i>
+                                <?php endfor; ?>
                             </div>
                         </div>
-                    </article>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </div>
-</section>
-
-<section class="vk-pub-section-alt py-5">
-    <div class="container">
-        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
-            <div>
-                <span class="vk-section-kicker">Local SEO pages</span>
-                <h2 class="vk-section-title mb-0">Popular local pages</h2>
+                    </div>
+                <?php endforeach; ?>
             </div>
-            <span class="small text-muted">Auto SEO landing links</span>
-        </div>
-        <div class="row g-3">
-            <?php
-            $rawLoc = (string) (vk_app_setting('seo_locations', 'jaffna,vavuniya,kilinochchi') ?? 'jaffna,vavuniya,kilinochchi');
-            $rawSvc = (string) (vk_app_setting('seo_service_slugs', 'computer-repair,laptop-repair,printer-repair,it-service') ?? 'computer-repair,laptop-repair,printer-repair,it-service');
-            $locs = array_values(array_filter(array_map(static fn(string $v): string => strtolower(trim($v)), explode(',', $rawLoc))));
-            $svcs = array_values(array_filter(array_map(static fn(string $v): string => strtolower(trim($v)), explode(',', $rawSvc))));
-            $locs = $locs ?: ['jaffna', 'vavuniya', 'kilinochchi'];
-            $svcs = $svcs ?: ['computer-repair', 'laptop-repair', 'printer-repair', 'it-service'];
-            $localLanding = [];
-            foreach ($locs as $ll) {
-                foreach ($svcs as $ss) {
-                    $localLanding[] = [
-                        'slug' => $ss . '-' . $ll,
-                        'label' => ucwords(str_replace('-', ' ', $ss . ' ' . $ll)),
-                    ];
-                }
-            }
-            foreach (array_slice($localLanding, 0, 8) as $lp): ?>
-                <div class="col-12 col-md-6 col-lg-3">
-                    <a class="vk-local-link" href="<?= e(BASE_URL . '/service/' . $lp['slug']) ?>">
-                        <strong><?= e($lp['label']) ?></strong>
-                        <span>View local offer</span>
-                    </a>
-                </div>
-            <?php endforeach; ?>
+            <button class="carousel-control-prev" type="button" data-bs-target="#vkTestimonialsCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#vkTestimonialsCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
         </div>
     </div>
 </section>
 
-<section class="vk-home-cta py-5">
-    <div class="container text-center" data-aos="fade-up">
-        <h2 class="vk-section-title mb-3">Need a technician today?</h2>
-        <p class="vk-section-lead mx-auto mb-4">Send a request online and keep every step trackable from booking to invoice.</p>
-        <div class="d-flex flex-wrap justify-content-center gap-3">
-            <a class="btn btn-primary btn-lg px-4" href="<?= e(BASE_URL) ?>/book.php">Book online</a>
-            <a class="btn btn-outline-secondary btn-lg px-4" href="<?= e(BASE_URL) ?>/track.php">Track status</a>
+<section class="vk-pub-section-alt py-5" id="how-it-works">
+    <div class="container py-lg-4">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-7" data-aos="fade-right">
+                <span class="vk-section-kicker">How it works</span>
+                <h2 class="vk-section-title mb-4">Three steps to service success.</h2>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="vk-step-card p-4 d-flex gap-3 align-items-start">
+                            <div class="vk-step-icon"><i data-lucide="layers"></i></div>
+                            <div>
+                                <strong>Select Service</strong>
+                                <p class="text-muted mb-0">Choose the right service category and share your location details in a few taps.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="vk-step-card p-4 d-flex gap-3 align-items-start">
+                            <div class="vk-step-icon"><i data-lucide="map-pin"></i></div>
+                            <div>
+                                <strong>Track Technician</strong>
+                                <p class="text-muted mb-0">Follow the technician route, ETA, and progress from your dashboard.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="vk-step-card p-4 d-flex gap-3 align-items-start">
+                            <div class="vk-step-icon"><i data-lucide="check-circle"></i></div>
+                            <div>
+                                <strong>Complete &amp; Review</strong>
+                                <p class="text-muted mb-0">Accept the finished job, pay securely, and leave feedback instantly.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5" data-aos="fade-left">
+                <div class="vk-ready-card p-4 p-lg-5 rounded-4 text-center">
+                    <span class="vk-section-kicker">Ready to get started?</span>
+                    <h3 class="vk-ready-title mb-3">Launch your service with a premium support experience.</h3>
+                    <p class="text-muted mb-4">Book now, track live, and keep everything transparent with real-time status updates.</p>
+                    <a class="btn btn-primary btn-lg px-4" href="<?= e(BASE_URL) ?>/book.php">Book Now</a>
+                </div>
+            </div>
         </div>
     </div>
 </section>
