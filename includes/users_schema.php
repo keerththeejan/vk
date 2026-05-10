@@ -6,6 +6,11 @@ declare(strict_types=1);
  */
 function vk_ensure_users_management_schema(PDO $pdo): void
 {
+    if (function_exists('vk_auth_ensure_schema')) {
+        vk_auth_ensure_schema($pdo);
+        return;
+    }
+
     static $done = false;
     if ($done) {
         return;
