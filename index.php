@@ -113,7 +113,7 @@ require __DIR__ . '/includes/public_header.php';
             <div class="col-lg-7" data-aos="fade-right" data-aos-duration="700">
                 <div class="vk-hero-topline d-flex flex-wrap align-items-center gap-3 mb-3">
                     <span class="vk-hero-trust px-3 py-2 rounded-pill">Trusted by 25K+ customers</span>
-                    <span class="vk-hero-badge-mini d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill">Live operations • Premium SLA</span>
+                    <span class="vk-hero-badge-mini d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill">Live operations &bull; Premium SLA</span>
                 </div>
                 <span class="vk-hero-eyebrow d-inline-flex align-items-center gap-2">
                     <i data-lucide="sparkles"></i>
@@ -152,7 +152,7 @@ require __DIR__ . '/includes/public_header.php';
                     </div>
                     <div class="col">
                         <div class="vk-home-stat">
-                            <strong>4.9★</strong>
+                            <strong>4.9</strong>
                             <span>Customer Rating</span>
                         </div>
                     </div>
@@ -236,7 +236,7 @@ require __DIR__ . '/includes/public_header.php';
                             <span class="vk-ai-badge">AI Assistant</span>
                             <span class="text-success small">Online</span>
                         </div>
-                        <div class="vk-ai-message">“Your service is scheduled and the technician is 18 minutes away. You can reschedule or review the estimate anytime.”</div>
+                        <div class="vk-ai-message">"Your service is scheduled and the technician is 18 minutes away. You can reschedule or review the estimate anytime."</div>
                         <a class="btn btn-sm btn-outline-light" href="<?= e(BASE_URL) ?>/track.php">View service details</a>
                     </div>
                     <div class="vk-rating-card p-3 d-flex align-items-center gap-3">
@@ -313,7 +313,7 @@ require __DIR__ . '/includes/public_header.php';
     </div>
 </section>
 
-<section class="vk-pub-section-alt py-5" id="overview">
+<section class="vk-pub-section-alt py-5" id="about">
     <div class="container py-lg-4">
         <div class="row g-4 align-items-center">
             <div class="col-lg-6" data-aos="fade-right">
@@ -378,6 +378,43 @@ require __DIR__ . '/includes/public_header.php';
                     <?php endforeach; ?>
                 </div>
             </div>
+        </div>
+    </div>
+</section>
+
+<section class="vk-pub-section py-5" id="pricing">
+    <div class="container py-lg-4">
+        <div class="row align-items-end justify-content-between g-3 mb-5">
+            <div class="col-lg-7" data-aos="fade-up">
+                <span class="vk-section-kicker">Transparent pricing</span>
+                <h2 class="vk-section-title mb-2">Premium service plans built for homes and growing teams.</h2>
+                <p class="vk-section-lead mb-0">Start with a one-time visit or choose an ongoing maintenance plan with priority dispatch.</p>
+            </div>
+            <div class="col-lg-4 text-lg-end" data-aos="fade-up" data-aos-delay="100">
+                <a class="btn btn-outline-primary btn-lg" href="<?= e(BASE_URL) ?>/book.php">Request estimate</a>
+            </div>
+        </div>
+        <div class="row g-4">
+            <?php $pricingPlans = [
+                ['name' => 'Rapid Visit', 'price' => 'From Rs. 2,500', 'icon' => 'zap', 'items' => ['Diagnosis and estimate', 'Same-day scheduling', 'Live job updates']],
+                ['name' => 'Business Care', 'price' => 'Custom SLA', 'icon' => 'building-2', 'items' => ['Priority technicians', 'Monthly maintenance', 'Asset and warranty notes']],
+                ['name' => 'Smart Install', 'price' => 'Project quote', 'icon' => 'router', 'items' => ['CCTV and networking', 'Smart home setup', 'Post-install support']],
+            ];
+            foreach ($pricingPlans as $pi => $plan): ?>
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="<?= (int) ($pi * 80) ?>">
+                    <article class="vk-service-card vk-pricing-card p-4 h-100">
+                        <div class="vk-service-card-icon mb-3"><i data-lucide="<?= e($plan['icon']) ?>"></i></div>
+                        <h3 class="h5 mb-2"><?= e($plan['name']) ?></h3>
+                        <strong class="d-block h4 mb-3"><?= e($plan['price']) ?></strong>
+                        <ul class="list-unstyled d-grid gap-2 mb-4">
+                            <?php foreach ($plan['items'] as $item): ?>
+                                <li class="d-flex align-items-center gap-2 text-muted small"><i data-lucide="check-circle"></i><?= e($item) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <a class="btn btn-outline-light w-100" href="<?= e(BASE_URL) ?>/book.php">Choose plan</a>
+                    </article>
+                </div>
+            <?php endforeach; ?>
         </div>
     </div>
 </section>

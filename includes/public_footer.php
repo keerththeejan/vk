@@ -41,7 +41,7 @@
                 <p class="small mb-3">Phone: <a class="link-footer" href="tel:+94778870135">077 887 0135</a></p>
                 <div class="vk-footer-apps d-flex flex-wrap gap-2">
                     <a class="vk-app-badge" href="#" aria-label="Download on the App Store"><i data-lucide="apple"></i> App Store</a>
-                    <a class="vk-app-badge" href="#" aria-label="Get it on Google Play"><i data-lucide="android"></i> Google Play</a>
+                    <a class="vk-app-badge" href="#" aria-label="Get it on Google Play"><i data-lucide="smartphone"></i> Google Play</a>
                 </div>
             </div>
         </div>
@@ -55,6 +55,7 @@
 $waDigits = defined('VK_PUBLIC_WHATSAPP_NUMBER') ? (string) VK_PUBLIC_WHATSAPP_NUMBER : '94778870135';
 $waMsg = rawurlencode('Hello, I need service from VK Network.');
 $waHref = 'https://wa.me/' . preg_replace('/\D+/', '', $waDigits) . '?text=' . $waMsg;
+$vkPublicScriptVersion = is_file(__DIR__ . '/../assets/js/public-site.js') ? (string) filemtime(__DIR__ . '/../assets/js/public-site.js') : (string) time();
 if (function_exists('vk_json_ld_local_business')) {
     echo "\n" . vk_json_ld_local_business() . "\n";
 }
@@ -65,7 +66,7 @@ if (function_exists('vk_json_ld_local_business')) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js" crossorigin="anonymous" defer></script>
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" crossorigin="anonymous" defer></script>
-<script src="<?= e(base_url('assets/js/public-site.js')) ?>" defer></script>
+<script src="<?= e(base_url('assets/js/public-site.js')) ?>?v=<?= e($vkPublicScriptVersion) ?>" defer></script>
 <?= $extraScripts ?? '' ?>
 </body>
 </html>

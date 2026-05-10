@@ -77,6 +77,73 @@
         });
     }
 
+    function initPremiumCounters() {
+        var counters = document.querySelectorAll(".vk-home-stat strong, .vk-analytics-kpi strong, .vk-mini-kpi strong");
+        if (!counters.length) return;
+        var reduce = false;
+        try {
+            reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        } catch (e) {
+            reduce = false;
+        }
+
+        function parseValue(text) {
+            var clean = String(text || "").replace(/,/g, "");
+            var match = clean.match(/([A-Za-z. ]*)?(\d+(?:\.\d+)?)([KkMm%+ ]*)/);
+            if (!match) return null;
+            return {
+                original: text,
+                prefix: match[1] || "",
+                value: parseFloat(match[2]),
+                suffix: match[3] || "",
+                decimals: match[2].indexOf(".") >= 0 ? 1 : 0,
+            };
+        }
+
+        function formatValue(data, n) {
+            var value = data.decimals ? n.toFixed(data.decimals) : Math.round(n).toLocaleString();
+            return data.prefix + value + data.suffix;
+        }
+
+        function animate(el) {
+            if (el.dataset.vkCounted === "1") return;
+            var data = parseValue(el.textContent);
+            if (!data) return;
+            el.dataset.vkCounted = "1";
+            if (reduce) {
+                el.textContent = data.original;
+                return;
+            }
+            var start = performance.now();
+            var duration = 1150 + Math.min(650, data.value * 6);
+            function frame(now) {
+                var t = Math.min(1, (now - start) / duration);
+                var eased = 1 - Math.pow(1 - t, 3);
+                el.textContent = formatValue(data, data.value * eased);
+                if (t < 1) {
+                    requestAnimationFrame(frame);
+                } else {
+                    el.textContent = data.original;
+                }
+            }
+            requestAnimationFrame(frame);
+        }
+
+        if (!("IntersectionObserver" in window)) {
+            counters.forEach(animate);
+            return;
+        }
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    animate(entry.target);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.35 });
+        counters.forEach(function (el) { observer.observe(el); });
+    }
+
     function refreshAOS() {
         if (typeof AOS !== "undefined" && typeof AOS.refresh === "function") {
             AOS.refresh();
@@ -97,6 +164,7 @@
     document.addEventListener("DOMContentLoaded", function () {
         initAOS();
         initLucide();
+        initPremiumCounters();
 
         updateToggleUi(getTheme());
 
