@@ -11,8 +11,9 @@ $seoTitlePrefix = vk_app_setting('seo_site_title');
 $titleBase = ($seoTitlePrefix !== null && $seoTitlePrefix !== '') ? $seoTitlePrefix : $seoBrand;
 $htmlTitle = $seoDocumentTitle ?? ($titleBase . ' | ' . $pageTitle);
 $GLOBALS['seoFullTitle'] = $htmlTitle;
-$siteLogo = vk_app_setting('site_logo');
-$siteFavicon = vk_app_setting('site_favicon');
+$siteLogoUrl = getLogo('main');
+$mobileLogoUrl = getLogo('mobile');
+$siteFaviconUrl = getLogo('favicon');
 $navCtaText = vk_app_setting('navbar_cta_text', 'Book Service');
 $navCtaUrl = vk_setting_url(vk_app_setting('navbar_cta_url', '/book.php'), BASE_URL . '/book.php');
 $announcementEnabled = vk_settings_bool('announcement_enabled', false);
@@ -77,10 +78,8 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
             --vk-public-glow: <?= e((string) $themeGlow) ?>;
         }
     </style>
-    <?php if ($siteFavicon): ?>
-    <link rel="icon" type="image/<?= strpos($siteFavicon, '.png') !== false ? 'png' : 'x-icon' ?>" href="<?= e(base_url($siteFavicon)) ?>">
-    <link rel="shortcut icon" href="<?= e(base_url($siteFavicon)) ?>">
-    <?php endif; ?>
+    <link rel="icon" href="<?= e($siteFaviconUrl) ?>">
+    <link rel="shortcut icon" href="<?= e($siteFaviconUrl) ?>">
 </head>
 <body class="vk-public-site vk-neo-site d-flex flex-column min-vh-100">
 <div class="vk-site-bg" aria-hidden="true">
@@ -97,15 +96,14 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
 <nav class="navbar navbar-expand-lg sticky-top vk-navbar-premium">
     <div class="container vk-navbar-shell d-flex flex-wrap align-items-center justify-content-between">
         <a class="navbar-brand d-flex align-items-center gap-3 py-2 mb-0 text-decoration-none" href="<?= e(BASE_URL) ?>/index.php">
-            <?php if ($siteLogo): ?>
-                <img src="<?= e(base_url($siteLogo)) ?>" alt="<?= e($seoBrand) ?>" class="vk-public-logo-img" style="max-height:48px;max-width:160px;width:auto;height:auto;">
-            <?php else: ?>
-                <span class="vk-public-logo-circle rounded-circle text-white d-inline-flex align-items-center justify-content-center" aria-hidden="true">VK</span>
-                <span class="d-flex flex-column align-items-start text-start lh-sm">
-                    <span class="vk-public-brand-title"><?= e($seoBrand) ?></span>
-                    <span class="vk-public-brand-sub"><?= e((string) $companyTagline) ?></span>
-                </span>
-            <?php endif; ?>
+            <picture>
+                <source media="(max-width: 575.98px)" srcset="<?= e($mobileLogoUrl) ?>">
+                <img src="<?= e($siteLogoUrl) ?>" alt="<?= e($seoBrand) ?>" class="vk-public-logo-img" loading="eager" decoding="async">
+            </picture>
+            <span class="d-flex flex-column align-items-start text-start lh-sm">
+                <span class="vk-public-brand-title"><?= e($seoBrand) ?></span>
+                <span class="vk-public-brand-sub"><?= e((string) $companyTagline) ?></span>
+            </span>
         </a>
         <div class="d-flex align-items-center gap-2 order-lg-last flex-shrink-0">
             <a class="btn vk-nav-book-btn d-none d-sm-inline-flex align-items-center justify-content-center" href="<?= e($navCtaUrl) ?>">

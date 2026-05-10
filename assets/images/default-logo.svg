@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" role="img" aria-label="VK Network logo">
+  <defs>
+    <linearGradient id="g" x1="32" x2="328" y1="18" y2="102" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38bdf8"/>
+      <stop offset=".52" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <rect width="360" height="120" rx="28" fill="#0f172a"/>
+  <circle cx="62" cy="60" r="34" fill="url(#g)"/>
+  <text x="62" y="72" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" fill="#fff">VK</text>
+  <text x="116" y="55" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="800" fill="#f8fafc">VK Network</text>
+  <text x="118" y="82" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#93c5fd">Multi-Service Solutions</text>
+</svg>

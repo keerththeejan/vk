@@ -132,21 +132,76 @@
 
     const brandingForm = document.getElementById('brandingForm');
     if (brandingForm) {
+        function setTilePreview(key, url) {
+            if (!key || !url) return;
+            document.querySelectorAll('[data-preview-for="' + CSS.escape(key) + '"]').forEach(function (img) {
+                img.src = url;
+                img.classList.add('is-loaded');
+            });
+            const input = document.getElementById(key);
+            const tile = input?.closest('[data-upload-tile]');
+            const preview = tile?.querySelector('.vk-upload-preview');
+            if (preview && !preview.querySelector('img')) {
+                const img = document.createElement('img');
+                img.alt = 'Uploaded image preview';
+                img.src = url;
+                img.dataset.previewFor = key;
+                img.className = 'is-loaded';
+                preview.replaceChildren(img);
+            }
+            const hidden = fieldByKey(key);
+            if (hidden && hidden.type === 'hidden') hidden.value = url;
+            if (key === 'company_logo') {
+                const live = document.querySelector('[data-live-logo]');
+                if (live) live.src = url;
+            }
+        }
+
+        function previewFile(input) {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            const tile = input.closest('[data-upload-tile]');
+            const preview = tile?.querySelector('.vk-upload-preview');
+            if (!preview) return;
+            tile.classList.add('is-ready');
+            const img = document.createElement('img');
+            img.alt = 'Selected image preview';
+            img.src = URL.createObjectURL(file);
+            img.onload = function () {
+                img.classList.add('is-loaded');
+            };
+            preview.replaceChildren(img);
+            if (input.id === 'company_logo') {
+                const live = document.querySelector('[data-live-logo]');
+                if (live) live.src = img.src;
+            }
+        }
+
         brandingForm.querySelectorAll('input[type="file"]').forEach(function (input) {
             input.addEventListener('change', function () {
-                const file = input.files && input.files[0];
-                if (!file) return;
-                const tile = input.closest('[data-upload-tile]');
-                const preview = tile?.querySelector('.vk-upload-preview');
-                if (!preview) return;
-                if (file.type === 'image/svg+xml') {
-                    preview.innerHTML = '<span><i class="bi bi-filetype-svg"></i></span>';
-                    return;
-                }
-                const img = document.createElement('img');
-                img.alt = 'Selected image preview';
-                img.src = URL.createObjectURL(file);
-                preview.replaceChildren(img);
+                previewFile(input);
+            });
+        });
+
+        brandingForm.querySelectorAll('[data-upload-tile]').forEach(function (tile) {
+            const input = tile.querySelector('input[type="file"]');
+            if (!input) return;
+            ['dragenter', 'dragover'].forEach(function (eventName) {
+                tile.addEventListener(eventName, function (e) {
+                    e.preventDefault();
+                    tile.classList.add('is-dragover');
+                });
+            });
+            ['dragleave', 'drop'].forEach(function (eventName) {
+                tile.addEventListener(eventName, function (e) {
+                    e.preventDefault();
+                    tile.classList.remove('is-dragover');
+                });
+            });
+            tile.addEventListener('drop', function (e) {
+                if (!e.dataTransfer?.files?.length) return;
+                input.files = e.dataTransfer.files;
+                previewFile(input);
             });
         });
 
@@ -162,6 +217,7 @@
             const formData = new FormData(brandingForm);
             formData.append('csrf_token', CSRF);
             try {
+                brandingForm.classList.add('is-uploading');
                 const res = await fetch(BASE + '/api/branding_save.php', {
                     method: 'POST',
                     headers: { 'X-CSRF-Token': CSRF },
@@ -175,14 +231,17 @@
                     alertBox.className = 'alert alert-success mt-3';
                     alertBox.textContent = 'Branding saved successfully.';
                 }
+                Object.entries(data.assets || {}).forEach(function ([key, asset]) {
+                    setTilePreview(key, asset.url);
+                });
                 toast('Branding saved', 'success');
-                setTimeout(function () { location.reload(); }, 700);
             } catch (err) {
                 if (alertBox) {
                     alertBox.className = 'alert alert-danger mt-3';
                     alertBox.textContent = err.message || 'Save failed';
                 }
             } finally {
+                brandingForm.classList.remove('is-uploading');
                 if (btn) btn.disabled = false;
             }
         });

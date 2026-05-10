@@ -608,6 +608,23 @@ body.vk-public-site {
     text-decoration: none;
 }
 
+.vk-public-logo-img {
+    display: block;
+    width: auto;
+    max-width: clamp(7.5rem, 13vw, 10.5rem);
+    max-height: 3rem;
+    object-fit: contain;
+    image-rendering: auto;
+}
+
+.vk-footer-logo-img {
+    display: block;
+    width: auto;
+    max-width: 8.5rem;
+    max-height: 3rem;
+    object-fit: contain;
+}
+
 html:is([data-theme="dark"], [data-bs-theme="dark"]) body.vk-public-site {
     --bs-primary-rgb: 59, 130, 246;
 }

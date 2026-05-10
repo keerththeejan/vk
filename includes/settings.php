@@ -127,6 +127,104 @@ function vk_setting_url(?string $path, string $default = ''): string
     return base_url($path);
 }
 
+function vk_setting_relative_path(?string $path): string
+{
+    $path = trim((string) $path);
+    if ($path === '' || preg_match('#^https?://#i', $path)) {
+        return $path;
+    }
+    $path = str_replace('\\', '/', $path);
+    $base = trim(BASE_URL, '/');
+    if ($base !== '' && str_starts_with(ltrim($path, '/'), $base . '/')) {
+        $path = substr(ltrim($path, '/'), strlen($base) + 1);
+    }
+
+    return ltrim($path, '/');
+}
+
+function vk_setting_asset_url(?string $path, string $fallback = '', bool $cacheBust = true): string
+{
+    $relative = vk_setting_relative_path($path);
+    if ($relative === '') {
+        $relative = vk_setting_relative_path($fallback);
+    }
+    if ($relative === '') {
+        return '';
+    }
+    if (preg_match('#^https?://#i', $relative)) {
+        return $relative;
+    }
+    $fs = ROOT_PATH . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+    if (!is_file($fs)) {
+        $relative = vk_setting_relative_path($fallback);
+        $fs = ROOT_PATH . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+    }
+    if ($relative === '') {
+        return '';
+    }
+    $url = base_url($relative);
+    if ($cacheBust && is_file($fs)) {
+        $url .= (str_contains($url, '?') ? '&' : '?') . 'v=' . (string) filemtime($fs);
+    }
+
+    return $url;
+}
+
+function vk_setting_asset_exists(?string $path): bool
+{
+    $relative = vk_setting_relative_path($path);
+    if ($relative === '' || preg_match('#^https?://#i', $relative)) {
+        return $relative !== '';
+    }
+
+    return is_file(ROOT_PATH . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative));
+}
+
+function getLogo(string $type = 'main'): string
+{
+    $type = strtolower(trim($type));
+    $fallback = 'assets/images/default-logo.svg';
+    $keys = [
+        'main' => ['company_logo', 'site_logo'],
+        'dark' => ['site_logo_dark', 'company_logo', 'site_logo'],
+        'light' => ['site_logo_light', 'company_logo', 'site_logo'],
+        'mobile' => ['mobile_logo', 'company_logo', 'site_logo'],
+        'favicon' => ['site_favicon', 'company_logo', 'site_logo'],
+    ][$type] ?? ['company_logo', 'site_logo'];
+
+    foreach ($keys as $key) {
+        $path = vk_app_setting($key, '');
+        if (is_string($path) && $path !== '' && vk_setting_asset_exists($path)) {
+            return vk_setting_asset_url($path, $fallback, true);
+        }
+        if (is_string($path) && $path !== '') {
+            error_log('getLogo: missing or invalid logo asset for ' . $key . ': ' . $path);
+        }
+    }
+
+    return vk_setting_asset_url($fallback, '', true);
+}
+
+function getLogoPath(string $type = 'main'): string
+{
+    $type = strtolower(trim($type));
+    $keys = [
+        'main' => ['company_logo', 'site_logo'],
+        'dark' => ['site_logo_dark', 'company_logo', 'site_logo'],
+        'light' => ['site_logo_light', 'company_logo', 'site_logo'],
+        'mobile' => ['mobile_logo', 'company_logo', 'site_logo'],
+        'favicon' => ['site_favicon', 'company_logo', 'site_logo'],
+    ][$type] ?? ['company_logo', 'site_logo'];
+    foreach ($keys as $key) {
+        $path = vk_setting_relative_path(vk_app_setting($key, ''));
+        if ($path !== '' && vk_setting_asset_exists($path)) {
+            return $path;
+        }
+    }
+
+    return 'assets/images/default-logo.svg';
+}
+
 function vk_settings_bool(string $key, bool $default = false): bool
 {
     $v = vk_app_setting($key, $default ? '1' : '0');
@@ -152,6 +250,7 @@ function vk_settings_defaults(): array
         'site_title' => ['VK Network', 'general', 'text'],
         'company_tagline' => ['Multi-Service Solutions', 'general', 'text'],
         'business_slogan' => ['Premium local service operations for homes and businesses.', 'general', 'textarea'],
+        'company_logo' => ['', 'branding', 'image'],
         'site_logo' => ['', 'branding', 'image'],
         'site_logo_dark' => ['', 'branding', 'image'],
         'site_logo_light' => ['', 'branding', 'image'],

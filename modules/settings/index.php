@@ -16,7 +16,7 @@ $defaults = static function (string $k, string $d = '') use ($s): string {
     return array_key_exists($k, $s) ? (string) $s[$k] : $d;
 };
 $asset = static function (string $path): string {
-    return $path !== '' ? base_url($path) : '';
+    return vk_setting_asset_url($path, 'assets/images/default-logo.svg', true);
 };
 $field = static function (string $key, string $label, string $type = 'text', string $help = '', array $options = []) use ($defaults): void {
     $value = $defaults($key);
@@ -109,7 +109,7 @@ $tabs = [
                     <div class="row g-3">
                         <?php
                         $uploads = [
-                            'site_logo' => ['Main logo', 'PNG, JPG, WEBP, or SVG. Recommended 320x120.'],
+                            'company_logo' => ['Main logo', 'PNG, JPG, WEBP, or SVG. Recommended 320x120.'],
                             'site_logo_dark' => ['Dark logo', 'Used on light surfaces when configured.'],
                             'site_logo_light' => ['Light logo', 'Used on dark surfaces when configured.'],
                             'mobile_logo' => ['Mobile logo', 'Compact mark for small screens.'],
@@ -118,7 +118,10 @@ $tabs = [
                             'seo_twitter_image' => ['Twitter/X card image', 'Optional social image override.'],
                         ];
                         foreach ($uploads as $key => [$label, $help]):
-                            $current = $defaults($key);
+                            $stored = $key === 'company_logo'
+                                ? ($defaults('company_logo') ?: $defaults('site_logo'))
+                                : $defaults($key);
+                            $current = $stored !== '' ? $stored : ($key === 'company_logo' ? getLogoPath('main') : '');
                         ?>
                         <div class="col-md-6 col-xl-4">
                             <div class="vk-upload-tile" data-upload-tile>
@@ -133,7 +136,7 @@ $tabs = [
                                 <input class="form-control" type="file" id="<?= e($key) ?>" name="<?= e($key) ?>" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon">
                                 <input type="hidden" data-setting-key="<?= e($key) ?>" data-setting-type="image" value="<?= e($current) ?>">
                                 <div class="form-text"><?= e($help) ?></div>
-                                <?php if ($current): ?>
+                                <?php if ($stored): ?>
                                     <div class="form-check mt-2">
                                         <input class="form-check-input" type="checkbox" id="remove_<?= e($key) ?>" name="remove_<?= e($key) ?>" value="1">
                                         <label class="form-check-label text-danger small" for="remove_<?= e($key) ?>">Remove current file</label>
@@ -327,11 +330,7 @@ $tabs = [
             <div class="vk-live-card">
                 <span>Live Preview</span>
                 <div class="vk-preview-brand">
-                    <?php if ($defaults('site_logo')): ?>
-                        <img src="<?= e($asset($defaults('site_logo'))) ?>" alt="Logo preview" data-live-logo>
-                    <?php else: ?>
-                        <strong data-live-initials>VK</strong>
-                    <?php endif; ?>
+                    <img src="<?= e(getLogo('main')) ?>" alt="Logo preview" data-live-logo>
                     <div>
                         <h3 data-live-company><?= e($defaults('company_name', 'VK Network')) ?></h3>
                         <p data-live-tagline><?= e($defaults('company_tagline', 'Multi-Service Solutions')) ?></p>

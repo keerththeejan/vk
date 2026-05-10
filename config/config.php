@@ -44,9 +44,9 @@ $configuredBaseUrl = trim((string) (getenv('APP_BASE_URL') ?: ''));
 $baseUrl = rtrim($configuredBaseUrl, '/');
 if ($baseUrl === '') {
     $scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
-    $scriptDir = str_replace('\\', '/', dirname($scriptName));
+    $scriptDir = $scriptName !== '' ? str_replace('\\', '/', dirname($scriptName)) : '';
     $rootFolder = trim($scriptDir, '/');
-    if ($rootFolder !== '') {
+    if ($rootFolder !== '' && $rootFolder !== '.') {
         $firstSegment = strtok($rootFolder, '/');
         $baseUrl = $firstSegment !== false ? '/' . $firstSegment : '';
     }

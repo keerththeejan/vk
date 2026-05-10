@@ -6,6 +6,7 @@ $footerBottom = vk_app_setting('footer_bottom_text', 'Made with care in Sri Lank
 $footerAddress = vk_app_setting('company_address', '26/3 Thiruvaiyaru, Kilinochchi, Sri Lanka');
 $footerPhone = vk_app_setting('contact_phone', '077 887 0135');
 $footerEmail = vk_app_setting('support_email', '');
+$footerLogo = getLogo('light');
 $socials = [
     'facebook' => vk_app_setting('facebook_url', ''),
     'instagram' => vk_app_setting('instagram_url', ''),
@@ -20,7 +21,7 @@ $socials = [
         <div class="row gy-4">
             <div class="col-lg-4">
                 <a class="vk-footer-logo d-inline-flex align-items-center gap-3 mb-3" href="<?= e(BASE_URL) ?>/index.php">
-                    <span class="vk-footer-mark">VK</span>
+                    <img class="vk-footer-logo-img" src="<?= e($footerLogo) ?>" alt="<?= e((string) $footerCompany) ?> logo" loading="lazy" decoding="async">
                     <div>
                         <div class="vk-footer-brand"><?= e((string) $footerCompany) ?></div>
                         <div class="small text-muted"><?= e((string) $footerTagline) ?></div>

@@ -65,6 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 $pageTitle = 'Sign in';
+$loginLogo = getLogo('main');
+$loginCompany = vk_app_setting('company_name', 'VK Network');
+$loginTagline = vk_app_setting('company_tagline', 'Service & billing');
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
@@ -83,8 +86,8 @@ $pageTitle = 'Sign in';
         <div class="card-body p-4 p-md-5">
             <div class="text-center mb-4">
                 <div class="d-inline-flex align-items-center gap-2 mb-2">
-                    <span class="vk-logo-sm rounded-circle d-flex align-items-center justify-content-center fw-bold text-white">VK</span>
-                    <span class="vk-brand-red fw-bold fs-4">IT Network</span>
+                    <img src="<?= e($loginLogo) ?>" alt="<?= e((string) $loginCompany) ?> logo" style="max-height:48px;max-width:180px;width:auto;object-fit:contain;">
+                    <span class="vk-brand-red fw-bold fs-4"><?= e((string) $loginCompany) ?></span>
                 </div>
                 <p class="text-muted small mb-0 text-uppercase" style="letter-spacing: 0.12em;">Service &amp; billing — sign in</p>
             </div>

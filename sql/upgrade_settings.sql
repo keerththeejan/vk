@@ -37,6 +37,7 @@ INSERT IGNORE INTO settings (key_name, value) VALUES
 ('site_title', 'VK Network'),
 ('company_tagline', 'Multi-Service Solutions'),
 ('business_slogan', 'Premium local service operations for homes and businesses.'),
+('company_logo', ''),
 ('site_logo', ''),
 ('site_logo_dark', ''),
 ('site_logo_light', ''),

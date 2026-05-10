@@ -68,6 +68,36 @@
         applyTheme(cur === 'dark' ? 'light' : 'dark');
     });
 
+    const sidebarMiniKey = 'vk_sidebar_mini';
+    if (localStorage.getItem(sidebarMiniKey) === '1') {
+        document.body.classList.add('vk-sidebar-mini');
+    }
+    document.getElementById('sidebarMiniToggle')?.addEventListener('click', function () {
+        document.body.classList.toggle('vk-sidebar-mini');
+        localStorage.setItem(sidebarMiniKey, document.body.classList.contains('vk-sidebar-mini') ? '1' : '0');
+    });
+
+    document.querySelectorAll('.vk-dashboard-2026 .vk-kpi-card .fs-3, .vk-dashboard-2026 .vk-kpi-card .fs-4, .vk-dashboard-2026 .vk-kpi-card .fs-5').forEach(function (el) {
+        const raw = (el.textContent || '').replace(/,/g, '').trim();
+        const value = parseFloat(raw);
+        if (!Number.isFinite(value) || value < 1) return;
+        const hasDecimals = raw.includes('.');
+        const duration = 760;
+        const start = performance.now();
+        function tick(now) {
+            const progress = Math.min(1, (now - start) / duration);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = value * eased;
+            el.textContent = hasDecimals
+                ? current.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : Math.round(current).toLocaleString();
+            if (progress < 1) {
+                requestAnimationFrame(tick);
+            }
+        }
+        requestAnimationFrame(tick);
+    });
+
     /* Table sort (client-side) */
     document.querySelectorAll('table.sortable').forEach(function (table) {
         const tbody = table.querySelector('tbody');
