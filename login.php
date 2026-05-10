@@ -10,69 +10,30 @@ unset($pdoBoot);
 if (!empty($_SESSION['user_id'])) {
     $dest = (($_SESSION['user_role'] ?? 'admin') === 'technician')
         ? BASE_URL . '/tech/index.php'
-        : BASE_URL . '/modules/dashboard.php';
+        : BASE_URL . '/dashboard.php';
     header('Location: ' . $dest);
     exit;
 }
 
-if (empty($_SESSION['login_csrf_token']) || !is_string($_SESSION['login_csrf_token'])) {
-    $_SESSION['login_csrf_token'] = bin2hex(random_bytes(32));
-}
-
 $error = '';
-$username = '';
+$identity = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim((string) ($_POST['username'] ?? ''));
+    $identity = trim((string) ($_POST['identity'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
-    $csrfToken = (string) ($_POST['csrf_token'] ?? '');
+    $remember = !empty($_POST['remember_me']);
 
-    if (!hash_equals((string) $_SESSION['login_csrf_token'], $csrfToken)) {
+    if (!csrf_verify((string) ($_POST['csrf_token'] ?? ''))) {
         $error = 'Your secure sign-in session expired. Refresh and try again.';
-        $_SESSION['login_csrf_token'] = bin2hex(random_bytes(32));
-    } elseif ($username === '' || $password === '') {
-        $error = 'Enter username and password.';
     } else {
-        try {
-            $pdo = db();
-            vk_ensure_users_management_schema($pdo);
-            $cols = users_has_role_column($pdo)
-                ? 'id, password_hash, role, technician_id, status'
-                : 'id, password_hash';
-            if (!str_contains($cols, 'status') && db_column_exists($pdo, 'users', 'status')) {
-                $cols .= ', status';
-            }
-            $st = $pdo->prepare("SELECT $cols FROM users WHERE username = ? LIMIT 1");
-            $st->execute([$username]);
-            $row = $st->fetch();
-            if ($row && password_verify($password, (string) $row['password_hash'])) {
-                if (isset($row['status']) && (string) $row['status'] === 'inactive') {
-                    $error = 'This account is inactive. Contact an administrator.';
-                } else {
-                    session_regenerate_id(true);
-                    $_SESSION['login_csrf_token'] = bin2hex(random_bytes(32));
-                    $_SESSION['user_id'] = (int) $row['id'];
-                    $_SESSION['user_role'] = $row['role'] ?? 'admin';
-                    $_SESSION['technician_id'] = isset($row['technician_id']) && $row['technician_id'] !== null
-                        ? (int) $row['technician_id']
-                        : null;
-                    if (($_SESSION['user_role'] ?? 'admin') === 'technician') {
-                        header('Location: ' . BASE_URL . '/tech/index.php');
-                    } else {
-                        header('Location: ' . BASE_URL . '/modules/dashboard.php');
-                    }
-                    exit;
-                }
-            }
-        } catch (Throwable $e) {
-            if (APP_DEBUG) {
-                $error = 'Database error: ' . $e->getMessage();
-            } else {
-                $error = 'Unable to connect. Check configuration.';
-            }
+        $result = vk_auth_attempt_login(db(), $identity, $password, $remember);
+        if ($result['ok'] ?? false) {
+            $dest = (($_SESSION['user_role'] ?? 'viewer') === 'technician')
+                ? BASE_URL . '/tech/index.php'
+                : BASE_URL . '/dashboard.php';
+            header('Location: ' . $dest);
+            exit;
         }
-        if ($error === '') {
-            $error = 'Invalid credentials.';
-        }
+        $error = (string) ($result['message'] ?? 'Unable to sign in.');
     }
 }
 
@@ -486,6 +447,35 @@ $brandInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $
             font-size: 0.82rem;
         }
 
+        .vk-auth-link {
+            color: #8fd3ff;
+            text-decoration: none;
+            transition: color 180ms ease;
+        }
+
+        .vk-auth-link:hover,
+        .vk-auth-link:focus-visible {
+            color: #d8f4ff;
+            text-decoration: underline;
+            outline: 0;
+        }
+
+        .vk-remember {
+            color: #b8c7e6;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .vk-remember .form-check-input {
+            border-color: rgba(164, 202, 255, 0.4);
+            background-color: rgba(5, 12, 26, 0.68);
+        }
+
+        .vk-remember .form-check-input:checked {
+            border-color: #67e8f9;
+            background-color: #246bfe;
+        }
+
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
         input:-webkit-autofill:focus,
@@ -575,7 +565,7 @@ $brandInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $
                 <?php endif; ?>
 
                 <form class="vk-form needs-validation" method="post" action="" autocomplete="off" novalidate>
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars((string) $_SESSION['login_csrf_token']) ?>">
+                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
                     <div class="vk-field">
                         <i class="bi bi-person-badge vk-field-icon" aria-hidden="true"></i>
@@ -583,20 +573,20 @@ $brandInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $
                             <input
                                 class="form-control"
                                 type="text"
-                                name="username"
-                                id="username"
-                                placeholder="Username"
+                                name="identity"
+                                id="identity"
+                                placeholder="Username or email"
                                 required
-                                maxlength="64"
+                                maxlength="150"
                                 inputmode="text"
                                 autocomplete="username"
                                 autocapitalize="none"
                                 spellcheck="false"
-                                value="<?= htmlspecialchars($username) ?>"
+                                value="<?= htmlspecialchars($identity) ?>"
                                 aria-describedby="usernameFeedback"
                             >
-                            <label for="username">Username</label>
-                            <div class="invalid-feedback" id="usernameFeedback">Enter your username.</div>
+                            <label for="identity">Username or email</label>
+                            <div class="invalid-feedback" id="usernameFeedback">Enter your username or email.</div>
                         </div>
                     </div>
 
@@ -621,12 +611,25 @@ $brandInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $
                         </div>
                     </div>
 
+                    <div class="d-flex align-items-center justify-content-between gap-3 small">
+                        <label class="d-inline-flex align-items-center gap-2 vk-remember">
+                            <input class="form-check-input mt-0" type="checkbox" name="remember_me" value="1">
+                            <span>Remember me</span>
+                        </label>
+                        <a class="vk-auth-link" href="<?= e(BASE_URL) ?>/signup.php#forgot">Forgot password?</a>
+                    </div>
+
                     <button class="btn vk-submit w-100" type="submit">
                         <span class="vk-submit-icon"><i class="bi bi-lock-fill" aria-hidden="true"></i></span>
                         <span class="vk-submit-text">Sign In</span>
                         <span class="spinner-border d-none" role="status" aria-hidden="true"></span>
                     </button>
                 </form>
+
+                <div class="text-center mt-3 small">
+                    <span class="text-white-50">New to VK Network?</span>
+                    <a class="vk-auth-link fw-semibold ms-1" href="<?= e(BASE_URL) ?>/signup.php">Create Account</a>
+                </div>
 
                 <p class="vk-footer">&copy; 2026 VK Network. All rights reserved.</p>
             </div>

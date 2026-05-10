@@ -62,7 +62,8 @@ function nav_active(string $needle): string
             <a class="nav-link px-3 py-2 <?= nav_active('/accounts/transfer') ?>" href="<?= e(BASE_URL) ?>/modules/accounts/transfer.php"><i class="bi bi-arrow-left-right me-2"></i><span>Transfer</span></a>
 
             <span class="vk-nav-label">Admin</span>
-            <?php if ((($currentUser ?? [])['role'] ?? 'admin') === 'admin'): ?>
+            <?php if (function_exists('vk_auth_role_can_manage') && vk_auth_role_can_manage((string) (($currentUser ?? [])['role'] ?? 'viewer'))): ?>
+            <a class="nav-link px-3 py-2 <?= nav_active('/approve_users.php') ?>" href="<?= e(BASE_URL) ?>/approve_users.php"><i class="bi bi-person-check me-2"></i><span>Approvals</span></a>
             <a class="nav-link px-3 py-2 <?= nav_active('/modules/users/') ?>" href="<?= e(BASE_URL) ?>/modules/users/index.php"><i class="bi bi-people me-2"></i><span>Users</span></a>
             <?php endif; ?>
             <a class="nav-link px-3 py-2 <?= nav_active('/modules/menus/') ?>" href="<?= e(BASE_URL) ?>/modules/menus/index.php"><i class="bi bi-list-nested me-2"></i><span>Site menus</span></a>

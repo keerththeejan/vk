@@ -232,13 +232,13 @@ function vk_auth_create_pending_user(PDO $pdo, array $data): array
     $phone = trim((string) ($data['phone'] ?? ''));
     $department = trim((string) ($data['department'] ?? ''));
 
-    if ($fullName === '' || mb_strlen($fullName) < 3) {
+    if ($fullName === '' || strlen($fullName) < 3) {
         throw new InvalidArgumentException('Enter your full name.');
     }
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         throw new InvalidArgumentException('Enter a valid email address.');
     }
-    if ($phone === '' || mb_strlen($phone) < 6) {
+    if ($phone === '' || strlen($phone) < 6) {
         throw new InvalidArgumentException('Enter a valid phone number.');
     }
     if ($department === '') {
@@ -550,4 +550,3 @@ function vk_auth_admin_reset_password(PDO $pdo, int $userId, ?int $actorId): str
     vk_auth_activity($pdo, $userId, $actorId, 'user_password_reset', 'user', $userId);
     return $password;
 }
-

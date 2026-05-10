@@ -47,9 +47,16 @@ function flash_get(): ?array
 
 function require_login(): void
 {
+    $pdo = db();
+    if (function_exists('vk_auth_try_remember')) {
+        vk_auth_try_remember($pdo);
+    }
     if (empty($_SESSION['user_id'])) {
         flash_set('warning', 'Please sign in to continue.');
         redirect('/login.php');
+    }
+    if (function_exists('vk_auth_enforce_session_timeout')) {
+        vk_auth_enforce_session_timeout();
     }
 }
 
@@ -72,10 +79,10 @@ function require_admin(): void
         redirect('/login.php');
     }
     $status = isset($row['status']) ? (string) $row['status'] : 'active';
-    if ($status === 'inactive') {
+    if ($status !== 'active') {
         $_SESSION = [];
         session_destroy();
-        flash_set('warning', 'Your account is inactive.');
+        flash_set('warning', 'Your account is not approved for access.');
         redirect('/login.php');
     }
     $role = (string) ($row['role'] ?? 'admin');
@@ -90,7 +97,7 @@ function require_admin(): void
 function require_users_admin(PDO $pdo): void
 {
     require_admin();
-    if (($_SESSION['user_role'] ?? 'admin') !== 'admin') {
+    if (!vk_auth_role_can_manage((string) ($_SESSION['user_role'] ?? 'viewer'))) {
         flash_set('error', 'Only administrators can manage user accounts.');
         redirect('/modules/dashboard.php');
     }
@@ -100,7 +107,7 @@ function require_settings_admin(): void
 {
     require_admin();
     $role = strtolower((string) ($_SESSION['user_role'] ?? 'admin'));
-    if (!in_array($role, ['admin', 'owner'], true)) {
+    if (!in_array($role, ['super_admin', 'admin', 'owner'], true)) {
         flash_set('error', 'Only administrators and owners can manage site settings.');
         redirect('/modules/dashboard.php');
     }
@@ -157,8 +164,9 @@ function current_user(PDO $pdo): ?array
         if (db_column_exists($pdo, 'users', 'email')) {
             $extra .= ', email, phone, status';
         }
+        $department = db_column_exists($pdo, 'users', 'department') ? ', department, user_uid, last_login_at' : '';
         $st = $pdo->prepare(
-            'SELECT id, username, fullname, role, technician_id' . $extra . ' FROM users WHERE id = ? LIMIT 1'
+            'SELECT id, username, fullname, role, technician_id' . $extra . $department . ' FROM users WHERE id = ? LIMIT 1'
         );
     } else {
         $st = $pdo->prepare('SELECT id, username, fullname FROM users WHERE id = ? LIMIT 1');
