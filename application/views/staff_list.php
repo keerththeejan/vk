@@ -27,7 +27,7 @@ $staffMembers = $staffMembers ?? [];
                 $role = (string) ($member['role'] ?? 'Team Member');
                 $roleClass = str_contains(strtolower($role), 'owner') ? 'text-bg-primary' : 'text-bg-info';
             ?>
-                <div class="col-lg-3 col-md-6 col-sm-12" data-aos="fade-up">
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12" data-aos="fade-up">
                     <article class="vk-team-card h-100">
                         <div class="vk-team-card-media">
                             <img
@@ -46,7 +46,7 @@ $staffMembers = $staffMembers ?? [];
                             <p class="text-muted small mb-3"><?= e(trim((string) $description) !== '' ? (string) $description : 'Experienced support professional focused on clean, reliable customer service.') ?></p>
                             <?php if ($skillsArray): ?>
                                 <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
-                                    <?php foreach ($skillsArray as $skill): ?>
+                                    <?php foreach (array_slice($skillsArray, 0, 6) as $skill): ?>
                                         <span class="badge rounded-pill text-bg-light border"><?= e((string) $skill) ?></span>
                                     <?php endforeach; ?>
                                 </div>
