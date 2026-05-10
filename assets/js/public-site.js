@@ -144,6 +144,48 @@
         counters.forEach(function (el) { observer.observe(el); });
     }
 
+    function initTestimonialsCarousel() {
+        var root = document.querySelector(".vk-testimonials-swiper");
+        if (!root || typeof window.Swiper === "undefined") return;
+        if (root.dataset.vkSwiperReady === "1") return;
+        root.dataset.vkSwiperReady = "1";
+        new window.Swiper(root, {
+            slidesPerView: 1,
+            spaceBetween: 16,
+            loop: true,
+            speed: 650,
+            grabCursor: true,
+            watchOverflow: true,
+            autoplay: {
+                delay: 4200,
+                disableOnInteraction: false,
+                pauseOnMouseEnter: true,
+            },
+            navigation: {
+                nextEl: ".vk-testimonial-next",
+                prevEl: ".vk-testimonial-prev",
+            },
+            pagination: {
+                el: ".vk-testimonial-pagination",
+                clickable: true,
+            },
+            breakpoints: {
+                768: {
+                    slidesPerView: 2,
+                    spaceBetween: 20,
+                },
+                992: {
+                    slidesPerView: 3,
+                    spaceBetween: 20,
+                },
+                1200: {
+                    slidesPerView: 4,
+                    spaceBetween: 20,
+                },
+            },
+        });
+    }
+
     function refreshAOS() {
         if (typeof AOS !== "undefined" && typeof AOS.refresh === "function") {
             AOS.refresh();
@@ -165,6 +207,7 @@
         initAOS();
         initLucide();
         initPremiumCounters();
+        initTestimonialsCarousel();
 
         updateToggleUi(getTheme());
 

@@ -216,3 +216,185 @@ body.vk-app {
 .sortable th[data-sort]:hover {
     background: rgba(10, 42, 92, 0.06);
 }
+
+/* Invoice create: compact fintech-style totals */
+.vk-invoice-form .card-body {
+    padding: 1rem;
+}
+
+.vk-invoice-form .form-label {
+    margin-bottom: 0.375rem;
+    font-size: 0.86rem;
+    font-weight: 650;
+}
+
+.vk-invoice-total-footer {
+    padding: 0.75rem 1rem;
+}
+
+.vk-invoice-total-wrap,
+.vk-payment-summary-wrap {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.vk-invoice-total-card,
+.vk-payment-summary-card {
+    width: 100%;
+    max-width: 360px;
+    border: 1px solid rgba(59, 130, 196, 0.16);
+    border-radius: 16px;
+    padding: 0.75rem;
+    background:
+        linear-gradient(135deg, rgba(59, 130, 196, 0.08), rgba(99, 102, 241, 0.035)),
+        rgba(255, 255, 255, 0.7);
+    box-shadow: 0 12px 30px rgba(10, 42, 92, 0.08);
+}
+
+.vk-payment-summary-card {
+    max-width: 390px;
+}
+
+.vk-invoice-total-list {
+    display: grid;
+    gap: 0.375rem;
+}
+
+.vk-total-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 1rem;
+    min-height: 2rem;
+    padding: 0.25rem 0.375rem;
+    border-radius: 10px;
+}
+
+.vk-total-row dt,
+.vk-total-row dd {
+    margin: 0;
+}
+
+.vk-total-row dt {
+    color: var(--bs-secondary-color);
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.vk-total-row dd {
+    min-width: 6.75rem;
+    text-align: right;
+    color: var(--bs-emphasis-color);
+    font-size: 0.9rem;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+}
+
+.vk-total-row-grand,
+.vk-total-row-balance {
+    margin-top: 0.125rem;
+    min-height: 2.65rem;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid rgba(59, 130, 196, 0.18);
+    background: linear-gradient(135deg, rgba(19, 74, 158, 0.12), rgba(59, 130, 196, 0.08));
+}
+
+.vk-total-row-grand dt,
+.vk-total-row-balance dt {
+    color: var(--bs-emphasis-color);
+    font-size: 0.86rem;
+    font-weight: 800;
+}
+
+.vk-total-row-grand dd,
+.vk-total-row-balance dd {
+    min-width: 7.5rem;
+    font-size: 1.18rem;
+    font-weight: 850;
+    color: var(--vk-blue-mid);
+}
+
+.vk-payment-total-list .vk-total-row {
+    min-height: 1.9rem;
+}
+
+[data-bs-theme="dark"] .vk-invoice-total-card,
+[data-bs-theme="dark"] .vk-payment-summary-card {
+    border-color: rgba(96, 165, 250, 0.18);
+    background:
+        linear-gradient(135deg, rgba(96, 165, 250, 0.12), rgba(124, 58, 237, 0.055)),
+        rgba(15, 23, 42, 0.62);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.045);
+    backdrop-filter: blur(16px);
+}
+
+[data-bs-theme="dark"] .vk-total-row-grand,
+[data-bs-theme="dark"] .vk-total-row-balance {
+    border-color: rgba(96, 165, 250, 0.24);
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.14), rgba(124, 58, 237, 0.1));
+    box-shadow: 0 0 24px rgba(96, 165, 250, 0.08);
+}
+
+[data-bs-theme="dark"] .vk-total-row-grand dd {
+    color: #93c5fd;
+}
+
+@media (min-width: 992px) {
+    .vk-invoice-form {
+        --bs-gutter-x: 1rem;
+        --bs-gutter-y: 1rem;
+    }
+
+    .vk-invoice-form .card-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .vk-invoice-form .table > :not(caption) > * > * {
+        padding: 0.625rem 0.75rem;
+    }
+
+    .vk-invoice-total-card {
+        max-width: 340px;
+    }
+
+    .vk-payment-summary-card {
+        max-width: 360px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .vk-invoice-total-footer {
+        padding: 0.75rem;
+    }
+
+    .vk-invoice-total-wrap,
+    .vk-payment-summary-wrap {
+        justify-content: flex-start;
+        max-width: calc(100vw - 2rem);
+        overflow: hidden;
+    }
+
+    .vk-invoice-total-card,
+    .vk-payment-summary-card {
+        width: min(100%, calc(100vw - 3.5rem));
+        max-width: calc(100vw - 3.5rem);
+        padding: 0.75rem;
+        border-radius: 14px;
+    }
+
+    .vk-total-row {
+        grid-template-columns: minmax(0, 1fr) minmax(5.5rem, auto);
+        column-gap: 0.75rem;
+    }
+
+    .vk-total-row dd {
+        min-width: 0;
+    }
+
+    .vk-total-row-grand dd,
+    .vk-total-row-balance dd {
+        min-width: 0;
+        font-size: 1.08rem;
+    }
+}

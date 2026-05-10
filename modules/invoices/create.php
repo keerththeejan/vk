@@ -358,7 +358,7 @@ $extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/invoice_create.js"><
     <div class="alert alert-info"><?= e($prefillLabel) ?></div>
 <?php endif; ?>
 
-<form method="post" id="invoiceForm" data-loading class="row g-3">
+<form method="post" id="invoiceForm" data-loading class="row g-3 vk-invoice-form">
     <input type="hidden" name="repair_job_id" value="<?= $prefillRepairId > 0 ? (string) $prefillRepairId : '' ?>">
     <input type="hidden" name="cctv_job_id" value="<?= $prefillCctvId > 0 ? (string) $prefillCctvId : '' ?>">
 
@@ -432,18 +432,26 @@ $extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/invoice_create.js"><
                     </table>
                 </div>
             </div>
-            <div class="card-footer bg-transparent">
-                <div class="row justify-content-end">
-                    <div class="col-12 col-md-5 col-lg-4">
-                        <dl class="row small mb-0">
-                            <dt class="col-6">Subtotal</dt>
-                            <dd class="col-6 text-end" id="disp_subtotal">0.00</dd>
-                            <dt class="col-6">Discount</dt>
-                            <dd class="col-6 text-end" id="disp_discount">0.00</dd>
-                            <dt class="col-6">Tax</dt>
-                            <dd class="col-6 text-end" id="disp_tax">0.00</dd>
-                            <dt class="col-6 fw-bold">Grand total</dt>
-                            <dd class="col-6 text-end fw-bold" id="disp_grand">0.00</dd>
+            <div class="card-footer bg-transparent vk-invoice-total-footer">
+                <div class="vk-invoice-total-wrap">
+                    <div class="vk-invoice-total-card">
+                        <dl class="vk-invoice-total-list mb-0">
+                            <div class="vk-total-row">
+                                <dt>Subtotal</dt>
+                                <dd id="disp_subtotal">0.00</dd>
+                            </div>
+                            <div class="vk-total-row">
+                                <dt>Discount</dt>
+                                <dd id="disp_discount">0.00</dd>
+                            </div>
+                            <div class="vk-total-row">
+                                <dt>Tax</dt>
+                                <dd id="disp_tax">0.00</dd>
+                            </div>
+                            <div class="vk-total-row vk-total-row-grand">
+                                <dt>Grand total</dt>
+                                <dd id="disp_grand">0.00</dd>
+                            </div>
                         </dl>
                     </div>
                 </div>
@@ -485,24 +493,32 @@ $extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/invoice_create.js"><
                 </div>
 
                 <!-- Live Summary Panel -->
-                <div class="row g-3 mt-1">
-                    <div class="col-12 col-md-6 col-lg-4 ms-auto">
-                        <div class="card bg-light border-0">
-                            <div class="card-body py-2 px-3">
-                                <dl class="row small mb-0">
-                                    <dt class="col-7">Total Items</dt>
-                                    <dd class="col-5 text-end" id="pay_total_items">0</dd>
-                                    <dt class="col-7">Total Payable</dt>
-                                    <dd class="col-5 text-end fw-semibold" id="pay_total_payable">0.00</dd>
-                                    <dt class="col-7">Total Paying</dt>
-                                    <dd class="col-5 text-end text-success fw-bold" id="pay_total_paying">0.00</dd>
-                                    <dt class="col-7">Change Return</dt>
-                                    <dd class="col-5 text-end text-info fw-semibold" id="pay_change_return">0.00</dd>
-                                    <dt class="col-7">Balance Due</dt>
-                                    <dd class="col-5 text-end text-danger fw-bold" id="pay_balance_due">0.00</dd>
-                                </dl>
+                <div class="vk-payment-summary-wrap mt-3">
+                    <div class="vk-payment-summary-card">
+                        <dl class="vk-invoice-total-list vk-payment-total-list mb-0">
+                            <div class="vk-total-row">
+                                <dt>Total Items</dt>
+                                <dd id="pay_total_items">0</dd>
                             </div>
-                        </div>
+                            <div class="vk-total-row">
+                                <dt>Total Payable</dt>
+                                <dd id="pay_total_payable">0.00</dd>
+                            </div>
+                            <div class="vk-total-row">
+                                <dt>Total Paying</dt>
+                                <dd class="text-success" id="pay_total_paying">0.00</dd>
+                            </div>
+                            <div class="vk-total-row">
+                                <dt>Change Return</dt>
+                                <dd class="text-info" id="pay_change_return">0.00</dd>
+                            </div>
+                            <div class="vk-total-row vk-total-row-balance">
+                                <dt>Balance Due</dt>
+                                <dd class="text-danger" id="pay_balance_due">0.00</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
                     </div>
                 </div>
             </div>

@@ -102,6 +102,8 @@ $seoAuto = vk_app_setting('seo_auto_enabled', '1') !== '0';
 $localKeywords = $seoAuto ? vk_local_keyword_pack('Computer repair') : [];
 $seoDescription = $seoAuto ? vk_local_meta_description('Computer repair and laptop service') : vk_seo_default_description();
 $seoKeywords = vk_seo_default_keywords() . ($localKeywords ? ', ' . implode(', ', $localKeywords) : '');
+$extraHead = ($extraHead ?? '') . "\n" . '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">';
+$extraScripts = ($extraScripts ?? '') . "\n" . '<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>';
 
 require __DIR__ . '/includes/public_header.php';
 ?>
@@ -421,45 +423,50 @@ require __DIR__ . '/includes/public_header.php';
 
 <section class="vk-pub-section py-5" id="testimonials">
     <div class="container py-lg-4">
-        <div class="text-center mb-5" data-aos="fade-up">
+        <div class="vk-testimonials-head text-center mb-5" data-aos="fade-up">
             <span class="vk-section-kicker">Testimonials</span>
             <h2 class="vk-section-title mb-2">Trusted by customers across Sri Lanka.</h2>
             <p class="vk-section-lead mx-auto mb-0">Premium reviews from customers who have experienced fast, transparent service delivery.</p>
         </div>
-        <div id="vkTestimonialsCarousel" class="carousel slide" data-bs-ride="carousel" data-aos="fade-up" data-aos-duration="700">
-            <div class="carousel-inner">
-                <?php $testimonials = [
-                    ['name' => 'Amali Perera', 'role' => 'Homeowner', 'text' => 'VK Network fixed my laptop and installed CCTV in one day. The tracking interface made it easy to follow every step.', 'stars' => 5],
-                    ['name' => 'Nalin Fernando', 'role' => 'Business owner', 'text' => 'Professional, fast, and secure. Their technician arrived on time and resolved our network outage quickly.', 'stars' => 5],
-                    ['name' => 'Samantha Jayasekara', 'role' => 'IT manager', 'text' => 'Great support for our office printer and AC systems. Clear communication and reliable follow-through.', 'stars' => 5],
-                ];
-                foreach ($testimonials as $i => $review): ?>
-                    <div class="carousel-item <?= $i === 0 ? 'active' : '' ?>">
-                        <div class="vk-testimonial-card p-4 p-lg-5 mx-auto" style="max-width: 730px;">
-                            <p class="mb-4 text-muted">"<?= e($review['text']) ?>"</p>
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="vk-testimonial-avatar"><span><?= e(substr($review['name'], 0, 1)) ?></span></div>
-                                <div>
-                                    <strong><?= e($review['name']) ?></strong>
-                                    <div class="small text-muted"><?= e($review['role']) ?></div>
-                                </div>
-                            </div>
-                            <div class="vk-testimonial-stars mt-4">
-                                <?php for ($s = 0; $s < 5; $s++): ?>
-                                    <i data-lucide="star" class="<?= $s < $review['stars'] ? 'text-warning' : 'text-muted' ?>"></i>
-                                <?php endfor; ?>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-            <button class="carousel-control-prev" type="button" data-bs-target="#vkTestimonialsCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Previous</span>
+        <div class="vk-testimonials-shell" data-aos="fade-up" data-aos-duration="700">
+            <button class="vk-testimonial-nav vk-testimonial-prev" type="button" aria-label="Previous testimonial">
+                <i data-lucide="chevron-left"></i>
             </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#vkTestimonialsCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Next</span>
+            <div class="swiper vk-testimonials-swiper">
+                <div class="swiper-wrapper">
+                    <?php $testimonials = [
+                        ['name' => 'Amali Perera', 'role' => 'Homeowner', 'text' => 'VK Network fixed my laptop and installed CCTV in one day. Tracking made every step clear.', 'avatar' => 'assets/images/default-avatar.svg'],
+                        ['name' => 'Nalin Fernando', 'role' => 'Business Owner', 'text' => 'Professional, fast, and secure. The technician arrived on time and solved our outage quickly.', 'avatar' => 'assets/images/default-avatar.svg'],
+                        ['name' => 'Samantha Jayasekara', 'role' => 'IT Manager', 'text' => 'Great support for our office printer and AC systems with reliable follow-through.', 'avatar' => 'assets/images/default-avatar.svg'],
+                        ['name' => 'Dilani Rajapaksha', 'role' => 'Retail Operator', 'text' => 'The booking experience felt premium, and the live updates helped us plan the service window.', 'avatar' => 'assets/images/default-avatar.svg'],
+                        ['name' => 'Kavin Suresh', 'role' => 'Startup Founder', 'text' => 'Their networking setup was neat, documented, and completed without disrupting our team.', 'avatar' => 'assets/images/default-avatar.svg'],
+                        ['name' => 'Ramesh Kumar', 'role' => 'Facilities Lead', 'text' => 'Clear estimates, fast dispatch, and a polished service experience from booking to review.', 'avatar' => 'assets/images/default-avatar.svg'],
+                    ];
+                    foreach ($testimonials as $review): ?>
+                        <div class="swiper-slide">
+                            <article class="vk-testimonial-card">
+                                <div class="vk-testimonial-quote" aria-hidden="true"><i data-lucide="quote"></i></div>
+                                <div class="vk-testimonial-stars" aria-label="5 out of 5 stars">
+                                    <?php for ($s = 0; $s < 5; $s++): ?>
+                                        <i data-lucide="star"></i>
+                                    <?php endfor; ?>
+                                </div>
+                                <p class="vk-testimonial-copy">"<?= e($review['text']) ?>"</p>
+                                <div class="vk-testimonial-person">
+                                    <img src="<?= e(base_url($review['avatar'])) ?>" alt="<?= e($review['name']) ?>" class="vk-testimonial-avatar-img" loading="lazy">
+                                    <div>
+                                        <strong><?= e($review['name']) ?></strong>
+                                        <span><?= e($review['role']) ?></span>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <div class="vk-testimonial-pagination swiper-pagination"></div>
+            </div>
+            <button class="vk-testimonial-nav vk-testimonial-next" type="button" aria-label="Next testimonial">
+                <i data-lucide="chevron-right"></i>
             </button>
         </div>
     </div>
