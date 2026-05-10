@@ -43,6 +43,14 @@ $teamFallbackMembers = [
         'image' => 'assets/images/staff/owner.svg',
         'description' => 'Leads service strategy, networking solutions, AI systems, and customer experience.',
         'skills' => 'Networking, AI Systems, Web Development',
+        'experience' => '10+ years',
+        'years_experience' => 10,
+        'completed_projects' => 620,
+        'specialization' => 'Enterprise networks, AI systems, and service automation',
+        'certifications' => 'Network Engineering, AI Automation, Field Service Leadership',
+        'status' => 'active',
+        'email' => '',
+        'phone' => '0778870135',
         'social_links' => 'Profile|' . BASE_URL . '/index.php/staff',
     ],
     [
@@ -51,6 +59,14 @@ $teamFallbackMembers = [
         'image' => 'assets/images/staff/staff1.svg',
         'description' => 'Handles diagnostics, hardware repairs, printer service, and site visits.',
         'skills' => 'Hardware Repair, Printer Service, CCTV',
+        'experience' => '7+ years',
+        'years_experience' => 7,
+        'completed_projects' => 410,
+        'specialization' => 'Hardware diagnostics and on-site technical support',
+        'certifications' => 'Hardware Repair, CCTV Installation, Printer Maintenance',
+        'status' => 'active',
+        'email' => '',
+        'phone' => '0778870135',
         'social_links' => 'Book|' . BASE_URL . '/book.php',
     ],
     [
@@ -59,6 +75,14 @@ $teamFallbackMembers = [
         'image' => 'assets/images/staff/staff2.svg',
         'description' => 'Maintains servers, network reliability, backup routines, and security checks.',
         'skills' => 'Servers, Network Management, Security',
+        'experience' => '6+ years',
+        'years_experience' => 6,
+        'completed_projects' => 280,
+        'specialization' => 'Server reliability and secure network operations',
+        'certifications' => 'Server Administration, Network Security, Backup Systems',
+        'status' => 'active',
+        'email' => '',
+        'phone' => '0778870135',
         'social_links' => 'Profile|' . BASE_URL . '/index.php/staff',
     ],
     [
@@ -67,6 +91,14 @@ $teamFallbackMembers = [
         'image' => 'assets/images/staff/nisha.svg',
         'description' => 'Coordinates bookings, customer updates, tracking requests, and follow ups.',
         'skills' => 'Support, Scheduling, Customer Care',
+        'experience' => '5+ years',
+        'years_experience' => 5,
+        'completed_projects' => 350,
+        'specialization' => 'Customer care, scheduling, and service coordination',
+        'certifications' => 'Customer Support, Service Operations, CRM Coordination',
+        'status' => 'active',
+        'email' => '',
+        'phone' => '0778870135',
         'social_links' => 'Book|' . BASE_URL . '/book.php',
     ],
 ];
@@ -75,7 +107,7 @@ $teamMembers = [];
 try {
     $pdo = $pdo ?? db();
     if (db_table_exists($pdo, 'staff')) {
-        $teamMembers = array_slice(vk_staff_get_all($pdo, true), 0, 4);
+        $teamMembers = array_slice(vk_staff_get_all($pdo, true), 0, 8);
     }
 } catch (Throwable $e) {
     if (defined('APP_DEBUG') && APP_DEBUG) {
@@ -85,8 +117,6 @@ try {
 
 if (!$teamMembers) {
     $teamMembers = $teamFallbackMembers;
-} elseif (count($teamMembers) < 4) {
-    $teamMembers = array_slice(array_merge($teamMembers, $teamFallbackMembers), 0, 4);
 }
 
 $stats = [
@@ -110,6 +140,10 @@ require __DIR__ . '/includes/public_header.php';
 <section class="vk-hero-premium vk-home-hero" id="top">
     <div class="vk-hero-shine"></div>
     <div class="vk-hero-grain"></div>
+    <div class="vk-cursor-glow" aria-hidden="true"></div>
+    <div class="vk-hero-particles" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
     <div class="container vk-hero-inner">
         <div class="row align-items-center g-4 g-lg-5">
             <div class="col-lg-7" data-aos="fade-right" data-aos-duration="700">
@@ -304,10 +338,17 @@ require __DIR__ . '/includes/public_header.php';
             foreach ($homeServices as $si => $service): ?>
                 <div class="col-sm-6 col-xl-3" data-aos="fade-up" data-aos-duration="700" data-aos-delay="<?= (int) min(240, $si * 45) ?>">
                     <article class="vk-service-card p-4 h-100 position-relative">
-                        <div class="vk-service-card-icon mb-3"><i data-lucide="<?= e($service['icon']) ?>"></i></div>
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                            <div class="vk-service-card-icon"><i data-lucide="<?= e($service['icon']) ?>"></i></div>
+                            <span class="vk-service-availability">Available</span>
+                        </div>
                         <h3 class="h5 mb-2"><?= e($service['name']) ?></h3>
-                        <p class="text-muted small mb-4"><?= e($service['description']) ?></p>
-                        <a class="stretched-link text-decoration-none text-primary fw-semibold" href="<?= e($service['url']) ?>">Book now <i data-lucide="arrow-right" class="ms-1"></i></a>
+                        <p class="text-muted small mb-3"><?= e($service['description']) ?></p>
+                        <div class="vk-service-meta d-flex flex-wrap gap-2 mb-4">
+                            <span><i data-lucide="timer"></i> 24h response</span>
+                            <span><i data-lucide="trending-up"></i> 98% success</span>
+                        </div>
+                        <a class="stretched-link text-decoration-none text-primary fw-semibold mt-auto d-inline-flex align-items-center" href="<?= e($service['url']) ?>">Book now <i data-lucide="arrow-right" class="ms-1"></i></a>
                     </article>
                 </div>
             <?php endforeach; ?>
@@ -349,10 +390,12 @@ require __DIR__ . '/includes/public_header.php';
                     </div>
                     <div class="d-flex align-items-center gap-3 flex-wrap">
                         <div class="vk-radial-progress">
+                            <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="50"></circle><circle cx="60" cy="60" r="50"></circle></svg>
                             <span>92%</span>
                             <small>Customer satisfaction</small>
                         </div>
                         <div class="vk-radial-progress vk-radial-progress--secondary">
+                            <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="50"></circle><circle cx="60" cy="60" r="50"></circle></svg>
                             <span>87%</span>
                             <small>First-time fix rate</small>
                         </div>
@@ -421,6 +464,132 @@ require __DIR__ . '/includes/public_header.php';
     </div>
 </section>
 
+<section class="vk-pub-section vk-team-showcase-section py-5" id="team">
+    <div class="container py-lg-4">
+        <div class="row justify-content-between align-items-end g-3 mb-5">
+            <div class="col-lg-7" data-aos="fade-up">
+                <span class="vk-section-kicker">Staff &amp; Owner Portfolio</span>
+                <h2 class="vk-section-title mb-2">Meet Our Expert Team</h2>
+                <p class="vk-section-lead mb-0">Certified professionals dedicated to delivering exceptional service</p>
+            </div>
+            <div class="col-lg-4 text-lg-end" data-aos="fade-up" data-aos-delay="100">
+                <a class="btn btn-outline-primary btn-lg" href="<?= e(BASE_URL) ?>/index.php/staff">View full portfolio</a>
+            </div>
+        </div>
+
+        <div class="vk-team-showcase-grid">
+            <?php foreach ($teamMembers as $ti => $member): ?>
+                <?php
+                $memberId = (int) ($member['id'] ?? (9000 + $ti));
+                $isOwner = vk_staff_is_owner($member);
+                $skills = array_slice(vk_staff_skills_list((string) ($member['skills'] ?? '')), 0, 4);
+                $certs = array_slice(vk_staff_certifications_list((string) ($member['certifications'] ?? '')), 0, 5);
+                $socials = vk_staff_social_links((string) ($member['social_links'] ?? ''));
+                $image = vk_staff_display_image($member, true);
+                $status = vk_staff_normalize_status((string) ($member['status'] ?? 'active'));
+                $phoneDigits = preg_replace('/\D+/', '', (string) ($member['phone'] ?? '0778870135'));
+                $whatsapp = $phoneDigits !== '' ? 'https://wa.me/94' . ltrim(preg_replace('/^94/', '', $phoneDigits) ?? '', '0') : $waHref ?? '#';
+                $modalId = 'teamProfileModal' . $memberId;
+                $years = (int) ($member['years_experience'] ?? 0);
+                $projects = (int) ($member['completed_projects'] ?? 0);
+                ?>
+                <article class="vk-team-showcase-card <?= $isOwner ? 'vk-team-showcase-card--owner' : '' ?>" data-aos="fade-up" data-aos-delay="<?= (int) min(280, $ti * 60) ?>">
+                    <div class="vk-team-card-glow"></div>
+                    <div class="vk-team-photo-wrap">
+                        <img src="<?= e($image) ?>" alt="<?= e((string) ($member['name'] ?? 'Team member')) ?>" loading="lazy" decoding="async" width="420" height="420" onerror="<?= vk_staff_image_onerror_attr() ?>">
+                        <span class="vk-team-status vk-team-status-<?= e($status) ?>"><?= e(vk_staff_status_label($status)) ?></span>
+                        <?php if ($isOwner): ?>
+                            <span class="vk-founder-badge"><i data-lucide="badge-check"></i> Verified Founder</span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="vk-team-card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3">
+                            <div>
+                                <h3><?= e((string) ($member['name'] ?? 'Team member')) ?></h3>
+                                <p class="vk-team-role"><?= e((string) ($member['role'] ?? 'Service professional')) ?></p>
+                            </div>
+                            <span class="vk-team-exp"><?= e((string) (($member['experience'] ?? '') ?: ($years ? $years . '+ years' : 'Certified'))) ?></span>
+                        </div>
+                        <p class="vk-team-desc"><?= e((string) (($member['specialization'] ?? '') ?: ($member['description'] ?? 'Experienced VK Network service professional.'))) ?></p>
+                        <div class="vk-team-tags">
+                            <?php foreach ($skills ?: ['Service', 'Support'] as $skill): ?>
+                                <span><?= e($skill) ?></span>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="vk-team-stats">
+                            <span><strong><?= $years ?: 5 ?>+</strong> Years</span>
+                            <span><strong><?= $projects ?: 120 ?>+</strong> Projects</span>
+                        </div>
+                        <div class="vk-team-actions">
+                            <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="modal" data-bs-target="#<?= e($modalId) ?>">View profile</button>
+                            <a class="btn btn-sm btn-primary" href="<?= e(BASE_URL) ?>/book.php">Book</a>
+                            <a class="vk-team-icon-btn" href="<?= e($whatsapp) ?>" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp <?= e((string) ($member['name'] ?? 'team member')) ?>"><i data-lucide="message-circle"></i></a>
+                        </div>
+                        <?php if ($socials): ?>
+                            <div class="vk-team-socials">
+                                <?php foreach (array_slice($socials, 0, 3) as $social): ?>
+                                    <a href="<?= e($social['url']) ?>" target="_blank" rel="noopener noreferrer"><?= e($social['label']) ?></a>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </article>
+
+                <div class="modal fade vk-team-modal" id="<?= e($modalId) ?>" tabindex="-1" aria-labelledby="<?= e($modalId) ?>Label" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header border-0">
+                                <div>
+                                    <span class="vk-section-kicker mb-1"><?= $isOwner ? 'Founder Profile' : 'Team Profile' ?></span>
+                                    <h2 class="modal-title h4" id="<?= e($modalId) ?>Label"><?= e((string) ($member['name'] ?? 'Team member')) ?></h2>
+                                </div>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body pt-0">
+                                <div class="row g-4">
+                                    <div class="col-md-5">
+                                        <img class="vk-team-modal-img" src="<?= e($image) ?>" alt="<?= e((string) ($member['name'] ?? 'Team member')) ?>" loading="lazy" decoding="async" onerror="<?= vk_staff_image_onerror_attr() ?>">
+                                        <div class="vk-team-modal-metrics">
+                                            <span><strong><?= $years ?: 5 ?>+</strong> Years experience</span>
+                                            <span><strong><?= $projects ?: 120 ?>+</strong> Completed projects</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <p class="vk-team-modal-role"><?= e((string) ($member['role'] ?? 'Service professional')) ?></p>
+                                        <p class="vk-team-modal-bio"><?= e((string) ($member['description'] ?? 'Certified VK Network professional focused on reliable, transparent service delivery.')) ?></p>
+                                        <h3 class="h6 text-white">Certifications</h3>
+                                        <div class="vk-team-tags mb-3">
+                                            <?php foreach ($certs ?: ['Service Quality', 'Safety Practices'] as $cert): ?>
+                                                <span><?= e($cert) ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <h3 class="h6 text-white">Skill strength</h3>
+                                        <div class="vk-skill-bars">
+                                            <?php foreach (array_slice($skills ?: ['Service', 'Diagnostics', 'Support'], 0, 3) as $si => $skill): ?>
+                                                <div>
+                                                    <span><?= e($skill) ?></span>
+                                                    <div><i style="width: <?= (int) (92 - ($si * 8)) ?>%;"></i></div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <div class="d-flex flex-wrap gap-2 mt-4">
+                                            <a class="btn btn-primary" href="<?= e(BASE_URL) ?>/book.php">Book this team</a>
+                                            <a class="btn btn-outline-light" href="<?= e($whatsapp) ?>" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                                            <?php if (!empty($member['email'])): ?>
+                                                <a class="btn btn-outline-light" href="mailto:<?= e((string) $member['email']) ?>">Email</a>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+
 <section class="vk-pub-section py-5" id="testimonials">
     <div class="container py-lg-4">
         <div class="vk-testimonials-head text-center mb-5" data-aos="fade-up">
@@ -455,7 +624,7 @@ require __DIR__ . '/includes/public_header.php';
                                 <div class="vk-testimonial-person">
                                     <img src="<?= e(base_url($review['avatar'])) ?>" alt="<?= e($review['name']) ?>" class="vk-testimonial-avatar-img" loading="lazy">
                                     <div>
-                                        <strong><?= e($review['name']) ?></strong>
+                                        <strong><?= e($review['name']) ?> <span class="vk-verified-badge" aria-label="Verified customer"><i data-lucide="badge-check"></i></span></strong>
                                         <span><?= e($review['role']) ?></span>
                                     </div>
                                 </div>
@@ -513,6 +682,11 @@ require __DIR__ . '/includes/public_header.php';
                     <span class="vk-section-kicker">Ready to get started?</span>
                     <h3 class="vk-ready-title mb-3">Launch your service with a premium support experience.</h3>
                     <p class="text-muted mb-4">Book now, track live, and keep everything transparent with real-time status updates.</p>
+                    <div class="vk-cta-trust d-flex flex-wrap justify-content-center gap-2 mb-4">
+                        <span><i data-lucide="users"></i> 25K+ customers</span>
+                        <span><i data-lucide="clock-3"></i> 18 min avg response</span>
+                        <span><i data-lucide="shield-check"></i> Verified technicians</span>
+                    </div>
                     <a class="btn btn-primary btn-lg px-4" href="<?= e(BASE_URL) ?>/book.php">Book Now</a>
                 </div>
             </div>

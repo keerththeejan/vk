@@ -109,5 +109,108 @@
         });
     });
 
+    document.querySelectorAll('[data-staff-form]').forEach(function (form) {
+        const fileInput = form.querySelector('[data-staff-file]');
+        const dropzone = form.querySelector('[data-staff-dropzone]');
+        const preview = form.querySelector('[data-staff-preview]');
+        const changeBtn = form.querySelector('[data-staff-change]');
+        const removeBtn = form.querySelector('[data-staff-remove]');
+        const removeInput = form.querySelector('[data-staff-remove-input]');
+        const progress = form.querySelector('[data-staff-progress]');
+        const fallbackSrc = preview ? preview.src : '';
+        if (!fileInput || !dropzone || !preview) return;
+
+        function setProgress(on) {
+            if (!progress) return;
+            progress.style.width = on ? '100%' : '0%';
+            if (on) {
+                window.setTimeout(function () {
+                    progress.style.width = '0%';
+                }, 850);
+            }
+        }
+
+        function acceptFile(file) {
+            if (!file) return;
+            const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!allowed.includes(file.type)) {
+                window.showToast('Only JPG, PNG, and WebP images are allowed.', 'danger');
+                fileInput.value = '';
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                window.showToast('Profile image must be 5 MB or smaller.', 'danger');
+                fileInput.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function (ev) {
+                preview.src = ev.target.result;
+                dropzone.classList.add('has-preview');
+                if (removeInput) removeInput.value = '0';
+                setProgress(true);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        changeBtn?.addEventListener('click', function () {
+            fileInput.click();
+        });
+        dropzone.addEventListener('click', function (ev) {
+            if (ev.target === fileInput) return;
+            fileInput.click();
+        });
+        dropzone.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Enter' || ev.key === ' ') {
+                ev.preventDefault();
+                fileInput.click();
+            }
+        });
+        fileInput.addEventListener('change', function () {
+            acceptFile(fileInput.files && fileInput.files[0]);
+        });
+        ['dragenter', 'dragover'].forEach(function (name) {
+            dropzone.addEventListener(name, function (ev) {
+                ev.preventDefault();
+                dropzone.classList.add('is-dragover');
+            });
+        });
+        ['dragleave', 'drop'].forEach(function (name) {
+            dropzone.addEventListener(name, function (ev) {
+                ev.preventDefault();
+                dropzone.classList.remove('is-dragover');
+            });
+        });
+        dropzone.addEventListener('drop', function (ev) {
+            const file = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
+            if (!file) return;
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            acceptFile(file);
+        });
+        removeBtn?.addEventListener('click', function () {
+            fileInput.value = '';
+            preview.src = fallbackSrc;
+            if (removeInput) removeInput.value = '1';
+            window.showToast('Image will be removed after saving.', 'warning');
+        });
+    });
+
+    const staffSearch = document.querySelector('[data-staff-search]');
+    const staffStatus = document.querySelector('[data-staff-status-filter]');
+    const staffRows = Array.from(document.querySelectorAll('[data-staff-row]'));
+    function filterStaffRows() {
+        const q = (staffSearch?.value || '').trim().toLowerCase();
+        const status = staffStatus?.value || '';
+        staffRows.forEach(function (row) {
+            const okText = !q || (row.getAttribute('data-search') || '').includes(q);
+            const okStatus = !status || row.getAttribute('data-status') === status;
+            row.classList.toggle('d-none', !(okText && okStatus));
+        });
+    }
+    staffSearch?.addEventListener('input', filterStaffRows);
+    staffStatus?.addEventListener('change', filterStaffRows);
+
     window.VK_BASE_URL = BASE;
 })();

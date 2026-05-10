@@ -186,6 +186,76 @@
         });
     }
 
+    function prefersReducedMotion() {
+        try {
+            return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function initEnterpriseInteractions() {
+        if (prefersReducedMotion()) return;
+
+        var hero = document.querySelector(".vk-home-hero");
+        if (hero) {
+            hero.addEventListener("pointermove", function (ev) {
+                var rect = hero.getBoundingClientRect();
+                var x = ((ev.clientX - rect.left) / Math.max(rect.width, 1)) * 100;
+                var y = ((ev.clientY - rect.top) / Math.max(rect.height, 1)) * 100;
+                hero.style.setProperty("--vk-glow-x", x.toFixed(2) + "%");
+                hero.style.setProperty("--vk-glow-y", y.toFixed(2) + "%");
+            }, { passive: true });
+        }
+
+        document.querySelectorAll(".vk-btn-hero-primary, .vk-btn-hero-secondary, .vk-nav-book-btn, .vk-ready-card .btn").forEach(function (btn) {
+            btn.classList.add("vk-magnetic");
+            btn.addEventListener("pointermove", function (ev) {
+                var rect = btn.getBoundingClientRect();
+                var x = ((ev.clientX - rect.left) - rect.width / 2) * 0.12;
+                var y = ((ev.clientY - rect.top) - rect.height / 2) * 0.18;
+                btn.style.setProperty("--vk-magnet-x", x.toFixed(1) + "px");
+                btn.style.setProperty("--vk-magnet-y", y.toFixed(1) + "px");
+            }, { passive: true });
+            btn.addEventListener("pointerleave", function () {
+                btn.style.setProperty("--vk-magnet-x", "0px");
+                btn.style.setProperty("--vk-magnet-y", "0px");
+            });
+        });
+
+        document.querySelectorAll(".vk-service-card, .vk-why-card, .vk-testimonial-card, .vk-step-card").forEach(function (card) {
+            card.addEventListener("pointermove", function (ev) {
+                var rect = card.getBoundingClientRect();
+                var x = ((ev.clientX - rect.left) / Math.max(rect.width, 1)) * 100;
+                var y = ((ev.clientY - rect.top) / Math.max(rect.height, 1)) * 100;
+                card.style.setProperty("--vk-spot-x", x.toFixed(2) + "%");
+                card.style.setProperty("--vk-spot-y", y.toFixed(2) + "%");
+                if (card.classList.contains("vk-service-card")) {
+                    card.style.setProperty("--vk-tilt-x", (((x - 50) / 50) * 1.2).toFixed(2) + "deg");
+                    card.style.setProperty("--vk-tilt-y", (((50 - y) / 50) * 1).toFixed(2) + "deg");
+                }
+            }, { passive: true });
+            card.addEventListener("pointerleave", function () {
+                card.style.setProperty("--vk-tilt-x", "0deg");
+                card.style.setProperty("--vk-tilt-y", "0deg");
+            });
+        });
+    }
+
+    function initLiveMetricRefresh() {
+        if (prefersReducedMotion()) return;
+        var nodes = document.querySelectorAll(".vk-mini-kpi small, .vk-analytics-kpi strong");
+        if (!nodes.length) return;
+        window.setInterval(function () {
+            nodes.forEach(function (el, idx) {
+                el.classList.add("vk-live-tick");
+                window.setTimeout(function () {
+                    el.classList.remove("vk-live-tick");
+                }, 520 + (idx * 20));
+            });
+        }, 4200);
+    }
+
     function refreshAOS() {
         if (typeof AOS !== "undefined" && typeof AOS.refresh === "function") {
             AOS.refresh();
@@ -193,14 +263,19 @@
     }
 
     var nav = document.querySelector(".vk-navbar-premium");
+    var supportWidget = document.querySelector(".vk-support-widget");
+    var whatsappWidget = document.querySelector(".vk-float-wa");
     var scrolled = false;
 
     function onScroll() {
         var y = window.scrollY || document.documentElement.scrollTop || 0;
         var on = y > 16;
-        if (on === scrolled) return;
-        scrolled = on;
-        if (nav) nav.classList.toggle("is-scrolled", on);
+        if (supportWidget) supportWidget.classList.toggle("is-visible", y > 520);
+        if (whatsappWidget) whatsappWidget.classList.toggle("is-visible", y > 240);
+        if (on !== scrolled) {
+            scrolled = on;
+            if (nav) nav.classList.toggle("is-scrolled", on);
+        }
     }
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -208,6 +283,8 @@
         initLucide();
         initPremiumCounters();
         initTestimonialsCarousel();
+        initEnterpriseInteractions();
+        initLiveMetricRefresh();
 
         updateToggleUi(getTheme());
 
@@ -221,6 +298,12 @@
         if (nav) {
             scrolled = (window.scrollY || 0) > 16;
             nav.classList.toggle("is-scrolled", scrolled);
+        }
+        if (supportWidget) {
+            supportWidget.classList.toggle("is-visible", (window.scrollY || 0) > 520);
+        }
+        if (whatsappWidget) {
+            whatsappWidget.classList.toggle("is-visible", (window.scrollY || 0) > 240);
         }
         window.addEventListener("scroll", onScroll, { passive: true });
 
