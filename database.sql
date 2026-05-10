@@ -29,11 +29,13 @@ CREATE TABLE IF NOT EXISTS users (
   user_uid VARCHAR(32) DEFAULT NULL UNIQUE,
   role ENUM('super_admin','admin','manager','technician','staff','viewer') NOT NULL DEFAULT 'viewer',
   technician_id INT UNSIGNED DEFAULT NULL,
-  status ENUM('pending','active','rejected','suspended','inactive') NOT NULL DEFAULT 'pending',
+  status ENUM('pending','approved','active','rejected','suspended','inactive') NOT NULL DEFAULT 'pending',
+  approved TINYINT(1) NOT NULL DEFAULT 0,
   approved_by INT UNSIGNED DEFAULT NULL,
   approved_at DATETIME DEFAULT NULL,
   rejected_at DATETIME DEFAULT NULL,
   last_login_at DATETIME DEFAULT NULL,
+  registration_ip VARCHAR(45) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_users_email (email),
@@ -53,6 +55,25 @@ CREATE TABLE IF NOT EXISTS login_logs (
   KEY idx_login_logs_user (user_id, created_at),
   KEY idx_login_logs_lookup (username, ip_address, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS email_logs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED DEFAULT NULL,
+  recipient VARCHAR(191) NOT NULL,
+  subject VARCHAR(255) NOT NULL,
+  template VARCHAR(96) DEFAULT NULL,
+  status ENUM('sent','failed','skipped') NOT NULL,
+  error_message TEXT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_email_logs_user (user_id, created_at),
+  KEY idx_email_logs_status (status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Existing installs:
+-- ALTER TABLE users MODIFY COLUMN status ENUM('pending','approved','active','rejected','suspended','inactive') NOT NULL DEFAULT 'pending';
+-- ALTER TABLE users ADD COLUMN approved TINYINT(1) NOT NULL DEFAULT 0 AFTER status;
+-- ALTER TABLE users ADD COLUMN registration_ip VARCHAR(45) NULL DEFAULT NULL AFTER last_login_at;
+-- UPDATE users SET approved = 1 WHERE status IN ('approved','active');
 
 CREATE TABLE IF NOT EXISTS approvals (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

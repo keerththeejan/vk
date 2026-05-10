@@ -5,6 +5,14 @@ $cu = $currentUser ?? null;
 $adminLogo = getLogo('mobile');
 $adminCompany = vk_app_setting('company_name', 'VK Network');
 $adminTagline = vk_app_setting('company_tagline', 'Service desk');
+$pendingAuthRegistrations = 0;
+if (isset($pdo) && function_exists('vk_auth_role_can_manage') && vk_auth_role_can_manage((string) ($cu['role'] ?? 'viewer'))) {
+    try {
+        $pendingAuthRegistrations = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE status = 'pending' AND approved = 0")->fetchColumn();
+    } catch (Throwable $e) {
+        $pendingAuthRegistrations = 0;
+    }
+}
 ?>
 <nav class="navbar navbar-expand-lg navbar-dark vk-navbar border-bottom border-secondary border-opacity-25 sticky-top">
     <div class="container-fluid vk-navbar-inner">
@@ -41,10 +49,15 @@ $adminTagline = vk_app_setting('company_tagline', 'Service desk');
             <div class="dropdown">
                 <button class="btn btn-outline-light vk-icon-btn position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
                     <i class="bi bi-bell"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info">3</span>
+                    <?php if ($pendingAuthRegistrations > 0): ?>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info"><?= (int) $pendingAuthRegistrations ?></span>
+                    <?php endif; ?>
                 </button>
                 <div class="dropdown-menu dropdown-menu-end shadow vk-premium-dropdown p-2">
                     <div class="dropdown-header">Notifications</div>
+                    <?php if ($pendingAuthRegistrations > 0): ?>
+                        <a class="dropdown-item rounded-3" href="<?= e(BASE_URL) ?>/approve_users.php"><i class="bi bi-person-check me-2 text-info"></i>New Registrations: <?= (int) $pendingAuthRegistrations ?></a>
+                    <?php endif; ?>
                     <a class="dropdown-item rounded-3" href="<?= e(BASE_URL) ?>/modules/bookings/list.php"><i class="bi bi-calendar2-check me-2 text-info"></i>Review new web bookings</a>
                     <a class="dropdown-item rounded-3" href="<?= e(BASE_URL) ?>/modules/warranties/list.php?filter=expiring"><i class="bi bi-shield-exclamation me-2 text-warning"></i>Warranty alert window</a>
                     <a class="dropdown-item rounded-3" href="<?= e(BASE_URL) ?>/modules/maintenance/list.php?status=active"><i class="bi bi-clock-history me-2 text-primary"></i>Maintenance reminders</a>

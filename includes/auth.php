@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 const VK_AUTH_ROLES = ['super_admin', 'admin', 'manager', 'technician', 'staff', 'viewer'];
-const VK_AUTH_STATUSES = ['pending', 'active', 'rejected', 'suspended', 'inactive'];
+const VK_AUTH_STATUSES = ['pending', 'approved', 'active', 'rejected', 'suspended', 'inactive'];
 
 function vk_auth_ensure_schema(PDO $pdo): void
 {
@@ -47,11 +47,13 @@ function vk_auth_ensure_schema(PDO $pdo): void
                 user_uid VARCHAR(32) DEFAULT NULL UNIQUE,
                 role ENUM('super_admin','admin','manager','technician','staff','viewer') NOT NULL DEFAULT 'viewer',
                 technician_id INT UNSIGNED DEFAULT NULL,
-                status ENUM('pending','active','rejected','suspended','inactive') NOT NULL DEFAULT 'pending',
+                status ENUM('pending','approved','active','rejected','suspended','inactive') NOT NULL DEFAULT 'pending',
+                approved TINYINT(1) NOT NULL DEFAULT 0,
                 approved_by INT UNSIGNED DEFAULT NULL,
                 approved_at DATETIME DEFAULT NULL,
                 rejected_at DATETIME DEFAULT NULL,
                 last_login_at DATETIME DEFAULT NULL,
+                registration_ip VARCHAR(45) DEFAULT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
                 UNIQUE KEY uq_users_email (email),
@@ -75,6 +77,21 @@ function vk_auth_ensure_schema(PDO $pdo): void
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             KEY idx_login_logs_user (user_id, created_at),
             KEY idx_login_logs_lookup (username, ip_address, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS email_logs (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            user_id INT UNSIGNED DEFAULT NULL,
+            recipient VARCHAR(191) NOT NULL,
+            subject VARCHAR(255) NOT NULL,
+            template VARCHAR(96) DEFAULT NULL,
+            status ENUM('sent','failed','skipped') NOT NULL,
+            error_message TEXT DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_email_logs_user (user_id, created_at),
+            KEY idx_email_logs_status (status, created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
 
@@ -145,10 +162,12 @@ function vk_auth_upgrade_users_table(PDO $pdo): void
         'phone' => "ALTER TABLE users ADD COLUMN phone VARCHAR(32) NULL DEFAULT NULL AFTER email",
         'department' => "ALTER TABLE users ADD COLUMN department VARCHAR(128) NULL DEFAULT NULL AFTER fullname",
         'user_uid' => "ALTER TABLE users ADD COLUMN user_uid VARCHAR(32) NULL DEFAULT NULL AFTER department",
+        'approved' => "ALTER TABLE users ADD COLUMN approved TINYINT(1) NOT NULL DEFAULT 0 AFTER status",
         'approved_by' => "ALTER TABLE users ADD COLUMN approved_by INT UNSIGNED NULL DEFAULT NULL AFTER status",
         'approved_at' => "ALTER TABLE users ADD COLUMN approved_at DATETIME NULL DEFAULT NULL AFTER approved_by",
         'rejected_at' => "ALTER TABLE users ADD COLUMN rejected_at DATETIME NULL DEFAULT NULL AFTER approved_at",
         'last_login_at' => "ALTER TABLE users ADD COLUMN last_login_at DATETIME NULL DEFAULT NULL AFTER rejected_at",
+        'registration_ip' => "ALTER TABLE users ADD COLUMN registration_ip VARCHAR(45) NULL DEFAULT NULL AFTER last_login_at",
         'updated_at' => "ALTER TABLE users ADD COLUMN updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP AFTER created_at",
     ] as $column => $sql) {
         if (!db_column_exists($pdo, 'users', $column)) {
@@ -160,8 +179,9 @@ function vk_auth_upgrade_users_table(PDO $pdo): void
         "ALTER TABLE users MODIFY COLUMN role ENUM('super_admin','admin','manager','technician','staff','viewer') NOT NULL DEFAULT 'viewer'"
     );
     $pdo->exec(
-        "ALTER TABLE users MODIFY COLUMN status ENUM('pending','active','rejected','suspended','inactive') NOT NULL DEFAULT 'pending'"
+        "ALTER TABLE users MODIFY COLUMN status ENUM('pending','approved','active','rejected','suspended','inactive') NOT NULL DEFAULT 'pending'"
     );
+    $pdo->exec("UPDATE users SET approved = 1 WHERE status IN ('approved','active')");
 
     try {
         $pdo->exec('CREATE UNIQUE INDEX uq_users_uid ON users (user_uid)');
@@ -224,13 +244,18 @@ function vk_auth_generate_username(PDO $pdo, string $fullName): string
     return $username;
 }
 
+function vk_auth_status_is_approved(string $status): bool
+{
+    return in_array($status, ['approved', 'active'], true);
+}
+
 function vk_auth_create_pending_user(PDO $pdo, array $data): array
 {
     vk_auth_ensure_schema($pdo);
-    $fullName = trim((string) ($data['fullname'] ?? ''));
-    $email = strtolower(trim((string) ($data['email'] ?? '')));
-    $phone = trim((string) ($data['phone'] ?? ''));
-    $department = trim((string) ($data['department'] ?? ''));
+    $fullName = trim(strip_tags((string) ($data['fullname'] ?? '')));
+    $email = strtolower(trim((string) filter_var((string) ($data['email'] ?? ''), FILTER_SANITIZE_EMAIL)));
+    $phone = trim(preg_replace('/[^\d+\-\s()]/', '', (string) ($data['phone'] ?? '')));
+    $department = trim(strip_tags((string) ($data['department'] ?? '')));
 
     if ($fullName === '' || strlen($fullName) < 3) {
         throw new InvalidArgumentException('Enter your full name.');
@@ -251,20 +276,44 @@ function vk_auth_create_pending_user(PDO $pdo, array $data): array
         throw new RuntimeException('A user with this email already exists.');
     }
 
-    $username = vk_auth_generate_username($pdo, $fullName);
-    $password = vk_auth_generate_password();
-    $uid = vk_auth_generate_user_uid($pdo);
-    $hash = password_hash($password, PASSWORD_DEFAULT);
+    $pdo->beginTransaction();
+    try {
+        $username = vk_auth_generate_username($pdo, $fullName);
+        $password = vk_auth_generate_password();
+        $uid = vk_auth_generate_user_uid($pdo);
+        $hash = password_hash($password, PASSWORD_DEFAULT);
 
-    $st = $pdo->prepare(
-        "INSERT INTO users (username, email, phone, password_hash, fullname, department, user_uid, role, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'viewer', 'pending')"
-    );
-    $st->execute([$username, $email, $phone, $hash, $fullName, $department, $uid]);
-    $userId = (int) $pdo->lastInsertId();
+        $st = $pdo->prepare(
+            "INSERT INTO users
+                (username, email, phone, password_hash, fullname, department, user_uid, role, status, approved, registration_ip)
+             VALUES
+                (?, ?, ?, ?, ?, ?, ?, 'viewer', 'pending', 0, ?)"
+        );
+        $st->execute([$username, $email, $phone, $hash, $fullName, $department, $uid, vk_auth_client_ip()]);
+        $userId = (int) $pdo->lastInsertId();
 
-    vk_auth_record_approval($pdo, $userId, 'registered', null, null, 'pending', null, 'viewer', 'Self-service registration');
-    vk_auth_activity($pdo, $userId, null, 'user_registered', 'user', $userId, ['email' => $email, 'department' => $department]);
+        vk_auth_record_approval($pdo, $userId, 'registered', null, null, 'pending', null, 'viewer', 'Self-service registration');
+        vk_auth_activity($pdo, $userId, null, 'user_registered', 'user', $userId, [
+            'email' => $email,
+            'department' => $department,
+            'ip' => vk_auth_client_ip(),
+        ]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    vk_auth_notify_admin_registration($pdo, [
+        'id' => $userId,
+        'fullname' => $fullName,
+        'email' => $email,
+        'username' => $username,
+        'department' => $department,
+        'created_at' => date('Y-m-d H:i:s'),
+    ]);
 
     return [
         'id' => $userId,
@@ -323,10 +372,10 @@ function vk_auth_attempt_login(PDO $pdo, string $identity, string $password, boo
     }
 
     $status = (string) ($row['status'] ?? 'pending');
-    if ($status !== 'active') {
+    if (!vk_auth_status_is_approved($status)) {
         vk_auth_log_login($pdo, (int) $row['id'], (string) $row['username'], 'failed', 'status_' . $status);
         $message = match ($status) {
-            'pending' => 'Your account is waiting for administrator approval.',
+            'pending' => 'Your account is awaiting administrator approval.',
             'rejected' => 'This registration was not approved. Contact an administrator.',
             'suspended', 'inactive' => 'This account is not active. Contact an administrator.',
             default => 'This account is not available for sign-in.',
@@ -401,7 +450,7 @@ function vk_auth_try_remember(PDO $pdo): void
     );
     $st->execute([$selector]);
     $row = $st->fetch(PDO::FETCH_ASSOC);
-    if (!$row || !password_verify($validator, (string) $row['validator_hash']) || (string) $row['status'] !== 'active') {
+    if (!$row || !password_verify($validator, (string) $row['validator_hash']) || !vk_auth_status_is_approved((string) $row['status'])) {
         vk_auth_clear_remember_cookie($pdo);
         return;
     }
@@ -447,6 +496,9 @@ function vk_auth_role_label(string $role): string
 
 function vk_auth_status_label(string $status): string
 {
+    if (vk_auth_status_is_approved($status)) {
+        return 'Approved';
+    }
     return ucfirst(str_replace('_', ' ', $status));
 }
 
@@ -503,23 +555,28 @@ function vk_auth_update_user_status(PDO $pdo, int $userId, string $status, ?int 
     }
     $updates = 'status = ?, updated_at = NOW()';
     $params = [$status];
-    if ($status === 'active') {
-        $updates .= ', approved_by = ?, approved_at = NOW(), rejected_at = NULL';
+    if (vk_auth_status_is_approved($status)) {
+        $updates .= ', approved = 1, approved_by = ?, approved_at = NOW(), rejected_at = NULL';
         $params[] = $actorId;
     } elseif ($status === 'rejected') {
-        $updates .= ', rejected_at = NOW()';
+        $updates .= ', approved = 0, rejected_at = NOW()';
+    } else {
+        $updates .= ', approved = 0';
     }
     $params[] = $userId;
     $pdo->prepare("UPDATE users SET {$updates} WHERE id = ?")->execute($params);
 
     $action = match ($status) {
-        'active' => 'approved',
+        'approved', 'active' => 'approved',
         'rejected' => 'rejected',
         'suspended' => 'suspended',
         default => 'reactivated',
     };
     vk_auth_record_approval($pdo, $userId, $action, $actorId, (string) $user['status'], $status, (string) $user['role'], (string) $user['role'], $note);
     vk_auth_activity($pdo, $userId, $actorId, 'user_' . $action, 'user', $userId, ['status' => $status]);
+    if (vk_auth_status_is_approved($status)) {
+        vk_auth_notify_user_approved($pdo, $userId);
+    }
 }
 
 function vk_auth_change_role(PDO $pdo, int $userId, string $role, ?int $actorId): void
@@ -549,4 +606,112 @@ function vk_auth_admin_reset_password(PDO $pdo, int $userId, ?int $actorId): str
     vk_auth_record_approval($pdo, $userId, 'password_reset', $actorId);
     vk_auth_activity($pdo, $userId, $actorId, 'user_password_reset', 'user', $userId);
     return $password;
+}
+
+function vk_auth_email_log(PDO $pdo, ?int $userId, string $recipient, string $subject, string $template, string $status, ?string $error = null): void
+{
+    try {
+        $st = $pdo->prepare(
+            'INSERT INTO email_logs (user_id, recipient, subject, template, status, error_message)
+             VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        $st->execute([$userId, $recipient, $subject, $template, $status, $error]);
+    } catch (Throwable $e) {
+        error_log('email log failed: ' . $e->getMessage());
+    }
+}
+
+function vk_auth_admin_recipients(PDO $pdo): array
+{
+    $rows = $pdo->query(
+        "SELECT email, fullname FROM users
+         WHERE role IN ('super_admin','admin') AND status IN ('approved','active') AND approved = 1
+           AND email IS NOT NULL AND email <> ''
+         ORDER BY role = 'super_admin' DESC, id ASC"
+    )->fetchAll(PDO::FETCH_ASSOC);
+    $recipients = [];
+    foreach ($rows as $row) {
+        if (filter_var((string) $row['email'], FILTER_VALIDATE_EMAIL)) {
+            $recipients[] = ['email' => (string) $row['email'], 'name' => (string) ($row['fullname'] ?? '')];
+        }
+    }
+    $fallback = getenv('VK_ADMIN_EMAIL') ?: getenv('MAIL_ADMIN_EMAIL') ?: '';
+    if ($fallback !== '' && filter_var($fallback, FILTER_VALIDATE_EMAIL)) {
+        $recipients[] = ['email' => $fallback, 'name' => 'VK Network Admin'];
+    }
+    if (!$recipients && function_exists('vk_smtp_settings_get')) {
+        try {
+            $cfg = vk_smtp_settings_get($pdo);
+            if (!empty($cfg['from_email']) && filter_var((string) $cfg['from_email'], FILTER_VALIDATE_EMAIL)) {
+                $recipients[] = ['email' => (string) $cfg['from_email'], 'name' => (string) ($cfg['from_name'] ?: 'VK Network Admin')];
+            }
+        } catch (Throwable $e) {
+        }
+    }
+    return $recipients;
+}
+
+function vk_auth_email_shell(string $title, string $body): string
+{
+    return '<!doctype html><html><body style="margin:0;background:#07111f;font-family:Inter,Segoe UI,Arial,sans-serif;color:#eaf2ff;">'
+        . '<div style="padding:28px;background:linear-gradient(135deg,#07111f,#0d1f3a);">'
+        . '<div style="max-width:640px;margin:auto;border:1px solid rgba(103,232,249,.25);border-radius:22px;background:rgba(13,22,42,.94);overflow:hidden;">'
+        . '<div style="padding:24px 28px;border-bottom:1px solid rgba(103,232,249,.18);"><div style="font-size:13px;color:#67e8f9;text-transform:uppercase;font-weight:700;">VK Network Security</div>'
+        . '<h1 style="margin:8px 0 0;font-size:24px;color:#fff;">' . e($title) . '</h1></div>'
+        . '<div style="padding:28px;color:#c8d6f3;line-height:1.65;">' . $body . '</div>'
+        . '<div style="padding:18px 28px;color:#7890b8;font-size:12px;border-top:1px solid rgba(103,232,249,.14);">This is an automated enterprise authentication notice.</div>'
+        . '</div></div></body></html>';
+}
+
+function vk_auth_notify_admin_registration(PDO $pdo, array $user): void
+{
+    $subject = 'New User Registration Pending Approval';
+    $approvalUrl = base_url('approve_users.php');
+    $bodyText = "New user registration pending approval\n\n"
+        . "Full Name: {$user['fullname']}\nEmail: {$user['email']}\nUsername: {$user['username']}\nDepartment: {$user['department']}\nRegistration Time: {$user['created_at']}\nApproval URL: {$approvalUrl}\n";
+    $html = vk_auth_email_shell($subject,
+        '<p>A new user registration is waiting for administrator approval.</p>'
+        . '<table style="width:100%;border-collapse:collapse;">'
+        . '<tr><td style="padding:8px;color:#8fb9ff;">Full Name</td><td style="padding:8px;color:#fff;">' . e((string) $user['fullname']) . '</td></tr>'
+        . '<tr><td style="padding:8px;color:#8fb9ff;">Email</td><td style="padding:8px;color:#fff;">' . e((string) $user['email']) . '</td></tr>'
+        . '<tr><td style="padding:8px;color:#8fb9ff;">Username</td><td style="padding:8px;color:#fff;">' . e((string) $user['username']) . '</td></tr>'
+        . '<tr><td style="padding:8px;color:#8fb9ff;">Department</td><td style="padding:8px;color:#fff;">' . e((string) $user['department']) . '</td></tr>'
+        . '<tr><td style="padding:8px;color:#8fb9ff;">Registration Time</td><td style="padding:8px;color:#fff;">' . e((string) $user['created_at']) . '</td></tr>'
+        . '</table><p><a href="' . e($approvalUrl) . '" style="display:inline-block;padding:12px 18px;border-radius:14px;background:#2f80ff;color:#fff;text-decoration:none;font-weight:700;">Open Approval Center</a></p>'
+    );
+    $recipients = vk_auth_admin_recipients($pdo);
+    if (!$recipients) {
+        vk_auth_email_log($pdo, (int) $user['id'], 'admin', $subject, 'registration_admin', 'skipped', 'No admin recipient configured');
+        return;
+    }
+    foreach ($recipients as $recipient) {
+        $result = function_exists('vk_mailer_send')
+            ? vk_mailer_send($pdo, $recipient['email'], $subject, $bodyText, $recipient['name'], ['html' => true, 'html_body' => $html, 'template_type' => 'registration_admin', 'max_retries' => 1, 'smtp_timeout' => 8])
+            : ['ok' => false, 'error' => 'Mailer unavailable'];
+        vk_auth_email_log($pdo, (int) $user['id'], $recipient['email'], $subject, 'registration_admin', !empty($result['ok']) ? 'sent' : 'failed', $result['error'] ?? null);
+    }
+}
+
+function vk_auth_notify_user_approved(PDO $pdo, int $userId): void
+{
+    $st = $pdo->prepare('SELECT username, email, fullname FROM users WHERE id = ? LIMIT 1');
+    $st->execute([$userId]);
+    $user = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$user || !filter_var((string) ($user['email'] ?? ''), FILTER_VALIDATE_EMAIL)) {
+        return;
+    }
+    $subject = 'Your VK Network Account Has Been Approved';
+    $loginUrl = base_url('login.php');
+    $bodyText = "Your VK Network account has been approved.\n\nUsername: {$user['username']}\nLogin URL: {$loginUrl}\n\nUse the temporary password shown during registration or request a reset from an administrator. Change your password after signing in.";
+    $html = vk_auth_email_shell($subject,
+        '<p>Your VK Network account has been approved and is ready for secure sign-in.</p>'
+        . '<p><strong style="color:#8fb9ff;">Username:</strong> <span style="color:#fff;">' . e((string) $user['username']) . '</span></p>'
+        . '<p>Use the temporary password shown during registration. If you did not save it, request a reset from an administrator.</p>'
+        . '<p>For security, change your password after your first successful login and never share credentials.</p>'
+        . '<p><a href="' . e($loginUrl) . '" style="display:inline-block;padding:12px 18px;border-radius:14px;background:#2f80ff;color:#fff;text-decoration:none;font-weight:700;">Open Secure Login</a></p>'
+    );
+    $result = function_exists('vk_mailer_send')
+        ? vk_mailer_send($pdo, (string) $user['email'], $subject, $bodyText, (string) ($user['fullname'] ?? ''), ['html' => true, 'html_body' => $html, 'template_type' => 'account_approved', 'max_retries' => 1, 'smtp_timeout' => 8])
+        : ['ok' => false, 'error' => 'Mailer unavailable'];
+    vk_auth_email_log($pdo, $userId, (string) $user['email'], $subject, 'account_approved', !empty($result['ok']) ? 'sent' : 'failed', $result['error'] ?? null);
 }

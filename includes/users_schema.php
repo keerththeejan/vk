@@ -76,7 +76,7 @@ function vk_users_count_active_admins(PDO $pdo): int
     vk_ensure_users_management_schema($pdo);
     $hasStatus = db_column_exists($pdo, 'users', 'status');
     $sql = $hasStatus
-        ? "SELECT COUNT(*) FROM users WHERE role = 'admin' AND status = 'active'"
+        ? "SELECT COUNT(*) FROM users WHERE role = 'admin' AND status IN ('approved','active')"
         : "SELECT COUNT(*) FROM users WHERE role = 'admin'";
     return (int) $pdo->query($sql)->fetchColumn();
 }

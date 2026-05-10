@@ -78,8 +78,8 @@ function require_admin(): void
         flash_set('error', 'Account not found.');
         redirect('/login.php');
     }
-    $status = isset($row['status']) ? (string) $row['status'] : 'active';
-    if ($status !== 'active') {
+    $status = isset($row['status']) ? (string) $row['status'] : 'approved';
+    if (function_exists('vk_auth_status_is_approved') ? !vk_auth_status_is_approved($status) : $status !== 'active') {
         $_SESSION = [];
         session_destroy();
         flash_set('warning', 'Your account is not approved for access.');
@@ -178,7 +178,7 @@ function current_user(PDO $pdo): ?array
         $u['technician_id'] = null;
     }
     if ($u && !isset($u['status'])) {
-        $u['status'] = 'active';
+        $u['status'] = 'approved';
     }
     return $u ?: null;
 }

@@ -274,6 +274,7 @@ function vk_smtp_settings_save(PDO $pdo, array $in): void
  *   html_body?:string,
  *   queue_only?:bool,
  *   max_retries?:int,
+ *   smtp_timeout?:int,
  *   fallback_tls?:bool,
  *   relaxed_ssl?:bool
  * } $options
@@ -299,6 +300,7 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
     $htmlBody = (string) ($options['html_body'] ?? '');
     $queueOnly = (bool) ($options['queue_only'] ?? false);
     $maxRetries = max(1, min(8, (int) ($options['max_retries'] ?? 3)));
+    $smtpTimeout = max(5, min(60, (int) ($options['smtp_timeout'] ?? 45)));
     $fallbackTls = (bool) ($options['fallback_tls'] ?? false);
     $relaxedSsl = (bool) ($options['relaxed_ssl'] ?? false);
     if (!$relaxedSsl) {
@@ -383,7 +385,7 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
                 $mail->isSMTP();
                 $mail->Host = $prof['host'];
                 $mail->Port = $prof['port'];
-                $mail->Timeout = 45;
+                $mail->Timeout = $smtpTimeout;
                 $mail->SMTPAuth = ((string) $cfg['smtp_user']) !== '';
                 if ($mail->SMTPAuth) {
                     $mail->Username = (string) $cfg['smtp_user'];

@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('You cannot disable your own active session.');
             }
             if ($action === 'approve') {
-                vk_auth_update_user_status($pdo, $userId, 'active', (int) $_SESSION['user_id'], 'Approved from enterprise console');
+                vk_auth_update_user_status($pdo, $userId, 'approved', (int) $_SESSION['user_id'], 'Approved from enterprise console');
                 $actionMessage = ['type' => 'success', 'text' => 'User approved successfully.'];
             } elseif ($action === 'reject') {
                 vk_auth_update_user_status($pdo, $userId, 'rejected', (int) $_SESSION['user_id'], 'Rejected from enterprise console');
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 vk_auth_update_user_status($pdo, $userId, 'suspended', (int) $_SESSION['user_id'], 'Suspended from enterprise console');
                 $actionMessage = ['type' => 'warning', 'text' => 'User suspended.'];
             } elseif ($action === 'reactivate') {
-                vk_auth_update_user_status($pdo, $userId, 'active', (int) $_SESSION['user_id'], 'Reactivated from enterprise console');
+                vk_auth_update_user_status($pdo, $userId, 'approved', (int) $_SESSION['user_id'], 'Reactivated from enterprise console');
                 $actionMessage = ['type' => 'success', 'text' => 'User reactivated.'];
             } elseif ($action === 'role') {
                 vk_auth_change_role($pdo, $userId, (string) ($_POST['role'] ?? 'viewer'), (int) $_SESSION['user_id']);
@@ -62,19 +62,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $stats = [
     'pending' => 0,
-    'active' => 0,
+    'approved' => 0,
     'suspended' => 0,
     'total' => 0,
 ];
 foreach ($pdo->query('SELECT status, COUNT(*) c FROM users GROUP BY status') as $row) {
-    $stats[(string) $row['status']] = (int) $row['c'];
+    $key = vk_auth_status_is_approved((string) $row['status']) ? 'approved' : (string) $row['status'];
+    $stats[$key] = ($stats[$key] ?? 0) + (int) $row['c'];
     $stats['total'] += (int) $row['c'];
 }
 
-$users = $pdo->query(
-    'SELECT id, user_uid, username, email, phone, fullname, department, role, status, created_at, approved_at, last_login_at
-     FROM users ORDER BY FIELD(status, "pending", "active", "suspended", "rejected", "inactive"), id DESC'
-)->fetchAll();
+$page = max(1, (int) ($_GET['page'] ?? 1));
+$perPage = 12;
+$totalRows = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+$pages = max(1, (int) ceil($totalRows / $perPage));
+$page = min($page, $pages);
+$offset = ($page - 1) * $perPage;
+$stUsers = $pdo->prepare(
+    'SELECT id, user_uid, username, email, phone, fullname, department, role, status, approved, created_at, approved_at, last_login_at
+     FROM users ORDER BY FIELD(status, "pending", "approved", "active", "suspended", "rejected", "inactive"), id DESC
+     LIMIT ? OFFSET ?'
+);
+$stUsers->bindValue(1, $perPage, PDO::PARAM_INT);
+$stUsers->bindValue(2, $offset, PDO::PARAM_INT);
+$stUsers->execute();
+$users = $stUsers->fetchAll();
 $loginLogs = $pdo->query(
     'SELECT l.*, u.fullname FROM login_logs l LEFT JOIN users u ON u.id = l.user_id ORDER BY l.id DESC LIMIT 80'
 )->fetchAll();
@@ -95,7 +107,7 @@ require_once __DIR__ . '/includes/layout_start.php';
         </div>
         <div class="row g-3 mt-2">
             <div class="col-6 col-lg-3"><div class="vk-enterprise-stat"><div class="text-muted small">Pending</div><div class="h3 mb-0"><?= (int) $stats['pending'] ?></div></div></div>
-            <div class="col-6 col-lg-3"><div class="vk-enterprise-stat"><div class="text-muted small">Active</div><div class="h3 mb-0"><?= (int) $stats['active'] ?></div></div></div>
+            <div class="col-6 col-lg-3"><div class="vk-enterprise-stat"><div class="text-muted small">Approved</div><div class="h3 mb-0"><?= (int) $stats['approved'] ?></div></div></div>
             <div class="col-6 col-lg-3"><div class="vk-enterprise-stat"><div class="text-muted small">Suspended</div><div class="h3 mb-0"><?= (int) $stats['suspended'] ?></div></div></div>
             <div class="col-6 col-lg-3"><div class="vk-enterprise-stat"><div class="text-muted small">Total Users</div><div class="h3 mb-0"><?= (int) $stats['total'] ?></div></div></div>
         </div>
@@ -130,6 +142,7 @@ require_once __DIR__ . '/includes/layout_start.php';
                         <th>Contact</th>
                         <th>Role</th>
                         <th>Status</th>
+                        <th>Registered</th>
                         <th>Last Login</th>
                         <th class="text-end">Actions</th>
                     </tr>
@@ -161,16 +174,17 @@ require_once __DIR__ . '/includes/layout_start.php';
                             </form>
                         </td>
                         <td><span class="vk-status-badge vk-status-<?= e($status) ?>"><?= e(vk_auth_status_label($status)) ?></span></td>
+                        <td><?= e(substr((string) $u['created_at'], 0, 16)) ?></td>
                         <td><?= $u['last_login_at'] ? e(substr((string) $u['last_login_at'], 0, 16)) : '<span class="text-muted">Never</span>' ?></td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm" role="group">
-                                <?php if ($status !== 'active'): ?>
+                                <?php if (!vk_auth_status_is_approved($status)): ?>
                                     <form method="post"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="user_id" value="<?= (int) $u['id'] ?>"><input type="hidden" name="action" value="approve"><button class="btn btn-outline-success" type="submit">Approve</button></form>
                                 <?php endif; ?>
                                 <?php if ($status === 'pending'): ?>
                                     <form method="post"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="user_id" value="<?= (int) $u['id'] ?>"><input type="hidden" name="action" value="reject"><button class="btn btn-outline-warning" type="submit">Reject</button></form>
                                 <?php endif; ?>
-                                <?php if ($status === 'active' && (int) $u['id'] !== (int) ($_SESSION['user_id'] ?? 0)): ?>
+                                <?php if (vk_auth_status_is_approved($status) && (int) $u['id'] !== (int) ($_SESSION['user_id'] ?? 0)): ?>
                                     <form method="post"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="user_id" value="<?= (int) $u['id'] ?>"><input type="hidden" name="action" value="suspend"><button class="btn btn-outline-danger" type="submit">Suspend</button></form>
                                 <?php endif; ?>
                                 <form method="post"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="user_id" value="<?= (int) $u['id'] ?>"><input type="hidden" name="action" value="reset_password"><button class="btn btn-outline-info" type="submit">Reset</button></form>
@@ -181,6 +195,18 @@ require_once __DIR__ . '/includes/layout_start.php';
                 </tbody>
             </table>
         </div>
+        <?php if ($pages > 1): ?>
+            <div class="card-footer bg-transparent d-flex justify-content-between align-items-center">
+                <span class="small text-muted">Page <?= (int) $page ?> of <?= (int) $pages ?> · <?= (int) $totalRows ?> users</span>
+                <nav aria-label="User pagination">
+                    <ul class="pagination pagination-sm mb-0">
+                        <?php for ($i = 1; $i <= $pages; $i++): ?>
+                            <li class="page-item <?= $i === $page ? 'active' : '' ?>"><a class="page-link" href="<?= e(BASE_URL) ?>/approve_users.php?page=<?= $i ?>"><?= $i ?></a></li>
+                        <?php endfor; ?>
+                    </ul>
+                </nav>
+            </div>
+        <?php endif; ?>
     </div>
 
     <div class="card vk-card">

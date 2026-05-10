@@ -242,7 +242,8 @@ body.vk-auth-body::before,
 }
 
 .vk-status-pending { background: rgba(250, 204, 21, 0.14); color: #fef3c7; }
-.vk-status-active { background: rgba(53, 211, 153, 0.14); color: #d1fae5; }
+.vk-status-active,
+.vk-status-approved { background: rgba(53, 211, 153, 0.14); color: #d1fae5; }
 .vk-status-rejected,
 .vk-status-suspended,
 .vk-status-inactive { background: rgba(255, 107, 138, 0.14); color: #ffe4ea; }
