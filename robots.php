@@ -9,9 +9,14 @@ header('Cache-Control: public, max-age=86400');
 $origin = vk_site_origin();
 $base = rtrim($origin . (BASE_URL === '' ? '' : BASE_URL), '/');
 $sitemap = $base . '/sitemap.php';
+$custom = trim((string) vk_app_setting('robots_txt', ''));
 
-echo "User-agent: *\n";
-echo "Allow: /\n";
-echo "Crawl-delay: 2\n";
+if ($custom !== '') {
+    echo preg_replace("/\r\n?/", "\n", $custom) . "\n";
+} else {
+    echo "User-agent: *\n";
+    echo "Allow: /\n";
+    echo "Crawl-delay: 2\n";
+}
 echo "\n";
 echo 'Sitemap: ' . $sitemap . "\n";

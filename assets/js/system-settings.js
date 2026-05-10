@@ -2,56 +2,82 @@
     'use strict';
 
     const BASE = window.VK_BASE_URL || '';
+    const CSRF = window.VK_CSRF_TOKEN || '';
 
-    function collectTab(tab) {
-        const out = {};
-        if (tab === 'general') {
-            out.site_name = document.getElementById('site_name')?.value ?? '';
-            out.analytics_domain = document.getElementById('analytics_domain')?.value ?? '';
-            out.analytics_script_src = document.getElementById('analytics_script_src')?.value ?? '';
-        } else if (tab === 'seo') {
-            out.seo_site_title = document.getElementById('seo_site_title')?.value ?? '';
-            out.seo_meta_description = document.getElementById('seo_meta_description')?.value ?? '';
-            out.seo_meta_keywords = document.getElementById('seo_meta_keywords')?.value ?? '';
-            out.seo_og_image = document.getElementById('seo_og_image')?.value ?? '';
-            out.seo_auto_enabled = document.getElementById('seo_auto_enabled')?.checked ? '1' : '0';
-            out.seo_locations = document.getElementById('seo_locations')?.value ?? '';
-            out.seo_service_slugs = document.getElementById('seo_service_slugs')?.value ?? '';
-        } else if (tab === 'whatsapp') {
-            out.whatsapp_number = document.getElementById('whatsapp_number')?.value ?? '';
-            out.whatsapp_default_message = document.getElementById('whatsapp_default_message')?.value ?? '';
-        } else if (tab === 'email') {
-            out.smtp_host = document.getElementById('smtp_host')?.value ?? '';
-            out.smtp_port = String(document.getElementById('smtp_port')?.value ?? '587');
-            out.smtp_username = document.getElementById('smtp_username')?.value ?? '';
-            out.smtp_secure = document.getElementById('smtp_secure')?.value ?? 'tls';
-            const pw = document.getElementById('smtp_password')?.value ?? '';
-            if (pw !== '') {
-                out.smtp_password = pw;
-            }
-            out.email_from = document.getElementById('email_from')?.value ?? '';
-            out.from_name = document.getElementById('from_name')?.value ?? '';
-            out.email_autoresponder_enabled = document.getElementById('email_autoresponder_enabled')?.checked ? '1' : '0';
-            out.email_autoresponder_subject = document.getElementById('email_autoresponder_subject')?.value ?? '';
-            out.email_autoresponder_body = document.getElementById('email_autoresponder_body')?.value ?? '';
+    const tabKeys = {
+        general: ['company_name', 'site_title', 'site_name', 'company_tagline', 'business_slogan'],
+        navigation: ['navbar_cta_text', 'navbar_cta_url', 'announcement_enabled', 'announcement_text', 'announcement_url'],
+        contact: ['contact_phone', 'contact_phone_alt', 'support_email', 'sales_email', 'whatsapp_number', 'business_hours', 'company_address', 'google_maps_embed', 'branches_json', 'whatsapp_default_message'],
+        social: ['facebook_url', 'instagram_url', 'linkedin_url', 'tiktok_url', 'youtube_url', 'twitter_url'],
+        homepage: ['hero_title', 'hero_subtitle', 'hero_primary_cta_text', 'hero_primary_cta_url', 'hero_secondary_cta_text', 'hero_secondary_cta_url', 'home_stats_json', 'services_section_title', 'services_section_subtitle', 'testimonials_title'],
+        seo: ['seo_site_title', 'seo_meta_description', 'seo_meta_keywords', 'seo_auto_enabled', 'seo_locations', 'seo_service_slugs', 'seo_canonical_url', 'robots_txt', 'seo_schema_markup'],
+        theme: ['theme_primary', 'theme_secondary', 'theme_accent', 'theme_gradient_start', 'theme_gradient_end', 'theme_glow', 'button_style', 'card_style'],
+        email: ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_secure', 'email_from', 'from_name', 'email_autoresponder_enabled', 'email_autoresponder_subject', 'email_autoresponder_body'],
+        security: ['security_maintenance_mode', 'security_readonly_staff'],
+        footer: ['footer_text', 'footer_bottom_text', 'analytics_domain', 'analytics_script_src'],
+    };
+
+    function toast(message, type) {
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type || 'success');
+        } else {
+            alert(message);
         }
-        return out;
     }
 
-    async function saveTab(tab) {
-        const settings = collectTab(tab);
-        const res = await fetch(BASE + '/api/settings_save.php', {
+    function fieldByKey(key) {
+        return document.querySelector('[data-setting-key="' + CSS.escape(key) + '"]');
+    }
+
+    function readField(el) {
+        if (!el) return '';
+        if (el.type === 'checkbox') return el.checked ? '1' : '0';
+        return el.value || '';
+    }
+
+    function collectKeys(keys) {
+        const settings = {};
+        keys.forEach(function (key) {
+            const el = fieldByKey(key);
+            if (!el) return;
+            if ((key === 'smtp_password' || key === 'imap_password') && readField(el) === '') return;
+            settings[key] = readField(el);
+        });
+        return settings;
+    }
+
+    function collectTab(tab) {
+        return collectKeys(tabKeys[tab] || []);
+    }
+
+    async function postJson(url, payload) {
+        const res = await fetch(BASE + url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tab: tab, settings: settings }),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF,
+            },
+            body: JSON.stringify(payload),
         });
         const data = await res.json().catch(function () {
             return { ok: false, error: 'Invalid response' };
         });
         if (!res.ok || !data.ok) {
-            throw new Error(data.error || 'Save failed');
+            throw new Error(data.error || 'Request failed');
         }
         return data;
+    }
+
+    async function saveTab(tab) {
+        return postJson('/api/settings_save.php', { tab: tab, settings: collectTab(tab), csrf_token: CSRF });
+    }
+
+    async function saveAll() {
+        const all = {};
+        Object.keys(tabKeys).forEach(function (tab) {
+            Object.assign(all, collectTab(tab));
+        });
+        return postJson('/api/settings_save.php', { tab: 'all', settings: all, csrf_token: CSRF });
     }
 
     document.querySelectorAll('.btn-save-tab').forEach(function (btn) {
@@ -60,32 +86,31 @@
             if (!tab) return;
             btn.disabled = true;
             try {
-                const data = await saveTab(tab);
-                if (typeof window.showToast === 'function') {
-                    if (tab === 'email' && data && data.smtp_password_configured === false) {
-                        window.showToast(
-                            'Saved. SMTP password is still missing — type the mailbox password and save again, or set VK_SMTP_PASS / MAIL_PASSWORD in .env (quoted if it contains $).',
-                            'warning'
-                        );
-                    } else {
-                        window.showToast('Settings saved successfully', 'success');
-                    }
-                }
-                const pw = document.getElementById('smtp_password');
-                if (pw && tab === 'email') {
-                    pw.value = '';
+                await saveTab(tab);
+                toast('Settings saved successfully', 'success');
+                if (tab === 'email') {
+                    const pw = fieldByKey('smtp_password');
+                    if (pw) pw.value = '';
                 }
             } catch (e) {
-                const msg = e && e.message ? e.message : 'Save failed';
-                if (typeof window.showToast === 'function') {
-                    window.showToast(msg, 'danger');
-                } else {
-                    alert(msg);
-                }
+                toast(e.message || 'Save failed', 'danger');
             } finally {
                 btn.disabled = false;
             }
         });
+    });
+
+    document.querySelector('[data-save-all]')?.addEventListener('click', async function (e) {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        try {
+            await saveAll();
+            toast('All settings saved', 'success');
+        } catch (err) {
+            toast(err.message || 'Save failed', 'danger');
+        } finally {
+            btn.disabled = false;
+        }
     });
 
     function digitsOnly(s) {
@@ -93,175 +118,157 @@
     }
 
     document.getElementById('btnTestWhatsapp')?.addEventListener('click', function () {
-        const num = document.getElementById('whatsapp_number')?.value ?? '';
-        const msg = document.getElementById('whatsapp_default_message')?.value ?? 'Hello';
-        const d = digitsOnly(num);
-        if (!d) {
-            if (typeof window.showToast === 'function') {
-                window.showToast('Enter a WhatsApp number first', 'warning');
-            }
+        const num = readField(fieldByKey('whatsapp_number'));
+        const msg = readField(fieldByKey('whatsapp_default_message')) || 'Hello';
+        let n = digitsOnly(num);
+        if (!n) {
+            toast('Enter a WhatsApp number first', 'warning');
             return;
         }
-        let n = d;
-        if (n.length === 10 && n.indexOf('07') === 0) {
-            n = '94' + n.slice(1);
-        } else if (n.length === 9 && n.indexOf('7') === 0) {
-            n = '94' + n;
-        }
-        const url = 'https://wa.me/' + n + '?text=' + encodeURIComponent(msg);
-        window.open(url, '_blank', 'noopener,noreferrer');
+        if (n.length === 10 && n.indexOf('07') === 0) n = '94' + n.slice(1);
+        else if (n.length === 9 && n.indexOf('7') === 0) n = '94' + n;
+        window.open('https://wa.me/' + n + '?text=' + encodeURIComponent(msg), '_blank', 'noopener,noreferrer');
     });
 
-    document.getElementById('btnMailTest')?.addEventListener('click', async function () {
-        const to = document.getElementById('mail_test_to')?.value?.trim() ?? '';
-        if (!to) {
-            if (typeof window.showToast === 'function') {
-                window.showToast('Enter a recipient email', 'warning');
-            }
-            return;
-        }
-        const btn = document.getElementById('btnMailTest');
-        if (btn) btn.disabled = true;
-        try {
-            const res = await fetch(BASE + '/api/mail_test.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ to: to }),
-            });
-            const data = await res.json().catch(function () {
-                return { ok: false, error: 'Invalid response' };
-            });
-            if (!res.ok || !data.ok) {
-                throw new Error(data.error || 'Send failed');
-            }
-            if (typeof window.showToast === 'function') {
-                window.showToast(data.message || 'Test email sent', 'success');
-            }
-        } catch (e) {
-            const msg = e && e.message ? e.message : 'Send failed';
-            if (typeof window.showToast === 'function') {
-                window.showToast(msg, 'danger');
-            } else {
-                alert(msg);
-            }
-        } finally {
-            if (btn) btn.disabled = false;
-        }
-    });
-
-    function applySmtpPreset(kind) {
-        const host = document.getElementById('smtp_host');
-        const port = document.getElementById('smtp_port');
-        const secure = document.getElementById('smtp_secure');
-        const from = document.getElementById('email_from');
-        const user = document.getElementById('smtp_username');
-        if (!host || !port || !secure) return;
-        const email = (from?.value || user?.value || '').trim().toLowerCase();
-        if (kind === 'gmail') {
-            host.value = 'smtp.gmail.com';
-            port.value = '587';
-            secure.value = 'tls';
-        } else if (kind === 'outlook') {
-            host.value = 'smtp.office365.com';
-            port.value = '587';
-            secure.value = 'tls';
-        } else if (kind === 'cpanel') {
-            if (email.includes('@')) {
-                host.value = 'mail.' + email.split('@')[1];
-            }
-            port.value = '587';
-            secure.value = 'tls';
-        }
-    }
-
-    document.getElementById('btnSmtpPresetVkitnet')?.addEventListener('click', function () {
-        const host = document.getElementById('smtp_host');
-        const port = document.getElementById('smtp_port');
-        const secure = document.getElementById('smtp_secure');
-        const from = document.getElementById('email_from');
-        const user = document.getElementById('smtp_username');
-        const fname = document.getElementById('from_name');
-        if (!host || !port || !secure) return;
-        host.value = 'vkitnet.info';
-        port.value = '465';
-        secure.value = 'ssl';
-        const u = 'info@vkitnet.info';
-        if (from && (!from.value || !from.value.trim())) from.value = u;
-        if (user && (!user.value || !user.value.trim())) user.value = u;
-        if (fname && (!fname.value || !fname.value.trim())) fname.value = 'VK IT';
-    });
-    document.getElementById('btnSmtpPresetGmail')?.addEventListener('click', function () { applySmtpPreset('gmail'); });
-    document.getElementById('btnSmtpPresetOutlook')?.addEventListener('click', function () { applySmtpPreset('outlook'); });
-    document.getElementById('btnSmtpPresetCpanel')?.addEventListener('click', function () { applySmtpPreset('cpanel'); });
-    document.getElementById('btnSmtpPresetSsl465')?.addEventListener('click', function () {
-        const host = document.getElementById('smtp_host');
-        const port = document.getElementById('smtp_port');
-        const secure = document.getElementById('smtp_secure');
-        const from = document.getElementById('email_from');
-        const user = document.getElementById('smtp_username');
-        if (!host || !port || !secure) return;
-        const email = (from?.value || user?.value || '').trim().toLowerCase();
-        if (email.includes('@')) {
-            host.value = email.split('@')[1];
-        }
-        port.value = '465';
-        secure.value = 'ssl';
-    });
-
-    if (window.location.hash === '#pane-mail') {
-        const trigger = document.querySelector('[data-bs-target="#pane-mail"]');
-        if (trigger && window.bootstrap && window.bootstrap.Tab) {
-            new window.bootstrap.Tab(trigger).show();
-        }
-    }
-
-    // Branding form handler
     const brandingForm = document.getElementById('brandingForm');
     if (brandingForm) {
+        brandingForm.querySelectorAll('input[type="file"]').forEach(function (input) {
+            input.addEventListener('change', function () {
+                const file = input.files && input.files[0];
+                if (!file) return;
+                const tile = input.closest('[data-upload-tile]');
+                const preview = tile?.querySelector('.vk-upload-preview');
+                if (!preview) return;
+                if (file.type === 'image/svg+xml') {
+                    preview.innerHTML = '<span><i class="bi bi-filetype-svg"></i></span>';
+                    return;
+                }
+                const img = document.createElement('img');
+                img.alt = 'Selected image preview';
+                img.src = URL.createObjectURL(file);
+                preview.replaceChildren(img);
+            });
+        });
+
         brandingForm.addEventListener('submit', async function (e) {
             e.preventDefault();
             const alertBox = document.getElementById('brandingAlert');
             const btn = brandingForm.querySelector('button[type="submit"]');
-            const originalText = btn?.textContent || 'Save Branding';
-            btn.disabled = true;
-            btn.textContent = 'Saving...';
+            if (btn) btn.disabled = true;
             if (alertBox) {
-                alertBox.className = 'alert d-none';
+                alertBox.className = 'alert d-none mt-3';
                 alertBox.textContent = '';
             }
-
             const formData = new FormData(brandingForm);
+            formData.append('csrf_token', CSRF);
             try {
                 const res = await fetch(BASE + '/api/branding_save.php', {
                     method: 'POST',
+                    headers: { 'X-CSRF-Token': CSRF },
                     body: formData,
                 });
                 const data = await res.json().catch(function () {
                     return { ok: false, error: 'Invalid response' };
                 });
-                if (data.ok) {
-                    if (alertBox) {
-                        alertBox.className = 'alert alert-success';
-                        alertBox.textContent = 'Branding saved successfully!';
-                    }
-                    // Reload page after short delay to show updated previews
-                    setTimeout(() => location.reload(), 800);
-                } else {
-                    const msg = data.errors?.join(', ') || data.error || 'Save failed';
-                    if (alertBox) {
-                        alertBox.className = 'alert alert-danger';
-                        alertBox.textContent = msg;
-                    }
+                if (!res.ok || !data.ok) throw new Error(data.errors?.join(', ') || data.error || 'Save failed');
+                if (alertBox) {
+                    alertBox.className = 'alert alert-success mt-3';
+                    alertBox.textContent = 'Branding saved successfully.';
                 }
+                toast('Branding saved', 'success');
+                setTimeout(function () { location.reload(); }, 700);
             } catch (err) {
                 if (alertBox) {
-                    alertBox.className = 'alert alert-danger';
-                    alertBox.textContent = err?.message || 'Network error';
+                    alertBox.className = 'alert alert-danger mt-3';
+                    alertBox.textContent = err.message || 'Save failed';
                 }
             } finally {
-                btn.disabled = false;
-                btn.textContent = originalText;
+                if (btn) btn.disabled = false;
             }
         });
+    }
+
+    document.getElementById('settingsSearch')?.addEventListener('input', function (e) {
+        const q = e.target.value.trim().toLowerCase();
+        document.querySelectorAll('.vk-setting-field').forEach(function (field) {
+            const hay = field.getAttribute('data-setting-search') || '';
+            field.classList.toggle('d-none', q !== '' && !hay.includes(q));
+        });
+    });
+
+    function updateLivePreview() {
+        const pairs = [
+            ['company_name', '[data-live-company]'],
+            ['company_tagline', '[data-live-tagline]'],
+            ['hero_title', '[data-live-hero-title]'],
+            ['hero_subtitle', '[data-live-hero-subtitle]'],
+            ['hero_primary_cta_text', '[data-live-cta]'],
+            ['footer_text', '[data-live-footer]'],
+        ];
+        pairs.forEach(function ([key, selector]) {
+            const target = document.querySelector(selector);
+            const el = fieldByKey(key);
+            if (target && el) target.textContent = readField(el);
+        });
+        const contact = document.querySelector('[data-live-contact]');
+        if (contact) {
+            contact.textContent = [readField(fieldByKey('contact_phone')), readField(fieldByKey('support_email'))].filter(Boolean).join(' · ');
+        }
+        const root = document.documentElement;
+        const primary = readField(fieldByKey('theme_primary')) || '#3b82f6';
+        const secondary = readField(fieldByKey('theme_secondary')) || '#14b8a6';
+        root.style.setProperty('--vk-preview-primary', primary);
+        root.style.setProperty('--vk-preview-secondary', secondary);
+    }
+
+    document.querySelectorAll('[data-setting-key]').forEach(function (el) {
+        el.addEventListener('input', updateLivePreview);
+        el.addEventListener('change', updateLivePreview);
+    });
+    updateLivePreview();
+
+    document.getElementById('settingsImportForm')?.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const form = e.currentTarget;
+        const box = document.getElementById('backupAlert');
+        const data = new FormData(form);
+        data.append('csrf_token', CSRF);
+        try {
+            const res = await fetch(BASE + '/api/settings_import.php', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': CSRF },
+                body: data,
+            });
+            const json = await res.json().catch(function () { return { ok: false, error: 'Invalid response' }; });
+            if (!res.ok || !json.ok) throw new Error(json.error || 'Import failed');
+            if (box) {
+                box.className = 'alert alert-success mt-3';
+                box.textContent = 'Imported ' + json.imported + ' settings. Reloading...';
+            }
+            setTimeout(function () { location.reload(); }, 900);
+        } catch (err) {
+            if (box) {
+                box.className = 'alert alert-danger mt-3';
+                box.textContent = err.message || 'Import failed';
+            }
+        }
+    });
+
+    document.querySelector('[data-restore-defaults]')?.addEventListener('click', async function () {
+        if (!confirm('Restore default settings? Existing customized values for known defaults will be overwritten.')) return;
+        try {
+            await postJson('/api/settings_restore_defaults.php', { csrf_token: CSRF });
+            toast('Defaults restored', 'success');
+            setTimeout(function () { location.reload(); }, 700);
+        } catch (err) {
+            toast(err.message || 'Restore failed', 'danger');
+        }
+    });
+
+    if (window.location.hash) {
+        const trigger = document.querySelector('[data-bs-target="' + CSS.escape(window.location.hash) + '"]');
+        if (trigger && window.bootstrap && window.bootstrap.Tab) {
+            new window.bootstrap.Tab(trigger).show();
+        }
     }
 })();

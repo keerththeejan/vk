@@ -96,6 +96,43 @@ function require_users_admin(PDO $pdo): void
     }
 }
 
+function require_settings_admin(): void
+{
+    require_admin();
+    $role = strtolower((string) ($_SESSION['user_role'] ?? 'admin'));
+    if (!in_array($role, ['admin', 'owner'], true)) {
+        flash_set('error', 'Only administrators and owners can manage site settings.');
+        redirect('/modules/dashboard.php');
+    }
+}
+
+function csrf_token(): string
+{
+    if (empty($_SESSION['_csrf_token']) || !is_string($_SESSION['_csrf_token'])) {
+        $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION['_csrf_token'];
+}
+
+function csrf_verify(?string $token): bool
+{
+    return is_string($token)
+        && isset($_SESSION['_csrf_token'])
+        && is_string($_SESSION['_csrf_token'])
+        && hash_equals($_SESSION['_csrf_token'], $token);
+}
+
+function require_csrf(?string $token): void
+{
+    if (!csrf_verify($token)) {
+        http_response_code(419);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'error' => 'Security token expired. Refresh and try again.'], JSON_THROW_ON_ERROR);
+        exit;
+    }
+}
+
 function users_has_role_column(PDO $pdo): bool
 {
     static $v = null;

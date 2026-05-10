@@ -1,3 +1,19 @@
+<?php
+$footerCompany = vk_app_setting('company_name', 'VK Network');
+$footerTagline = vk_app_setting('company_tagline', 'Multi-Service Solutions');
+$footerText = vk_app_setting('footer_text', 'Premium local service operations with transparent booking, tracking, and field support for homes and businesses.');
+$footerBottom = vk_app_setting('footer_bottom_text', 'Made with care in Sri Lanka');
+$footerAddress = vk_app_setting('company_address', '26/3 Thiruvaiyaru, Kilinochchi, Sri Lanka');
+$footerPhone = vk_app_setting('contact_phone', '077 887 0135');
+$footerEmail = vk_app_setting('support_email', '');
+$socials = [
+    'facebook' => vk_app_setting('facebook_url', ''),
+    'instagram' => vk_app_setting('instagram_url', ''),
+    'linkedin' => vk_app_setting('linkedin_url', ''),
+    'youtube' => vk_app_setting('youtube_url', ''),
+    'twitter' => vk_app_setting('twitter_url', ''),
+];
+?>
 </main>
 <footer class="vk-public-footer py-5 mt-auto">
     <div class="container">
@@ -6,15 +22,15 @@
                 <a class="vk-footer-logo d-inline-flex align-items-center gap-3 mb-3" href="<?= e(BASE_URL) ?>/index.php">
                     <span class="vk-footer-mark">VK</span>
                     <div>
-                        <div class="vk-footer-brand">VK Network</div>
-                        <div class="small text-muted">Multi-Service Solutions</div>
+                        <div class="vk-footer-brand"><?= e((string) $footerCompany) ?></div>
+                        <div class="small text-muted"><?= e((string) $footerTagline) ?></div>
                     </div>
                 </a>
-                <p class="vk-footer-copy">Premium local service operations with transparent booking, tracking, and field support for homes and businesses.</p>
+                <p class="vk-footer-copy"><?= e((string) $footerText) ?></p>
                 <div class="d-flex flex-wrap gap-2 mt-3">
-                    <a class="vk-social-btn" href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i data-lucide="facebook"></i></a>
-                    <a class="vk-social-btn" href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i data-lucide="twitter"></i></a>
-                    <a class="vk-social-btn" href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i data-lucide="linkedin"></i></a>
+                    <?php foreach ($socials as $name => $url): if (trim((string) $url) === '') continue; ?>
+                        <a class="vk-social-btn" href="<?= e((string) $url) ?>" target="_blank" rel="noopener noreferrer" aria-label="<?= e(ucfirst($name)) ?>"><i data-lucide="<?= e($name) ?>"></i></a>
+                    <?php endforeach; ?>
                 </div>
             </div>
             <div class="col-6 col-md-3 col-lg-2">
@@ -37,8 +53,9 @@
             </div>
             <div class="col-12 col-md-6 col-lg-4">
                 <h3 class="vk-footer-heading">Contact</h3>
-                <p class="small mb-3">26/3 Thiruvaiyaru, Kilinochchi, Sri Lanka</p>
-                <p class="small mb-3">Phone: <a class="link-footer" href="tel:+94778870135">077 887 0135</a></p>
+                <p class="small mb-3"><?= nl2br(e((string) $footerAddress)) ?></p>
+                <?php if ($footerPhone): ?><p class="small mb-3">Phone: <a class="link-footer" href="tel:<?= e(preg_replace('/\D+/', '', (string) $footerPhone)) ?>"><?= e((string) $footerPhone) ?></a></p><?php endif; ?>
+                <?php if ($footerEmail): ?><p class="small mb-3">Email: <a class="link-footer" href="mailto:<?= e((string) $footerEmail) ?>"><?= e((string) $footerEmail) ?></a></p><?php endif; ?>
                 <form class="vk-newsletter-form mb-3" action="<?= e(BASE_URL) ?>/book.php" method="get">
                     <label class="visually-hidden" for="vkNewsletterEmail">Email address</label>
                     <div class="input-group">
@@ -55,14 +72,14 @@
             </div>
         </div>
         <div class="vk-footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 pt-4 mt-4 border-top border-secondary border-opacity-10">
-            <p class="small mb-0 text-muted">&copy; <?= (int) date('Y') ?> VK Network. All rights reserved.</p>
-            <p class="small mb-0 text-muted">Made with ❤️ in Sri Lanka</p>
+            <p class="small mb-0 text-muted">&copy; <?= (int) date('Y') ?> <?= e((string) $footerCompany) ?>. All rights reserved.</p>
+            <p class="small mb-0 text-muted"><?= e((string) $footerBottom) ?></p>
         </div>
     </div>
 </footer>
 <?php
-$waDigits = defined('VK_PUBLIC_WHATSAPP_NUMBER') ? (string) VK_PUBLIC_WHATSAPP_NUMBER : '94778870135';
-$waMsg = rawurlencode('Hello, I need service from VK Network.');
+$waDigits = vk_app_setting('whatsapp_number', defined('VK_PUBLIC_WHATSAPP_NUMBER') ? (string) VK_PUBLIC_WHATSAPP_NUMBER : '94778870135');
+$waMsg = rawurlencode((string) vk_app_setting('whatsapp_default_message', 'Hello, I need service from VK Network.'));
 $waHref = 'https://wa.me/' . preg_replace('/\D+/', '', $waDigits) . '?text=' . $waMsg;
 $vkPublicScriptVersion = is_file(__DIR__ . '/../assets/js/public-site.js') ? (string) filemtime(__DIR__ . '/../assets/js/public-site.js') : (string) time();
 if (function_exists('vk_json_ld_local_business')) {

@@ -146,7 +146,7 @@ function vk_seo_og_image_default(): string
  */
 function vk_public_seo_head(): void
 {
-    $dbBrand = vk_app_setting('site_name');
+    $dbBrand = vk_app_setting('company_name', vk_app_setting('site_name'));
     $brand = ($dbBrand !== null && $dbBrand !== '') ? $dbBrand : 'VK Network';
     $pageLabel = isset($GLOBALS['pageTitle']) ? (string) $GLOBALS['pageTitle'] : 'Home';
     $fullTitle = $GLOBALS['seoFullTitle'] ?? null;
@@ -171,11 +171,16 @@ function vk_public_seo_head(): void
         $keywords = ($dbKw !== null && $dbKw !== '') ? $dbKw : vk_seo_default_keywords();
     }
 
-    $canonicalRel = $GLOBALS['seoCanonicalPath'] ?? ($_SERVER['REQUEST_URI'] ?? '/');
-    if (($pos = strpos($canonicalRel, '?')) !== false) {
-        $canonicalRel = substr($canonicalRel, 0, $pos);
+    $dbCanonical = vk_app_setting('seo_canonical_url', '');
+    if (is_string($dbCanonical) && preg_match('#^https?://#i', $dbCanonical)) {
+        $canonicalAbs = $dbCanonical;
+    } else {
+        $canonicalRel = $GLOBALS['seoCanonicalPath'] ?? ($_SERVER['REQUEST_URI'] ?? '/');
+        if (($pos = strpos($canonicalRel, '?')) !== false) {
+            $canonicalRel = substr($canonicalRel, 0, $pos);
+        }
+        $canonicalAbs = vk_public_absolute_url($canonicalRel);
     }
-    $canonicalAbs = vk_public_absolute_url($canonicalRel);
 
     if (isset($GLOBALS['seoOgImage']) && (string) $GLOBALS['seoOgImage'] !== '') {
         $ogImage = (string) $GLOBALS['seoOgImage'];
@@ -187,6 +192,10 @@ function vk_public_seo_head(): void
         $ogImage = vk_public_absolute_url($ogImage);
     }
 
+    $twitterImage = vk_app_setting('seo_twitter_image', '');
+    if (is_string($twitterImage) && $twitterImage !== '' && !str_starts_with($twitterImage, 'http')) {
+        $twitterImage = vk_public_absolute_url($twitterImage);
+    }
     $twitterCard = $GLOBALS['seoTwitterCard'] ?? 'summary_large_image';
 
     echo '<meta name="description" content="' . e((string) $desc) . '">' . "\n";
@@ -201,14 +210,22 @@ function vk_public_seo_head(): void
     echo '<meta name="twitter:card" content="' . e((string) $twitterCard) . '">' . "\n";
     echo '<meta name="twitter:title" content="' . e($fullTitle) . '">' . "\n";
     echo '<meta name="twitter:description" content="' . e((string) $desc) . '">' . "\n";
+    if (is_string($twitterImage) && $twitterImage !== '') {
+        echo '<meta name="twitter:image" content="' . e($twitterImage) . '">' . "\n";
+    }
+    $customSchema = trim((string) vk_app_setting('seo_schema_markup', ''));
+    if ($customSchema !== '' && json_decode($customSchema, true) !== null) {
+        echo '<script type="application/ld+json">' . json_encode(json_decode($customSchema, true), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . '</script>' . "\n";
+    }
 }
 
 function vk_json_ld_local_business(): string
 {
-    $nameDb = vk_app_setting('site_name');
+    $nameDb = vk_app_setting('company_name', vk_app_setting('site_name'));
     $name = ($nameDb !== null && $nameDb !== '') ? $nameDb : (defined('VK_BUSINESS_NAME') ? (string) VK_BUSINESS_NAME : 'VK Network');
-    $phone = defined('VK_BUSINESS_PHONE_E164') ? (string) VK_BUSINESS_PHONE_E164 : '+94778870135';
-    $street = defined('VK_BUSINESS_STREET') ? (string) VK_BUSINESS_STREET : '26/3 Thiruvaiyaru';
+    $phoneSetting = preg_replace('/\D+/', '', (string) vk_app_setting('contact_phone', ''));
+    $phone = $phoneSetting ? '+' . $phoneSetting : (defined('VK_BUSINESS_PHONE_E164') ? (string) VK_BUSINESS_PHONE_E164 : '+94778870135');
+    $street = (string) vk_app_setting('company_address', defined('VK_BUSINESS_STREET') ? (string) VK_BUSINESS_STREET : '26/3 Thiruvaiyaru');
     $city = defined('VK_BUSINESS_CITY') ? (string) VK_BUSINESS_CITY : 'Kilinochchi';
     $region = defined('VK_BUSINESS_REGION') ? (string) VK_BUSINESS_REGION : 'Northern Province';
     $country = defined('VK_BUSINESS_COUNTRY') ? (string) VK_BUSINESS_COUNTRY : 'LK';

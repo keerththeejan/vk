@@ -9,6 +9,9 @@ uploads/services/gallery/*
 !uploads/staff/
 uploads/staff/*
 !uploads/staff/.htaccess
+!uploads/settings/
+uploads/settings/*
+!uploads/settings/.htaccess
 .env
 # Local scratch / credentials — do not commit
 note

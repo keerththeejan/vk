@@ -2,6 +2,7 @@
     'use strict';
 
     const BASE = window.VK_BASE_URL || '';
+    const CSRF = window.VK_CSRF_TOKEN || '';
 
     function collectHub() {
         return {
@@ -26,8 +27,8 @@
         try {
             const res = await fetch(BASE + '/api/settings_save.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tab: 'email_hub', settings: settings }),
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
+                body: JSON.stringify({ tab: 'email_hub', settings: settings, csrf_token: CSRF }),
             });
             const data = await res.json().catch(function () {
                 return { ok: false, error: 'Invalid response' };

@@ -2,7 +2,7 @@
 declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 require_once dirname(__DIR__) . '/includes/init.php';
-require_admin();
+require_settings_admin();
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     http_response_code(405);
@@ -17,6 +17,7 @@ if (!is_array($data)) {
     echo json_encode(['ok' => false, 'error' => 'Invalid JSON'], JSON_THROW_ON_ERROR);
     exit;
 }
+require_csrf((string) ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? $data['csrf_token'] ?? ''));
 
 $tab = (string) ($data['tab'] ?? '');
 $settings = $data['settings'] ?? null;
@@ -27,15 +28,22 @@ if (!is_array($settings)) {
 }
 
 $byTab = [
-    'general' => ['site_name', 'analytics_domain', 'analytics_script_src'],
-    'seo' => ['seo_site_title', 'seo_meta_description', 'seo_meta_keywords', 'seo_og_image', 'seo_auto_enabled', 'seo_locations', 'seo_service_slugs'],
-    'whatsapp' => ['whatsapp_number', 'whatsapp_default_message'],
-    'email' => ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_secure', 'email_from', 'from_name'],
+    'general' => ['company_name', 'site_title', 'site_name', 'company_tagline', 'business_slogan'],
+    'navigation' => ['navbar_cta_text', 'navbar_cta_url', 'announcement_enabled', 'announcement_text', 'announcement_url'],
+    'contact' => ['contact_phone', 'contact_phone_alt', 'support_email', 'sales_email', 'whatsapp_number', 'business_hours', 'company_address', 'google_maps_embed', 'branches_json', 'whatsapp_default_message'],
+    'social' => ['facebook_url', 'instagram_url', 'linkedin_url', 'tiktok_url', 'youtube_url', 'twitter_url'],
+    'homepage' => ['hero_title', 'hero_subtitle', 'hero_primary_cta_text', 'hero_primary_cta_url', 'hero_secondary_cta_text', 'hero_secondary_cta_url', 'home_stats_json', 'services_section_title', 'services_section_subtitle', 'testimonials_title'],
+    'seo' => ['seo_site_title', 'seo_meta_description', 'seo_meta_keywords', 'seo_og_image', 'seo_twitter_image', 'seo_auto_enabled', 'seo_locations', 'seo_service_slugs', 'seo_canonical_url', 'robots_txt', 'seo_schema_markup'],
+    'theme' => ['theme_primary', 'theme_secondary', 'theme_accent', 'theme_gradient_start', 'theme_gradient_end', 'theme_glow', 'button_style', 'card_style'],
+    'email' => ['smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_secure', 'email_from', 'from_name', 'email_autoresponder_enabled', 'email_autoresponder_subject', 'email_autoresponder_body'],
+    'security' => ['security_maintenance_mode', 'security_readonly_staff'],
+    'footer' => ['footer_text', 'footer_bottom_text', 'analytics_domain', 'analytics_script_src'],
     'email_hub' => [
         'imap_host', 'imap_port', 'imap_username', 'imap_password', 'imap_poll_enabled',
         'email_autoresponder_enabled', 'email_autoresponder_subject', 'email_autoresponder_body',
     ],
 ];
+$byTab['all'] = array_values(array_unique(array_merge(...array_values($byTab))));
 
 if (!isset($byTab[$tab])) {
     http_response_code(400);
@@ -44,13 +52,10 @@ if (!isset($byTab[$tab])) {
 }
 
 $pdo = db();
-if (!vk_settings_table_ready($pdo)) {
-    http_response_code(503);
-    echo json_encode(['ok' => false, 'error' => 'Settings table missing. Import sql/upgrade_settings.sql'], JSON_THROW_ON_ERROR);
-    exit;
-}
+vk_settings_seed_defaults($pdo);
 
 $allowed = array_flip($byTab[$tab]);
+$meta = vk_settings_defaults();
 
 foreach ($settings as $key => $value) {
     if (!is_string($key) || !isset($allowed[$key])) {
@@ -69,10 +74,27 @@ foreach ($settings as $key => $value) {
     if ($key === 'imap_password' && $str === '') {
         continue;
     }
-    vk_settings_set($pdo, $key, $str);
+    if (str_ends_with($key, '_json')) {
+        $decoded = json_decode($str, true);
+        if (!is_array($decoded)) {
+            http_response_code(422);
+            echo json_encode(['ok' => false, 'error' => $key . ' must contain valid JSON'], JSON_THROW_ON_ERROR);
+            exit;
+        }
+    }
+    if (in_array($key, ['theme_primary', 'theme_secondary', 'theme_accent', 'theme_gradient_start', 'theme_gradient_end', 'theme_glow'], true)
+        && !preg_match('/^#[0-9a-f]{6}$/i', $str)) {
+        http_response_code(422);
+        echo json_encode(['ok' => false, 'error' => $key . ' must be a hex color'], JSON_THROW_ON_ERROR);
+        exit;
+    }
+    $group = isset($meta[$key]) ? (string) $meta[$key][1] : $tab;
+    $type = isset($meta[$key]) ? (string) $meta[$key][2] : 'text';
+    vk_settings_set($pdo, $key, $str, $group, $type);
+    vk_settings_audit($pdo, 'save', $key, in_array($key, ['smtp_password', 'imap_password'], true) ? '[secret]' : $str);
 }
 
-if ($tab === 'email') {
+if ($tab === 'email' || $tab === 'all') {
     $smtpIn = [
         'smtp_host' => trim((string) ($settings['smtp_host'] ?? '')),
         'smtp_port' => (int) ($settings['smtp_port'] ?? 587),
@@ -101,7 +123,9 @@ if ($tab === 'email') {
         'smtp_password_configured' => ((string) ($cfgAfter['smtp_user'] ?? '')) === ''
             || trim((string) ($cfgAfter['smtp_pass'] ?? '')) !== '',
     ], JSON_THROW_ON_ERROR);
-    exit;
+    if ($tab === 'email') {
+        exit;
+    }
 }
 
 if ($tab === 'email_hub') {

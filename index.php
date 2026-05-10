@@ -134,6 +134,24 @@ $seoDescription = $seoAuto ? vk_local_meta_description('Computer repair and lapt
 $seoKeywords = vk_seo_default_keywords() . ($localKeywords ? ', ' . implode(', ', $localKeywords) : '');
 $extraHead = ($extraHead ?? '') . "\n" . '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">';
 $extraScripts = ($extraScripts ?? '') . "\n" . '<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>';
+$homeHeroTitle = vk_app_setting('hero_title', 'Smart Service Solutions for modern Homes & Businesses');
+$homeHeroSubtitle = vk_app_setting('hero_subtitle', 'Book repairs, installations, maintenance, and technical support with real-time tracking and intelligent workflow management.');
+$homePrimaryCtaText = vk_app_setting('hero_primary_cta_text', 'Book a Service');
+$homePrimaryCtaUrl = vk_setting_url(vk_app_setting('hero_primary_cta_url', '/book.php'), BASE_URL . '/book.php');
+$homeSecondaryCtaText = vk_app_setting('hero_secondary_cta_text', 'Track Your Service');
+$homeSecondaryCtaUrl = vk_setting_url(vk_app_setting('hero_secondary_cta_url', '/track.php'), BASE_URL . '/track.php');
+$servicesSectionTitle = vk_app_setting('services_section_title', 'Expert solutions with fast booking and transparent tracking.');
+$servicesSectionSubtitle = vk_app_setting('services_section_subtitle', 'Every service is backed by qualified technicians, instant booking, and a seamless customer experience.');
+$testimonialsTitle = vk_app_setting('testimonials_title', 'Trusted by customers across Sri Lanka.');
+$homeStats = vk_settings_json('home_stats_json', []);
+if (!$homeStats) {
+    $homeStats = [
+        ['value' => '25K+', 'label' => 'Happy Customers'],
+        ['value' => '98.6%', 'label' => 'Success Rate'],
+        ['value' => '4.9', 'label' => 'Customer Rating'],
+        ['value' => '247', 'label' => 'Online Technicians'],
+    ];
+}
 
 require __DIR__ . '/includes/public_header.php';
 ?>
@@ -155,16 +173,16 @@ require __DIR__ . '/includes/public_header.php';
                     <i data-lucide="sparkles"></i>
                     Premium enterprise service platform
                 </span>
-                <h1 class="vk-hero-title">Smart Service Solutions for modern <span class="vk-gradient-text">Homes &amp; Businesses</span></h1>
-                <p class="vk-hero-lead">Book repairs, installations, maintenance, and technical support with real-time tracking and intelligent workflow management.</p>
+                <h1 class="vk-hero-title"><?= e((string) $homeHeroTitle) ?></h1>
+                <p class="vk-hero-lead"><?= e((string) $homeHeroSubtitle) ?></p>
                 <div class="vk-hero-actions d-flex flex-wrap gap-3">
-                    <a class="vk-btn-hero-primary btn btn-lg px-4" href="<?= e(BASE_URL) ?>/book.php">
+                    <a class="vk-btn-hero-primary btn btn-lg px-4" href="<?= e($homePrimaryCtaUrl) ?>">
                         <span class="vk-hero-btn-ic me-2 d-inline-flex align-items-center" aria-hidden="true"><i data-lucide="calendar-plus"></i></span>
-                        Book a Service
+                        <?= e((string) $homePrimaryCtaText) ?>
                     </a>
-                    <a class="vk-btn-hero-secondary btn btn-lg px-4" href="<?= e(BASE_URL) ?>/track.php">
+                    <a class="vk-btn-hero-secondary btn btn-lg px-4" href="<?= e($homeSecondaryCtaUrl) ?>">
                         <span class="vk-hero-btn-ic me-2 d-inline-flex align-items-center" aria-hidden="true"><i data-lucide="search"></i></span>
-                        Track Your Service
+                        <?= e((string) $homeSecondaryCtaText) ?>
                     </a>
                 </div>
                 <div class="vk-hero-badges d-flex flex-wrap gap-2 mt-4" data-aos="fade-up" data-aos-duration="700" data-aos-delay="150">
@@ -174,30 +192,14 @@ require __DIR__ . '/includes/public_header.php';
                     <span class="vk-hero-badge">Satisfaction Guarantee</span>
                 </div>
                 <div class="row row-cols-1 row-cols-sm-2 g-3 mt-4" data-aos="fade-up" data-aos-duration="700" data-aos-delay="200">
-                    <div class="col">
-                        <div class="vk-home-stat">
-                            <strong>25K+</strong>
-                            <span>Happy Customers</span>
+                    <?php foreach (array_slice($homeStats, 0, 4) as $stat): ?>
+                        <div class="col">
+                            <div class="vk-home-stat">
+                                <strong><?= e((string) ($stat['value'] ?? '')) ?></strong>
+                                <span><?= e((string) ($stat['label'] ?? '')) ?></span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col">
-                        <div class="vk-home-stat">
-                            <strong>98.6%</strong>
-                            <span>Success Rate</span>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="vk-home-stat">
-                            <strong>4.9</strong>
-                            <span>Customer Rating</span>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="vk-home-stat">
-                            <strong>247</strong>
-                            <span>Online Technicians</span>
-                        </div>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
                 <div class="vk-brand-strip d-flex flex-wrap align-items-center gap-3 gap-sm-4 mt-5" data-aos="fade-up" data-aos-duration="700" data-aos-delay="260">
                     <span class="vk-brand-pill">Dell</span>
@@ -316,8 +318,8 @@ require __DIR__ . '/includes/public_header.php';
         <div class="row justify-content-between align-items-end g-3 mb-5">
             <div class="col-lg-7" data-aos="fade-up">
                 <span class="vk-section-kicker">Our Premium Services</span>
-                <h2 class="vk-section-title mb-2">Expert solutions with fast booking and transparent tracking.</h2>
-                <p class="vk-section-lead mb-0">Every service is backed by qualified technicians, instant booking, and a seamless customer experience.</p>
+                <h2 class="vk-section-title mb-2"><?= e((string) $servicesSectionTitle) ?></h2>
+                <p class="vk-section-lead mb-0"><?= e((string) $servicesSectionSubtitle) ?></p>
             </div>
             <div class="col-lg-4 text-lg-end" data-aos="fade-up" data-aos-delay="100">
                 <a class="btn btn-outline-primary btn-lg" href="<?= e(BASE_URL) ?>/service.php">View all services</a>
@@ -594,7 +596,7 @@ require __DIR__ . '/includes/public_header.php';
     <div class="container py-lg-4">
         <div class="vk-testimonials-head text-center mb-5" data-aos="fade-up">
             <span class="vk-section-kicker">Testimonials</span>
-            <h2 class="vk-section-title mb-2">Trusted by customers across Sri Lanka.</h2>
+            <h2 class="vk-section-title mb-2"><?= e((string) $testimonialsTitle) ?></h2>
             <p class="vk-section-lead mx-auto mb-0">Premium reviews from customers who have experienced fast, transparent service delivery.</p>
         </div>
         <div class="vk-testimonials-shell" data-aos="fade-up" data-aos-duration="700">

@@ -592,6 +592,22 @@ body.vk-public-site {
     --bs-primary-rgb: 37, 99, 235;
 }
 
+.vk-announcement-bar {
+    position: relative;
+    z-index: 1040;
+    padding: 0.48rem 1rem;
+    text-align: center;
+    background: linear-gradient(90deg, var(--primary-color), var(--vk-public-secondary, #14b8a6));
+    box-shadow: 0 12px 32px rgba(var(--bs-primary-rgb), 0.24);
+}
+
+.vk-announcement-bar a {
+    color: #fff;
+    font-size: 0.88rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+
 html:is([data-theme="dark"], [data-bs-theme="dark"]) body.vk-public-site {
     --bs-primary-rgb: 59, 130, 246;
 }
