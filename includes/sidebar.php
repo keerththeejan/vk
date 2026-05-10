@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
-$path = $_SERVER['SCRIPT_NAME'] ?? '';
+$path = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
 function nav_active(string $needle): string
 {
     global $path;
-    return str_contains($path, $needle) ? 'active' : '';
+    return str_contains((string) $path, $needle) ? 'active' : '';
 }
 ?>
 <div class="offcanvas-lg offcanvas-start vk-sidebar text-white" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">

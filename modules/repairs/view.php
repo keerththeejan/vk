@@ -1,44 +1,129 @@
 <?php
 declare(strict_types=1);
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('log_errors', '1');
+
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
 
 $id = (int) ($_GET['id'] ?? 0);
-$st = $pdo->prepare(
-    'SELECT r.*, c.name AS customer_name, c.phone, c.email, c.address,
-            t.name AS technician_name,
-            st.name AS template_name
-     FROM repair_jobs r
-     JOIN customers c ON c.id = r.customer_id
-     LEFT JOIN technicians t ON t.id = r.technician_id
-     LEFT JOIN service_templates st ON st.id = r.service_template_id
-     WHERE r.id = ?'
-);
-$st->execute([$id]);
-$job = $st->fetch();
-if (!$job) {
-    flash_set('error', 'Job not found.');
-    redirect('/modules/repairs/list.php');
+
+function render_repair_view_error(string $title, string $message, ?string $debug = null): never
+{
+    $pageTitle = 'Repair job';
+    require dirname(__DIR__, 2) . '/includes/layout_start.php';
+    ?>
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8 col-xl-6">
+            <div class="card vk-card border-0 shadow-sm">
+                <div class="card-body p-4 text-center">
+                    <div class="display-6 text-warning mb-3"><i class="bi bi-exclamation-triangle"></i></div>
+                    <h1 class="h4 mb-2"><?= e($title) ?></h1>
+                    <p class="text-muted mb-4"><?= e($message) ?></p>
+                    <?php if ($debug !== null && $debug !== ''): ?>
+                        <div class="alert alert-danger text-start small"><?= nl2br(e($debug)) ?></div>
+                    <?php endif; ?>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <a class="btn btn-primary" href="<?= e(BASE_URL) ?>/modules/repairs/list.php"><i class="bi bi-arrow-left me-1"></i>Back to repairs</a>
+                        <a class="btn btn-outline-secondary" href="<?= e(BASE_URL) ?>/modules/dashboard.php">Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
+    require dirname(__DIR__, 2) . '/includes/layout_end.php';
+    exit;
 }
 
-$parts = $pdo->prepare(
-    'SELECT jp.*, p.name AS product_name FROM repair_job_parts jp JOIN products p ON p.id = jp.product_id WHERE jp.repair_job_id = ?'
-);
-$parts->execute([$id]);
-$partRows = $parts->fetchAll();
+if ($id <= 0) {
+    render_repair_view_error('Invalid repair ID', 'The selected repair job link is missing a valid ID.');
+}
 
-$adv = $pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM payments WHERE repair_job_id = ?');
-$adv->execute([$id]);
-$advances = (float) $adv->fetchColumn();
+try {
+    if (!db_table_exists($pdo, 'repair_jobs')) {
+        render_repair_view_error('Repair module unavailable', 'The repair jobs table is missing. Please run the repair module database upgrade.');
+    }
+    if (!db_table_exists($pdo, 'customers')) {
+        render_repair_view_error('Customer data unavailable', 'The customers table is missing, so repair job details cannot be loaded.');
+    }
 
-$payList = $pdo->prepare('SELECT * FROM payments WHERE repair_job_id = ? ORDER BY paid_at DESC');
-$payList->execute([$id]);
-$payments = $payList->fetchAll();
+    $select = [
+        'r.*',
+        'COALESCE(c.name, "Unknown customer") AS customer_name',
+        'c.phone',
+        'c.email',
+        'c.address',
+    ];
+    $joins = ['LEFT JOIN customers c ON c.id = r.customer_id'];
 
+    $hasTechnician = db_table_exists($pdo, 'technicians') && db_column_exists($pdo, 'repair_jobs', 'technician_id');
+    if ($hasTechnician) {
+        $select[] = 't.name AS technician_name';
+        $joins[] = 'LEFT JOIN technicians t ON t.id = r.technician_id';
+    } else {
+        $select[] = 'NULL AS technician_name';
+    }
+
+    $hasTemplate = db_table_exists($pdo, 'service_templates') && db_column_exists($pdo, 'repair_jobs', 'service_template_id');
+    if ($hasTemplate) {
+        $select[] = 'svc_tpl.name AS template_name';
+        $joins[] = 'LEFT JOIN service_templates svc_tpl ON svc_tpl.id = r.service_template_id';
+    } else {
+        $select[] = 'NULL AS template_name';
+    }
+
+    $sql = 'SELECT ' . implode(', ', $select) . ' FROM repair_jobs r ' . implode(' ', $joins) . ' WHERE r.id = ? LIMIT 1';
+    $st = $pdo->prepare($sql);
+    $st->execute([$id]);
+    $job = $st->fetch();
+} catch (Throwable $e) {
+    error_log('Repair view load failed for ID ' . $id . ': ' . $e->getMessage());
+    render_repair_view_error('Repair view could not load', 'The repair record could not be loaded right now.', APP_DEBUG ? $e->getMessage() : null);
+}
+
+if (!$job) {
+    render_repair_view_error('Repair record not found', 'This repair job may have been deleted, moved, or the link is outdated.');
+}
+
+$partRows = [];
+$advances = 0.0;
+$payments = [];
 $inv = null;
-if (!empty($job['invoice_id'])) {
-    $ist = $pdo->prepare('SELECT id, invoice_number, grand_total, paid_amount, status FROM invoices WHERE id = ?');
-    $ist->execute([(int) $job['invoice_id']]);
-    $inv = $ist->fetch();
+
+try {
+    if (db_table_exists($pdo, 'repair_job_parts') && db_table_exists($pdo, 'products')) {
+        $parts = $pdo->prepare(
+            'SELECT jp.*, COALESCE(p.name, "Deleted part") AS product_name
+             FROM repair_job_parts jp
+             LEFT JOIN products p ON p.id = jp.product_id
+             WHERE jp.repair_job_id = ?
+             ORDER BY jp.id'
+        );
+        $parts->execute([$id]);
+        $partRows = $parts->fetchAll();
+    }
+
+    if (db_table_exists($pdo, 'payments') && db_column_exists($pdo, 'payments', 'repair_job_id')) {
+        $adv = $pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM payments WHERE repair_job_id = ?');
+        $adv->execute([$id]);
+        $advances = (float) $adv->fetchColumn();
+
+        $payList = $pdo->prepare('SELECT * FROM payments WHERE repair_job_id = ? ORDER BY paid_at DESC, id DESC');
+        $payList->execute([$id]);
+        $payments = $payList->fetchAll();
+    }
+
+    if (!empty($job['invoice_id']) && db_table_exists($pdo, 'invoices')) {
+        $ist = $pdo->prepare('SELECT id, invoice_number, grand_total, paid_amount, status FROM invoices WHERE id = ? LIMIT 1');
+        $ist->execute([(int) $job['invoice_id']]);
+        $inv = $ist->fetch() ?: null;
+    }
+} catch (Throwable $e) {
+    error_log('Repair view related data failed for ID ' . $id . ': ' . $e->getMessage());
+    if (APP_DEBUG) {
+        flash_set('warning', 'Some related repair data could not be loaded: ' . $e->getMessage());
+    }
 }
 
 $waPhone = preg_replace('/\D+/', '', (string) ($job['phone'] ?? ''));
