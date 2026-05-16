@@ -20,6 +20,41 @@ function base_url(string $path = ''): string
     return $path === '' ? $base . '/' : $base . '/' . $path;
 }
 
+/**
+ * Render a responsive image helper for WebP/AVIF-aware public assets.
+ *
+ * Example usage:
+ * echo vk_public_responsive_image('assets/images/hero.jpg', 'Hero image', [480 => 'assets/images/hero-480w.webp', 768 => 'assets/images/hero-768w.webp', 1200 => 'assets/images/hero-1200w.webp']);
+ */
+function vk_public_responsive_image(string $src, string $alt, array $srcset = [], string $sizes = '100vw', string $class = '', string $loading = 'lazy', string $decoding = 'async', int $width = 1200, int $height = 675): string
+{
+    $srcsetParts = [];
+    foreach ($srcset as $w => $path) {
+        $srcsetParts[] = e(base_url((string) $path)) . ' ' . ((int) $w) . 'w';
+    }
+    $srcsetAttr = implode(', ', $srcsetParts);
+    $imgAttrs = [
+        'src' => e(base_url($src)),
+        'alt' => e($alt),
+        'width' => (string) $width,
+        'height' => (string) $height,
+        'loading' => $loading,
+        'decoding' => $decoding,
+        'sizes' => e($sizes),
+        'class' => e($class),
+    ];
+    $attributes = '';
+    foreach ($imgAttrs as $name => $value) {
+        $attributes .= ' ' . $name . '="' . $value . '"';
+    }
+
+    return '<picture>' .
+        '<source type="image/avif" srcset="' . $srcsetAttr . '" sizes="' . e($sizes) . '">' .
+        '<source type="image/webp" srcset="' . $srcsetAttr . '" sizes="' . e($sizes) . '">' .
+        '<img' . $attributes . '>' .
+        '</picture>';
+}
+
 function redirect(string $path): void
 {
     if (str_starts_with($path, 'http')) {

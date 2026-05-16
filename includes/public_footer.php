@@ -21,7 +21,7 @@ $socials = [
         <div class="row gy-4">
             <div class="col-lg-4">
                 <a class="vk-footer-logo d-inline-flex align-items-center gap-3 mb-3" href="<?= e(BASE_URL) ?>/index.php">
-                    <img class="vk-footer-logo-img" src="<?= e($footerLogo) ?>" alt="<?= e((string) $footerCompany) ?> logo" loading="lazy" decoding="async">
+                    <img class="vk-footer-logo-img" src="<?= e($footerLogo) ?>" alt="<?= e((string) $footerCompany) ?> logo" width="120" height="40" loading="lazy" decoding="async">
                     <div>
                         <div class="vk-footer-brand"><?= e((string) $footerCompany) ?></div>
                         <div class="small text-muted"><?= e((string) $footerTagline) ?></div>
