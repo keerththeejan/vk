@@ -63,13 +63,38 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" crossorigin="anonymous">
-    <link href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= e($vkPublicStyleVersion) ?>" rel="stylesheet">
-    <link href="<?= e(base_url('assets/css/public-premium.css')) ?>?v=<?= e($vkPublicPremiumVersion) ?>" rel="stylesheet">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap"></noscript>
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+    <link rel="preload" as="style" href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= e($vkPublicStyleVersion) ?>">
+    <link rel="preload" as="style" href="<?= e(base_url('assets/css/public-premium.css')) ?>?v=<?= e($vkPublicPremiumVersion) ?>">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= e($vkPublicStyleVersion) ?>" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="<?= e(base_url('assets/css/public-premium.css')) ?>?v=<?= e($vkPublicPremiumVersion) ?>" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= e($vkPublicStyleVersion) ?>">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/public-premium.css')) ?>?v=<?= e($vkPublicPremiumVersion) ?>">
+    </noscript>
     <?= $extraHead ?>
     <style>
+        :root { color-scheme: dark; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        html { scroll-behavior: smooth; }
+        body { margin: 0; min-height: 100vh; background: #020617; color: #f8fafc; }
+        .vk-navbar-premium { background: rgba(7, 14, 26, .92); border-bottom: 1px solid rgba(148, 163, 184, .12); }
+        .vk-public-logo-img { max-height: 40px; width: auto; height: auto; display: block; }
+        .vk-public-site { background: #020617; }
+        .vk-home-hero { position: relative; overflow: hidden; background: linear-gradient(180deg, #060b17 0%, #070f1f 100%); color: #fff; min-height: 100vh; }
+        .vk-home-hero .vk-hero-inner { padding: clamp(2rem, 5vw, 4.5rem) 0; }
+        .vk-hero-title { font-size: clamp(2.5rem, 6vw, 3.8rem); line-height: 1.05; margin: .75rem 0; }
+        .vk-hero-lead { max-width: 44rem; font-size: 1.03rem; line-height: 1.7; color: rgba(255, 255, 255, .82); }
+        .vk-btn-hero-primary, .vk-btn-hero-secondary, .vk-nav-book-btn { transition: transform .22s ease, opacity .2s ease; }
+        .vk-btn-hero-primary:hover, .vk-btn-hero-secondary:hover, .vk-nav-book-btn:hover { transform: translateY(-1px); }
+        .vk-hero-shine, .vk-hero-grain, .vk-hero-particles { display: none !important; }
+        @media (min-width: 992px) { .vk-hero-shine, .vk-hero-grain, .vk-hero-particles { display: block !important; } }
+        @media (max-width: 767.98px) { .vk-hero-inner { padding-top: 2rem; padding-bottom: 2.8rem; } .vk-brand-strip { gap: .65rem; } }
         body.vk-public-site {
             --primary-color: <?= e((string) $themePrimary) ?>;
             --vk-pub-primary-mid: <?= e((string) $themePrimary) ?>;
@@ -93,9 +118,9 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
     <a href="<?= e($announcementUrl) ?>"><?= e((string) $announcementText) ?></a>
 </div>
 <?php endif; ?>
-<nav class="navbar navbar-expand-lg sticky-top vk-navbar-premium">
+<nav class="navbar navbar-expand-lg sticky-top vk-navbar-premium" data-vk-navbar="true" data-vk-scroll-target="true" role="navigation" aria-label="Main navigation">
     <div class="container vk-navbar-shell d-flex flex-wrap align-items-center justify-content-between">
-        <a class="navbar-brand d-flex align-items-center gap-3 py-2 mb-0 text-decoration-none" href="<?= e(BASE_URL) ?>/index.php">
+        <a class="navbar-brand d-flex align-items-center gap-3 py-2 mb-0 text-decoration-none" href="<?= e(BASE_URL) ?>/index.php" title="<?= e($seoBrand) ?> - <?= e((string) $companyTagline) ?>">
             <picture>
                 <source media="(max-width: 575.98px)" srcset="<?= e($mobileLogoUrl) ?>">
                 <img src="<?= e($siteLogoUrl) ?>" alt="<?= e($seoBrand) ?>" class="vk-public-logo-img" loading="eager" decoding="async">
@@ -106,20 +131,20 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
             </span>
         </a>
         <div class="d-flex align-items-center gap-2 order-lg-last flex-shrink-0">
-            <a class="btn vk-nav-book-btn d-none d-sm-inline-flex align-items-center justify-content-center" href="<?= e($navCtaUrl) ?>">
+            <a class="btn vk-nav-book-btn d-none d-sm-inline-flex align-items-center justify-content-center" href="<?= e($navCtaUrl) ?>" data-animate="ripple" title="<?= e((string) $navCtaText) ?>">
                 <span class="vk-lucide-nav me-2" aria-hidden="true"><i data-lucide="calendar-plus"></i></span>
                 <?= e((string) $navCtaText) ?>
             </a>
-            <button type="button" class="btn vk-theme-toggle" data-vk-theme-toggle aria-label="Toggle color theme" aria-pressed="false" title="Light / dark mode">
+            <button type="button" class="btn vk-theme-toggle" data-vk-theme-toggle aria-label="Toggle color theme between light and dark mode" aria-pressed="false" title="Light / dark mode">
                 <span class="vk-theme-icon-sun d-none align-items-center justify-content-center" aria-hidden="true" style="width:1.35rem;height:1.35rem"><i data-lucide="sun"></i></span>
                 <span class="vk-theme-icon-moon d-inline-flex align-items-center justify-content-center" aria-hidden="true" style="width:1.35rem;height:1.35rem"><i data-lucide="moon"></i></span>
             </button>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#pubNav" aria-controls="pubNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#pubNav" aria-controls="pubNav" aria-expanded="false" aria-label="Toggle navigation menu" title="Open navigation menu">
                 <span class="navbar-toggler-icon"></span>
             </button>
         </div>
         <div class="collapse navbar-collapse flex-grow-1 justify-content-lg-end" id="pubNav">
-            <ul class="navbar-nav vk-pub-nav mx-lg-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-1 pt-3 pt-lg-0 border-top border-lg-top-0 mt-2 mt-lg-0" id="vkPubNavMenus">
+            <nav class="navbar-nav vk-pub-nav mx-lg-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-1 pt-3 pt-lg-0 border-top border-lg-top-0 mt-2 mt-lg-0" id="vkPubNavMenus">
                 <?php
                 $premiumNav = [];
                 foreach ($vkPubNavMenus ?: [] as $menuRow) {
@@ -142,21 +167,21 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
                     $isActive = $navActive !== '' && $navActive === $m['slug'];
                 ?>
                     <li class="nav-item">
-                        <a class="nav-link vk-pub-nav-link d-inline-flex align-items-center <?= $isActive ? 'active' : '' ?>" href="<?= e($m['href']) ?>"<?= $isActive ? ' aria-current="page"' : '' ?>>
+                        <a class="nav-link vk-pub-nav-link d-inline-flex align-items-center <?= $isActive ? 'active' : '' ?>" href="<?= e($m['href']) ?>" data-nav-link="<?= e($m['slug']) ?>"<?= $isActive ? ' aria-current="page"' : '' ?> title="Navigate to <?= e($m['name']) ?>">
                             <?= e($m['name']) ?>
                         </a>
                     </li>
                 <?php endforeach; ?>
                 <li class="nav-item ms-lg-1 mt-2 mt-lg-0 w-100 w-lg-auto">
-                    <a class="btn btn-staff d-inline-flex align-items-center justify-content-center w-100 w-lg-auto" href="<?= e(BASE_URL) ?>/login.php"><span class="vk-lucide-nav me-2" aria-hidden="true"><i data-lucide="shield-check"></i></span>Staff Login</a>
+                    <a class="btn btn-staff d-inline-flex align-items-center justify-content-center w-100 w-lg-auto" href="<?= e(BASE_URL) ?>/login.php" data-animate="ripple" title="Staff login portal"><span class="vk-lucide-nav me-2" aria-hidden="true"><i data-lucide="shield-check"></i></span>Staff Login</a>
                 </li>
                 <li class="nav-item mt-2 d-sm-none w-100">
-                    <a class="btn vk-nav-book-btn d-inline-flex align-items-center justify-content-center w-100" href="<?= e($navCtaUrl) ?>">
+                    <a class="btn vk-nav-book-btn d-inline-flex align-items-center justify-content-center w-100" href="<?= e($navCtaUrl) ?>" data-animate="ripple" title="<?= e((string) $navCtaText) ?>">
                         <span class="vk-lucide-nav me-2" aria-hidden="true"><i data-lucide="calendar-plus"></i></span>
                         <?= e((string) $navCtaText) ?>
                     </a>
                 </li>
-            </ul>
+            </nav>
         </div>
     </div>
 </nav>

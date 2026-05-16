@@ -1,10 +1,11 @@
 /**
- * Public site: theme, navbar scroll, AOS, Lucide icons
+ * Public site: lightweight theme, lazy animation loading, and interaction batching.
  */
 (function () {
     "use strict";
 
     var STORAGE_KEY = "vk-public-theme";
+    var aosLoaded = false;
 
     function getTheme() {
         var h = document.documentElement;
@@ -15,8 +16,9 @@
     }
 
     function setTheme(mode) {
-        document.documentElement.setAttribute("data-bs-theme", mode);
-        document.documentElement.setAttribute("data-theme", mode);
+        var html = document.documentElement;
+        html.setAttribute("data-bs-theme", mode);
+        html.setAttribute("data-theme", mode);
         try {
             localStorage.setItem(STORAGE_KEY, mode);
         } catch (e) {
@@ -67,7 +69,7 @@
             reduce = false;
         }
         AOS.init({
-            duration: 680,
+            duration: 520,
             easing: "ease-out-cubic",
             once: true,
             offset: 48,
@@ -77,7 +79,28 @@
         });
     }
 
-    function initPremiumCounters() {
+    function loadAosAssets() {
+        if (!document.querySelector("[data-aos]")) return;
+        if (aosLoaded) return;
+        aosLoaded = true;
+
+        var css = document.createElement("link");
+        css.rel = "preload";
+        css.as = "style";
+        css.href = "https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css";
+        css.crossOrigin = "anonymous";
+        css.onload = function () { this.rel = "stylesheet"; };
+        document.head.appendChild(css);
+
+        var js = document.createElement("script");
+        js.src = "https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js";
+        js.defer = true;
+        js.crossOrigin = "anonymous";
+        js.onload = function () { initAOS(); };
+        document.body.appendChild(js);
+    }
+
+    function initCounters() {
         var counters = document.querySelectorAll(".vk-home-stat strong, .vk-analytics-kpi strong, .vk-mini-kpi strong");
         if (!counters.length) return;
         var reduce = false;
@@ -96,7 +119,7 @@
                 prefix: match[1] || "",
                 value: parseFloat(match[2]),
                 suffix: match[3] || "",
-                decimals: match[2].indexOf(".") >= 0 ? 1 : 0,
+                decimals: match[2].includes(".") ? 1 : 0,
             };
         }
 
@@ -133,6 +156,7 @@
             counters.forEach(animate);
             return;
         }
+
         var observer = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
                 if (entry.isIntersecting) {
@@ -141,6 +165,7 @@
                 }
             });
         }, { threshold: 0.35 });
+
         counters.forEach(function (el) { observer.observe(el); });
     }
 
@@ -170,18 +195,9 @@
                 clickable: true,
             },
             breakpoints: {
-                768: {
-                    slidesPerView: 2,
-                    spaceBetween: 20,
-                },
-                992: {
-                    slidesPerView: 3,
-                    spaceBetween: 20,
-                },
-                1200: {
-                    slidesPerView: 4,
-                    spaceBetween: 20,
-                },
+                768: { slidesPerView: 2, spaceBetween: 20 },
+                992: { slidesPerView: 3, spaceBetween: 20 },
+                1200: { slidesPerView: 4, spaceBetween: 20 },
             },
         });
     }
@@ -194,29 +210,46 @@
         }
     }
 
+    function createMotionTracker(element, callback) {
+        var latestEvent = null;
+        var frameId = null;
+        function flush() {
+            frameId = null;
+            if (!latestEvent) return;
+            callback(latestEvent);
+            latestEvent = null;
+        }
+        element.addEventListener("pointermove", function (ev) {
+            latestEvent = ev;
+            if (frameId === null) {
+                frameId = requestAnimationFrame(flush);
+            }
+        }, { passive: true });
+    }
+
     function initEnterpriseInteractions() {
         if (prefersReducedMotion()) return;
 
         var hero = document.querySelector(".vk-home-hero");
         if (hero) {
-            hero.addEventListener("pointermove", function (ev) {
+            createMotionTracker(hero, function (ev) {
                 var rect = hero.getBoundingClientRect();
                 var x = ((ev.clientX - rect.left) / Math.max(rect.width, 1)) * 100;
                 var y = ((ev.clientY - rect.top) / Math.max(rect.height, 1)) * 100;
                 hero.style.setProperty("--vk-glow-x", x.toFixed(2) + "%");
                 hero.style.setProperty("--vk-glow-y", y.toFixed(2) + "%");
-            }, { passive: true });
+            });
         }
 
         document.querySelectorAll(".vk-btn-hero-primary, .vk-btn-hero-secondary, .vk-nav-book-btn, .vk-ready-card .btn").forEach(function (btn) {
             btn.classList.add("vk-magnetic");
-            btn.addEventListener("pointermove", function (ev) {
+            createMotionTracker(btn, function (ev) {
                 var rect = btn.getBoundingClientRect();
                 var x = ((ev.clientX - rect.left) - rect.width / 2) * 0.12;
                 var y = ((ev.clientY - rect.top) - rect.height / 2) * 0.18;
                 btn.style.setProperty("--vk-magnet-x", x.toFixed(1) + "px");
                 btn.style.setProperty("--vk-magnet-y", y.toFixed(1) + "px");
-            }, { passive: true });
+            });
             btn.addEventListener("pointerleave", function () {
                 btn.style.setProperty("--vk-magnet-x", "0px");
                 btn.style.setProperty("--vk-magnet-y", "0px");
@@ -224,7 +257,7 @@
         });
 
         document.querySelectorAll(".vk-service-card, .vk-why-card, .vk-testimonial-card, .vk-step-card").forEach(function (card) {
-            card.addEventListener("pointermove", function (ev) {
+            createMotionTracker(card, function (ev) {
                 var rect = card.getBoundingClientRect();
                 var x = ((ev.clientX - rect.left) / Math.max(rect.width, 1)) * 100;
                 var y = ((ev.clientY - rect.top) / Math.max(rect.height, 1)) * 100;
@@ -234,8 +267,10 @@
                     card.style.setProperty("--vk-tilt-x", (((x - 50) / 50) * 1.2).toFixed(2) + "deg");
                     card.style.setProperty("--vk-tilt-y", (((50 - y) / 50) * 1).toFixed(2) + "deg");
                 }
-            }, { passive: true });
+            });
             card.addEventListener("pointerleave", function () {
+                card.style.setProperty("--vk-spot-x", "50%");
+                card.style.setProperty("--vk-spot-y", "0%");
                 card.style.setProperty("--vk-tilt-x", "0deg");
                 card.style.setProperty("--vk-tilt-y", "0deg");
             });
@@ -251,7 +286,7 @@
                 el.classList.add("vk-live-tick");
                 window.setTimeout(function () {
                     el.classList.remove("vk-live-tick");
-                }, 520 + (idx * 20));
+                }, 520 + idx * 20);
             });
         }, 4200);
     }
@@ -276,16 +311,103 @@
             scrolled = on;
             if (nav) nav.classList.toggle("is-scrolled", on);
         }
+        updateScrollProgress();
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        initAOS();
-        initLucide();
-        initPremiumCounters();
+    function updateScrollProgress() {
+        if (!nav) return;
+        var winHeight = window.innerHeight;
+        var docHeight = document.documentElement.scrollHeight;
+        var totalScroll = docHeight - winHeight;
+        var scrollAmount = window.scrollY || 0;
+        var scrollPercent = totalScroll > 0 ? scrollAmount / totalScroll : 0;
+        document.documentElement.style.setProperty("--vk-scroll-progress", String(Math.min(1, Math.max(0, scrollPercent))));
+    }
+
+    function initScrollProgressBar() {
+        updateScrollProgress();
+        window.addEventListener("scroll", updateScrollProgress, { passive: true });
+    }
+
+    function initActiveMenuDetection() {
+        var links = document.querySelectorAll("[data-nav-link]");
+        if (!links.length) return;
+        var path = window.location.pathname;
+        links.forEach(function (link) {
+            link.classList.remove("active");
+            link.removeAttribute("aria-current");
+            var href = link.getAttribute("href") || "";
+            var linkPath = new URL(href, window.location.origin).pathname;
+            var dataSlug = link.getAttribute("data-nav-link") || "";
+            if (linkPath === path || (dataSlug && window.location.pathname.includes(dataSlug))) {
+                link.classList.add("active");
+                link.setAttribute("aria-current", "page");
+            }
+        });
+    }
+
+    function initRippleEffect() {
+        if (prefersReducedMotion()) return;
+        document.querySelectorAll("[data-animate='ripple']").forEach(function (btn) {
+            btn.addEventListener("click", function (ev) {
+                if (ev.detail === 0) return;
+                var rect = btn.getBoundingClientRect();
+                var x = ev.clientX - rect.left;
+                var y = ev.clientY - rect.top;
+                var ripple = document.createElement("span");
+                ripple.className = "vk-ripple-effect";
+                ripple.style.left = x + "px";
+                ripple.style.top = y + "px";
+                btn.style.position = "relative";
+                btn.appendChild(ripple);
+                window.setTimeout(function () {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+    }
+
+    function initSystemThemePreference() {
+        try {
+            var stored = localStorage.getItem(STORAGE_KEY);
+            if (stored && (stored === "dark" || stored === "light")) {
+                return;
+            }
+            if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                setTheme("dark");
+            } else {
+                setTheme("light");
+            }
+        } catch (e) {
+            /* ignore */
+        }
+    }
+
+    function initKeyboardNavigation() {
+        document.addEventListener("keydown", function (ev) {
+            if (ev.key === "Escape") {
+                var pubNav = document.getElementById("pubNav");
+                if (pubNav && pubNav.classList.contains("show")) {
+                    var toggler = document.querySelector(".navbar-toggler");
+                    if (toggler) toggler.click();
+                }
+            }
+        });
+    }
+
+    function loadDeferredFeatures() {
+        loadAosAssets();
+        initCounters();
         initTestimonialsCarousel();
         initEnterpriseInteractions();
         initLiveMetricRefresh();
+    }
 
+    document.addEventListener("DOMContentLoaded", function () {
+        initLucide();
+        initActiveMenuDetection();
+        initKeyboardNavigation();
+        initSystemThemePreference();
         updateToggleUi(getTheme());
 
         var toggle = document.querySelector("[data-vk-theme-toggle]");
@@ -310,11 +432,12 @@
         var pubNav = document.getElementById("pubNav");
         if (pubNav) {
             pubNav.addEventListener("shown.bs.collapse", refreshAOS);
+            pubNav.addEventListener("hidden.bs.collapse", function () {
+                document.querySelectorAll("[data-nav-link]").forEach(function (link) {
+                    link.blur();
+                });
+            });
         }
-
-        window.addEventListener("load", function () {
-            refreshAOS();
-        });
 
         var previewModal = document.getElementById("galleryPreviewModal");
         if (previewModal) {
@@ -414,5 +537,15 @@
             renderRatings();
             renderReviews();
         }
+
+        if (typeof requestIdleCallback === "function") {
+            requestIdleCallback(loadDeferredFeatures, { timeout: 900 });
+        } else {
+            setTimeout(loadDeferredFeatures, 360);
+        }
+    });
+
+    window.addEventListener("load", function () {
+        refreshAOS();
     });
 })();
