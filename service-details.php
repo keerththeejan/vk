@@ -162,7 +162,7 @@ require __DIR__ . '/includes/public_header.php';
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-0">
-                    <img id="galleryPreviewImage" src="" alt="<?= e((string) $service['name']) ?>" class="w-100 vk-gallery-preview-img" style="max-height:80vh;object-fit:contain" loading="lazy">
+                    <img id="galleryPreviewImage" src="" alt="<?= e((string) $service['name']) ?>" class="w-100 vk-gallery-preview-img" width="1200" height="675" style="max-height:80vh;object-fit:contain" loading="lazy" decoding="async">
                 </div>
             </div>
         </div>

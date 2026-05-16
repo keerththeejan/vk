@@ -550,7 +550,7 @@ require __DIR__ . '/includes/public_header.php';
                             <div class="modal-body pt-0">
                                 <div class="row g-4">
                                     <div class="col-md-5">
-                                        <img class="vk-team-modal-img" src="<?= e($image) ?>" alt="<?= e((string) ($member['name'] ?? 'Team member')) ?>" loading="lazy" decoding="async" onerror="<?= vk_staff_image_onerror_attr() ?>">
+                                        <img class="vk-team-modal-img" src="<?= e($image) ?>" alt="<?= e((string) ($member['name'] ?? 'Team member')) ?>" loading="lazy" decoding="async" width="420" height="420" onerror="<?= vk_staff_image_onerror_attr() ?>">
                                         <div class="vk-team-modal-metrics">
                                             <span><strong><?= $years ?: 5 ?>+</strong> Years experience</span>
                                             <span><strong><?= $projects ?: 120 ?>+</strong> Completed projects</span>
