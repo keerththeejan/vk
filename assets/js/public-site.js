@@ -5,7 +5,6 @@
     "use strict";
 
     var STORAGE_KEY = "vk-public-theme";
-    var aosLoaded = false;
 
     function getTheme() {
         var h = document.documentElement;
@@ -55,49 +54,61 @@
         }
     }
 
-    function initAOS() {
-        if (typeof AOS === "undefined") {
-            document.querySelectorAll("[data-aos]").forEach(function (el) {
-                el.classList.add("aos-animate");
+    function prefersReducedMotion() {
+        try {
+            return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function initAutoReveal() {
+        var revealEls = Array.prototype.slice.call(document.querySelectorAll("[data-aos]"));
+        if (!revealEls.length) return;
+
+        var reduce = prefersReducedMotion();
+        revealEls.forEach(function (el) {
+            el.classList.add("vk-reveal");
+            var delay = el.getAttribute("data-aos-delay");
+            var duration = el.getAttribute("data-aos-duration");
+            if (delay) {
+                el.style.transitionDelay = parseInt(delay, 10) + "ms";
+            }
+            if (duration) {
+                el.style.transitionDuration = Math.max(260, parseInt(duration, 10)) + "ms";
+            }
+        });
+
+        if (reduce || !("IntersectionObserver" in window)) {
+            revealEls.forEach(function (el) {
+                el.classList.add("is-visible");
             });
             return;
         }
-        var reduce = false;
-        try {
-            reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        } catch (e) {
-            reduce = false;
-        }
-        AOS.init({
-            duration: 520,
-            easing: "ease-out-cubic",
-            once: true,
-            offset: 48,
-            delay: 0,
-            disable: reduce,
-            anchorPlacement: "top-bottom",
+
+        var observer = new IntersectionObserver(
+            function (entries, obs) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) return;
+                    entry.target.classList.add("is-visible");
+                    obs.unobserve(entry.target);
+                });
+            },
+            { rootMargin: "0px 0px -16% 0px", threshold: 0.12 }
+        );
+
+        revealEls.forEach(function (el) {
+            observer.observe(el);
         });
     }
 
-    function loadAosAssets() {
-        if (!document.querySelector("[data-aos]")) return;
-        if (aosLoaded) return;
-        aosLoaded = true;
-
-        var css = document.createElement("link");
-        css.rel = "preload";
-        css.as = "style";
-        css.href = "https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css";
-        css.crossOrigin = "anonymous";
-        css.onload = function () { this.rel = "stylesheet"; };
-        document.head.appendChild(css);
-
-        var js = document.createElement("script");
-        js.src = "https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js";
-        js.defer = true;
-        js.crossOrigin = "anonymous";
-        js.onload = function () { initAOS(); };
-        document.body.appendChild(js);
+    function refreshRevealAnimations() {
+        document.querySelectorAll(".vk-reveal:not(.is-visible)").forEach(function (el) {
+            var rect = el.getBoundingClientRect();
+            if (rect.top < window.innerHeight && rect.bottom > 0) {
+                el.classList.add("is-visible");
+            }
+        });
     }
 
     function initCounters() {
@@ -291,12 +302,6 @@
         }, 4200);
     }
 
-    function refreshAOS() {
-        if (typeof AOS !== "undefined" && typeof AOS.refresh === "function") {
-            AOS.refresh();
-        }
-    }
-
     var nav = document.querySelector(".vk-navbar-premium");
     var supportWidget = document.querySelector(".vk-support-widget");
     var whatsappWidget = document.querySelector(".vk-float-wa");
@@ -396,7 +401,7 @@
     }
 
     function loadDeferredFeatures() {
-        loadAosAssets();
+        initAutoReveal();
         initCounters();
         initTestimonialsCarousel();
         initEnterpriseInteractions();
@@ -431,7 +436,7 @@
 
         var pubNav = document.getElementById("pubNav");
         if (pubNav) {
-            pubNav.addEventListener("shown.bs.collapse", refreshAOS);
+            pubNav.addEventListener("shown.bs.collapse", refreshRevealAnimations);
             pubNav.addEventListener("hidden.bs.collapse", function () {
                 document.querySelectorAll("[data-nav-link]").forEach(function (link) {
                     link.blur();
@@ -546,6 +551,6 @@
     });
 
     window.addEventListener("load", function () {
-        refreshAOS();
+        refreshRevealAnimations();
     });
 })();

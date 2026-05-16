@@ -45,7 +45,7 @@ require __DIR__ . '/includes/public_header.php';
                             $hero = $imgs[0] ?? null;
                             ?>
                             <?php if ($hero): ?>
-                                <img src="<?= e(BASE_URL) ?>/<?= e($hero['image_path']) ?>" class="card-img-top" alt="" style="height:200px;object-fit:cover;">
+                                <img src="<?= e(BASE_URL) ?>/<?= e($hero['image_path']) ?>" width="560" height="280" loading="lazy" decoding="async" class="card-img-top" alt="<?= e($post['title']) ?> preview" style="width:100%;height:200px;object-fit:cover;min-height:200px;">
                             <?php else: ?>
                                 <div class="bg-secondary bg-opacity-10 text-center py-5 text-muted vk-portfolio-placeholder d-flex align-items-center justify-content-center"><i data-lucide="image"></i></div>
                             <?php endif; ?>
@@ -57,7 +57,7 @@ require __DIR__ . '/includes/public_header.php';
                                     <div class="d-flex flex-wrap gap-1 mt-2">
                                         <?php foreach (array_slice($imgs, 1) as $im): ?>
                                             <a href="<?= e(BASE_URL) ?>/<?= e($im['image_path']) ?>" target="_blank" rel="noopener">
-                                                <img src="<?= e(BASE_URL) ?>/<?= e($im['image_path']) ?>" alt="" class="rounded border" style="width:64px;height:64px;object-fit:cover;">
+                                                <img src="<?= e(BASE_URL) ?>/<?= e($im['image_path']) ?>" width="64" height="64" loading="lazy" decoding="async" alt="<?= e($post['title']) ?> thumbnail" class="rounded border" style="width:64px;height:64px;object-fit:cover;">
                                             </a>
                                         <?php endforeach; ?>
                                     </div>

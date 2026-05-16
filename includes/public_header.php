@@ -65,7 +65,7 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap"></noscript>
     <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
     <link rel="preload" as="style" href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= e($vkPublicStyleVersion) ?>">
@@ -92,6 +92,8 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         .vk-hero-lead { max-width: 44rem; font-size: 1.03rem; line-height: 1.7; color: rgba(255, 255, 255, .82); }
         .vk-btn-hero-primary, .vk-btn-hero-secondary, .vk-nav-book-btn { transition: transform .22s ease, opacity .2s ease; }
         .vk-btn-hero-primary:hover, .vk-btn-hero-secondary:hover, .vk-nav-book-btn:hover { transform: translateY(-1px); }
+        .vk-reveal { opacity: 0; transform: translateY(16px); will-change: opacity, transform; transition: opacity .34s ease-out, transform .34s ease-out; }
+        .vk-reveal.is-visible { opacity: 1; transform: translateY(0); }
         .vk-hero-shine, .vk-hero-grain, .vk-hero-particles { display: none !important; }
         @media (min-width: 992px) { .vk-hero-shine, .vk-hero-grain, .vk-hero-particles { display: block !important; } }
         @media (max-width: 767.98px) { .vk-hero-inner { padding-top: 2rem; padding-bottom: 2.8rem; } .vk-brand-strip { gap: .65rem; } }
