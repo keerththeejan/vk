@@ -1,23 +1,14 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/config/config.php';
-require_once dirname(__DIR__) . '/config/database.php';
-require_once __DIR__ . '/functions.php';
-require_once __DIR__ . '/auth.php';
-require_once __DIR__ . '/service_gallery.php';
-require_once __DIR__ . '/vehicle_booking.php';
-require_once __DIR__ . '/whatsapp_bridge.php';
-require_once __DIR__ . '/settings.php';
-require_once __DIR__ . '/mailer.php';
-require_once __DIR__ . '/email_system.php';
-require_once __DIR__ . '/email_imap_poll.php';
-require_once __DIR__ . '/seo.php';
+require_once __DIR__ . '/bootstrap_core.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_name(SESSION_NAME);
-    session_start();
-}
+vk_bootstrap_module('service_gallery');
+vk_bootstrap_module('vehicle_booking');
+vk_bootstrap_module('whatsapp_bridge');
+vk_bootstrap_module('mailer');
+vk_bootstrap_module('email_system');
+vk_bootstrap_module('email_imap_poll');
 
 try {
     $vkAuthPdo = db();

@@ -3,7 +3,7 @@ declare(strict_types=1);
 $pageTitle = 'Enterprise Dashboard';
 require_once __DIR__ . '/includes/layout_init.php';
 
-$user = current_user($pdo) ?: [];
+$user = vk_auth_cached_user() ?: current_user($pdo) ?: [];
 $role = (string) ($user['role'] ?? 'viewer');
 $status = (string) ($user['status'] ?? 'pending');
 if (!vk_auth_status_is_approved($status)) {
@@ -17,23 +17,11 @@ if (!vk_auth_status_is_approved($status)) {
 
 $pendingApprovals = 0;
 $totalUsers = 0;
+$approvedUsers = 0;
+$suspendedUsers = 0;
 $recentLogins = [];
 $recentRegistrations = [];
-if (vk_auth_role_can_manage($role)) {
-    $pendingApprovals = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE status = 'pending' AND approved = 0")->fetchColumn();
-    $totalUsers = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
-    $approvedUsers = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE approved = 1 AND status IN ('approved','active')")->fetchColumn();
-    $suspendedUsers = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE status = 'suspended'")->fetchColumn();
-    $recentRegistrations = $pdo->query(
-        "SELECT fullname, email, username, department, status, created_at
-         FROM users ORDER BY created_at DESC, id DESC LIMIT 6"
-    )->fetchAll();
-    $recentLogins = $pdo->query(
-        "SELECT l.created_at, l.status, l.ip_address, COALESCE(u.fullname, l.username) AS display_name
-         FROM login_logs l LEFT JOIN users u ON u.id = l.user_id
-         ORDER BY l.id DESC LIMIT 6"
-    )->fetchAll();
-}
+$extraScripts = ($extraScripts ?? '') . "\n" . '<script src="' . e(base_url('assets/js/dashboard-admin.js')) . '?v=' . e(vk_asset_mtime_version('assets/js/dashboard-admin.js')) . '" defer></script>';
 
 $quickActions = [
     ['label' => 'Operations dashboard', 'icon' => 'bi-speedometer2', 'href' => BASE_URL . '/modules/dashboard.php', 'roles' => ['super_admin','admin','manager','staff','viewer']],
@@ -91,8 +79,8 @@ require_once __DIR__ . '/includes/layout_start.php';
             <div class="card vk-card h-100">
                 <div class="card-body">
                     <div class="text-muted small"><?= vk_auth_role_can_manage($role) ? 'Pending Approvals' : 'Access Mode' ?></div>
-                    <div class="h4 mb-1"><?= vk_auth_role_can_manage($role) ? (int) $pendingApprovals : 'Role Based' ?></div>
-                    <div class="small text-muted"><?= vk_auth_role_can_manage($role) ? ((int) $totalUsers . ' total users') : 'Only approved modules are available.' ?></div>
+                    <div class="h4 mb-1" data-vk-admin="pending"><?= vk_auth_role_can_manage($role) ? '…' : 'Role Based' ?></div>
+                    <div class="small text-muted" data-vk-admin="users-summary"><?= vk_auth_role_can_manage($role) ? 'Loading users…' : 'Only approved modules are available.' ?></div>
                 </div>
             </div>
         </div>
@@ -101,7 +89,7 @@ require_once __DIR__ . '/includes/layout_start.php';
             <div class="card vk-card h-100">
                 <div class="card-body">
                     <div class="text-muted small">Approved / Suspended</div>
-                    <div class="h4 mb-1"><?= (int) $approvedUsers ?> / <?= (int) $suspendedUsers ?></div>
+                    <div class="h4 mb-1" data-vk-admin="approved-suspended">…</div>
                     <div class="small text-muted">Identity governance snapshot.</div>
                 </div>
             </div>
@@ -134,19 +122,10 @@ require_once __DIR__ . '/includes/layout_start.php';
             <div class="card vk-card mb-3">
                 <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
                     <h2 class="h5 mb-0">Recent Registrations</h2>
-                    <span class="badge text-bg-info">New Registrations <?= (int) $pendingApprovals ?></span>
+                    <span class="badge text-bg-info" data-vk-admin="pending-badge">New Registrations …</span>
                 </div>
-                <div class="card-body">
-                    <?php foreach ($recentRegistrations as $reg): ?>
-                        <div class="d-flex justify-content-between gap-3 border-bottom border-light border-opacity-10 py-2">
-                            <div>
-                                <div class="fw-semibold"><?= e((string) ($reg['fullname'] ?: $reg['username'])) ?></div>
-                                <div class="small text-muted"><?= e((string) $reg['email']) ?> · <?= e((string) ($reg['department'] ?: 'No department')) ?></div>
-                            </div>
-                            <span class="vk-status-badge vk-status-<?= e((string) $reg['status']) ?> align-self-start"><?= e(vk_auth_status_label((string) $reg['status'])) ?></span>
-                        </div>
-                    <?php endforeach; ?>
-                    <?php if (!$recentRegistrations): ?><div class="text-muted">No registrations yet.</div><?php endif; ?>
+                <div class="card-body" data-vk-admin="registrations">
+                    <div class="text-muted">Loading registrations…</div>
                 </div>
             </div>
             <div class="card vk-card">
@@ -154,17 +133,8 @@ require_once __DIR__ . '/includes/layout_start.php';
                     <h2 class="h5 mb-0">Recent Login Signals</h2>
                     <a class="small" href="<?= e(BASE_URL) ?>/approve_users.php">View logs</a>
                 </div>
-                <div class="card-body">
-                    <?php foreach ($recentLogins as $log): ?>
-                        <div class="d-flex justify-content-between gap-3 border-bottom border-light border-opacity-10 py-2">
-                            <div>
-                                <div class="fw-semibold"><?= e((string) $log['display_name']) ?></div>
-                                <div class="small text-muted"><?= e(substr((string) $log['created_at'], 0, 16)) ?> · <?= e((string) $log['ip_address']) ?></div>
-                            </div>
-                            <span class="badge text-bg-<?= $log['status'] === 'success' ? 'success' : 'secondary' ?> align-self-start"><?= e((string) $log['status']) ?></span>
-                        </div>
-                    <?php endforeach; ?>
-                    <?php if (!$recentLogins): ?><div class="text-muted">No login activity yet.</div><?php endif; ?>
+                <div class="card-body" data-vk-admin="logins">
+                    <div class="text-muted">Loading login activity…</div>
                 </div>
             </div>
         </div>

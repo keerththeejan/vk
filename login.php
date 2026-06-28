@@ -1,13 +1,11 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/includes/init.php';
-require_once __DIR__ . '/includes/users_schema.php';
+require_once __DIR__ . '/includes/init_public.php';
 
-$pdoBoot = db();
-vk_ensure_users_management_schema($pdoBoot);
-unset($pdoBoot);
-
-if (!empty($_SESSION['user_id'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_once __DIR__ . '/includes/users_schema.php';
+    vk_ensure_users_management_schema(db());
+} elseif (!empty($_SESSION['user_id'])) {
     $dest = (($_SESSION['user_role'] ?? 'admin') === 'technician')
         ? BASE_URL . '/tech/index.php'
         : BASE_URL . '/dashboard.php';
@@ -49,8 +47,14 @@ $brandInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
     <title><?= htmlspecialchars($pageTitle) ?> - <?= htmlspecialchars(APP_NAME) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    </noscript>
     <script>window.VK_BASE_URL = <?= json_encode(BASE_URL, JSON_THROW_ON_ERROR) ?>;</script>
     <style>
         :root {

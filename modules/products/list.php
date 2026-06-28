@@ -1,108 +1,158 @@
 <?php
 declare(strict_types=1);
+require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
+
 $pageTitle = 'Products';
+$extraHead = '<link rel="stylesheet" href="' . e(base_url('assets/css/products.css')) . '">';
+$extraScripts = '<script src="' . e(base_url('assets/js/products.js')) . '"></script>';
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 
-$q = trim((string) ($_GET['q'] ?? ''));
-$cat = trim((string) ($_GET['category'] ?? ''));
-$page = max(1, (int) ($_GET['p'] ?? 1));
-$perPage = 15;
-$where = '1=1';
-$params = [];
-if ($q !== '') {
-    $where .= ' AND (name LIKE ? OR category LIKE ?)';
-    $like = '%' . $q . '%';
-    $params[] = $like;
-    $params[] = $like;
+$cats = [];
+try {
+  $cats = $pdo->query('SELECT id, name FROM categories ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+  // categories table missing or DB error — fallback to empty categories
+  $cats = [];
 }
-if ($cat !== '') {
-    $where .= ' AND category = ?';
-    $params[] = $cat;
-}
-$countSt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE $where");
-$countSt->execute($params);
-$total = (int) $countSt->fetchColumn();
-$pg = paginate($total, $page, $perPage);
-
-$sql = "SELECT * FROM products WHERE $where ORDER BY id DESC LIMIT {$pg['perPage']} OFFSET {$pg['offset']}";
-$st = $pdo->prepare($sql);
-$st->execute($params);
-$rows = $st->fetchAll();
-
-$cats = $pdo->query('SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category <> "" ORDER BY category')->fetchAll(PDO::FETCH_COLUMN);
 ?>
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
-    <h1 class="h3 mb-0">Parts &amp; products</h1>
-    <a class="btn btn-primary" href="<?= e(BASE_URL) ?>/modules/products/add.php"><i class="bi bi-plus-lg me-1"></i>Add product</a>
-</div>
-<form class="row g-2 mb-3 align-items-end" method="get" action="">
-    <div class="col-12 col-md-4">
-        <label class="form-label small mb-0">Search</label>
-        <input type="search" name="q" class="form-control" placeholder="Name or category" value="<?= e($q) ?>">
+<div class="products-page container-fluid py-3">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-3">
+    <div>
+      <nav aria-label="breadcrumb" class="mb-2 small text-muted"><ol class="breadcrumb mb-0"><li class="breadcrumb-item"><a href="<?= e(BASE_URL) ?>">Dashboard</a></li><li class="breadcrumb-item active" aria-current="page">Products</li></ol></nav>
+      <h1 class="h3 mb-1">Parts &amp; Products</h1>
+      <p class="text-muted small mb-0">Manage your inventory, stock, pricing and product catalog.</p>
     </div>
-    <div class="col-12 col-md-3">
-        <label class="form-label small mb-0">Category</label>
-        <select name="category" class="form-select">
-            <option value="">All</option>
-            <?php foreach ($cats as $c): ?>
-                <option value="<?= e((string) $c) ?>" <?= $cat === (string) $c ? 'selected' : '' ?>><?= e((string) $c) ?></option>
-            <?php endforeach; ?>
-        </select>
+    <div class="ms-auto d-flex gap-2">
+      <a href="<?= e(BASE_URL) ?>/modules/products/add.php" class="btn btn-primary btn-lg"><i class="bi bi-plus-lg me-1"></i> Add product</a>
+      <button class="btn btn-outline-secondary">Import</button>
+      <button class="btn btn-outline-secondary">Export</button>
     </div>
-    <div class="col-auto">
-        <button class="btn btn-outline-secondary" type="submit">Filter</button>
-    </div>
-</form>
-<div class="card vk-card">
-    <div class="table-responsive table-responsive-stack">
-        <table class="table table-hover mb-0 sortable">
-            <thead class="table-light">
-                <tr>
-                    <th data-sort="0">ID</th>
-                    <th data-sort="1">Name</th>
-                    <th data-sort="2" data-type="number">Price</th>
-                    <th data-sort="3" data-type="number">Stock</th>
-                    <th data-sort="4" data-type="number">Low at</th>
-                    <th data-sort="5">Category</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php if (!$rows): ?>
-                <tr><td colspan="7" class="text-center text-muted py-4">No products found.</td></tr>
-            <?php else: ?>
-                <?php foreach ($rows as $r): ?>
-                    <?php
-                    $lowAt = isset($r['low_stock_threshold']) ? (int) $r['low_stock_threshold'] : 5;
-                    $isLow = (int) $r['stock'] <= $lowAt;
-                    ?>
-                    <tr class="<?= $isLow ? 'table-warning' : '' ?>">
-                        <td><?= (int) $r['id'] ?></td>
-                        <td><?= e($r['name']) ?><?= $isLow ? ' <span class="badge text-bg-warning text-dark">Low stock</span>' : '' ?></td>
-                        <td><?= e(number_format((float) $r['price'], 2)) ?></td>
-                        <td><?= (int) $r['stock'] ?></td>
-                        <td><?= (int) $lowAt ?></td>
-                        <td><?= e($r['category'] ?? '—') ?></td>
-                        <td class="text-end text-nowrap">
-                            <a class="btn btn-sm btn-outline-primary" href="<?= e(BASE_URL) ?>/modules/products/edit.php?id=<?= (int) $r['id'] ?>">Edit</a>
-                            <a class="btn btn-sm btn-outline-danger" href="<?= e(BASE_URL) ?>/modules/products/delete.php?id=<?= (int) $r['id'] ?>" onclick="return confirm('Delete this product?');">Delete</a>
-                        </td>
-                    </tr>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-xl-9">
+      <div class="row g-3">
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="card vk-stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="vk-stat-icon bg-gradient-primary"><i class="bi bi-box-seam"></i></div>
+              <div>
+                <div class="small text-muted">Total Products</div>
+                <div class="h5 mb-0" id="stat-total">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="card vk-stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="vk-stat-icon bg-gradient-warning"><i class="bi bi-exclamation-triangle"></i></div>
+              <div>
+                <div class="small text-muted">Low Stock</div>
+                <div class="h5 mb-0" id="stat-low">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="card vk-stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="vk-stat-icon bg-gradient-danger"><i class="bi bi-dash-circle"></i></div>
+              <div>
+                <div class="small text-muted">Out of Stock</div>
+                <div class="h5 mb-0" id="stat-out">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-3">
+          <div class="card vk-stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="vk-stat-icon bg-gradient-info"><i class="bi bi-currency-dollar"></i></div>
+              <div>
+                <div class="small text-muted">Inventory Value</div>
+                <div class="h5 mb-0" id="stat-value">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card glass-card mt-3">
+        <div class="card-body">
+          <div class="filter-bar d-flex flex-wrap gap-2 align-items-center mb-3">
+            <div class="flex-fill">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input id="product-search" class="form-control" placeholder="Search name, SKU, barcode...">
+              </div>
+            </div>
+            <div class="w-auto">
+              <select id="filter-category" class="form-select">
+                <option value="">All categories</option>
+                <?php foreach ($cats as $c): ?>
+                  <option value="<?= (int) $c['id'] ?>"><?= e($c['name']) ?></option>
                 <?php endforeach; ?>
-            <?php endif; ?>
-            </tbody>
-        </table>
+              </select>
+            </div>
+            <div class="w-auto">
+              <select id="filter-status" class="form-select">
+                <option value="">All status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <div class="w-auto ms-auto">
+              <button id="reset-filters" class="btn btn-link small">Reset</button>
+            </div>
+          </div>
+
+          <div class="table-responsive modern-table" id="products-table-wrap">
+            <table id="products-table" class="table table-hover align-middle">
+              <thead class="table-dark sticky-top">
+                <tr>
+                  <th class="w-1"><input id="bulk-select-all" type="checkbox" aria-label="Select all"></th>
+                  <th>Image</th>
+                  <th>Product</th>
+                  <th>SKU</th>
+                  <th>Category</th>
+                  <th>Brand</th>
+                  <th class="text-end">Price</th>
+                  <th class="text-end">Stock</th>
+                  <th>Status</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+              <button id="bulk-delete" class="btn btn-sm btn-outline-danger">Delete Selected</button>
+            </div>
+            <nav><ul id="pagination" class="pagination pagination-sm mb-0"></ul></nav>
+          </div>
+        </div>
+      </div>
+
     </div>
+    <div class="col-12 col-xl-3">
+      <div class="card glass-card sticky-top" style="top:88px">
+        <div class="card-body">
+          <h6 class="mb-2">Quick Actions</h6>
+          <div class="d-grid gap-2">
+            <button class="btn btn-outline-secondary">Import Products</button>
+            <button class="btn btn-outline-secondary">Export CSV / Excel</button>
+            <button class="btn btn-outline-secondary">Bulk Stock Update</button>
+          </div>
+          <hr>
+          <h6 class="mb-2">Analytics</h6>
+          <div class="small text-muted">Stock value, turnover and trending products will appear here.</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-<?php if ($pg['pages'] > 1): ?>
-<nav class="mt-3">
-    <ul class="pagination pagination-sm flex-wrap">
-        <?php for ($i = 1; $i <= $pg['pages']; $i++): ?>
-            <li class="page-item <?= $i === $pg['page'] ? 'active' : '' ?>">
-                <a class="page-link" href="?<?= e(http_build_query(['q' => $q, 'category' => $cat, 'p' => $i])) ?>"><?= $i ?></a>
-            </li>
-        <?php endfor; ?>
-    </ul>
-</nav>
-<?php endif; ?>
+
 <?php require_once dirname(__DIR__, 2) . '/includes/layout_end.php'; ?>

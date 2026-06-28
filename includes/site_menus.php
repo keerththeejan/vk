@@ -129,7 +129,11 @@ function vk_site_menus_href(string $storedUrl): string
  */
 function vk_site_menus_for_public_nav(PDO $pdo): array
 {
-    vk_site_menus_ensure_schema($pdo);
+    static $cached = null;
+    if (is_array($cached)) {
+        return $cached;
+    }
+
     if (!vk_site_menus_table_exists($pdo)) {
         $out = [];
         foreach (vk_site_menus_default_rows() as $i => $r) {
@@ -143,14 +147,16 @@ function vk_site_menus_for_public_nav(PDO $pdo): array
             ];
         }
 
-        return $out;
+        $cached = $out;
+
+        return $cached;
     }
     try {
         $rows = $pdo->query(
             "SELECT id, name, slug, url, icon, sort_order FROM menus WHERE status = 'active' ORDER BY sort_order ASC, id ASC"
         )->fetchAll(PDO::FETCH_ASSOC);
         if ($rows) {
-            return array_map(static function (array $row): array {
+            $cached = array_map(static function (array $row): array {
                 return [
                     'id' => (int) ($row['id'] ?? 0),
                     'name' => (string) ($row['name'] ?? ''),
@@ -160,12 +166,16 @@ function vk_site_menus_for_public_nav(PDO $pdo): array
                     'sort_order' => (int) ($row['sort_order'] ?? 0),
                 ];
             }, $rows);
+
+            return $cached;
         }
     } catch (Throwable $e) {
         error_log('vk_site_menus_for_public_nav: ' . $e->getMessage());
     }
 
-    return vk_site_menus_for_public_nav_fallback();
+    $cached = vk_site_menus_for_public_nav_fallback();
+
+    return $cached;
 }
 
 /**

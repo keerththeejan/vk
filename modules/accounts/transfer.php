@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
+vk_ensure_finance_schemas($pdo);
 
 $accounts = $pdo->query('SELECT id, code, name, account_type FROM accounts ORDER BY account_type DESC, code')->fetchAll();
 

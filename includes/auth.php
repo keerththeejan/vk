@@ -249,6 +249,81 @@ function vk_auth_status_is_approved(string $status): bool
     return in_array($status, ['approved', 'active'], true);
 }
 
+/** Cache authenticated user profile in session to avoid repeated DB reads. */
+function vk_auth_cache_user(array $user): void
+{
+    $uid = (int) ($user['id'] ?? $user['user_id'] ?? 0);
+    if ($uid < 1) {
+        return;
+    }
+    $_SESSION['user_id'] = $uid;
+    $_SESSION['user_role'] = (string) ($user['role'] ?? 'viewer');
+    $_SESSION['user_status'] = (string) ($user['status'] ?? 'approved');
+    $_SESSION['technician_id'] = isset($user['technician_id']) && $user['technician_id'] !== null
+        ? (int) $user['technician_id']
+        : null;
+    $_SESSION['_user_cache'] = [
+        'id' => $uid,
+        'username' => (string) ($user['username'] ?? ''),
+        'fullname' => (string) ($user['fullname'] ?? ''),
+        'email' => (string) ($user['email'] ?? ''),
+        'phone' => (string) ($user['phone'] ?? ''),
+        'role' => (string) ($user['role'] ?? 'viewer'),
+        'status' => (string) ($user['status'] ?? 'approved'),
+        'technician_id' => isset($user['technician_id']) && $user['technician_id'] !== null
+            ? (int) $user['technician_id']
+            : null,
+        'department' => (string) ($user['department'] ?? ''),
+        'user_uid' => (string) ($user['user_uid'] ?? ''),
+        'last_login_at' => (string) ($user['last_login_at'] ?? ''),
+    ];
+    $_SESSION['_user_cache_at'] = time();
+}
+
+function vk_auth_cached_user(): ?array
+{
+    if (empty($_SESSION['user_id']) || empty($_SESSION['_user_cache']) || !is_array($_SESSION['_user_cache'])) {
+        return null;
+    }
+
+    return $_SESSION['_user_cache'];
+}
+
+function vk_auth_invalidate_user_cache(): void
+{
+    unset($_SESSION['_user_cache'], $_SESSION['_user_cache_at'], $_SESSION['user_status']);
+}
+
+function vk_auth_user_cache_fresh(int $ttlSeconds = 300): bool
+{
+    $at = (int) ($_SESSION['_user_cache_at'] ?? 0);
+
+    return !empty($_SESSION['_user_cache'])
+        && is_array($_SESSION['_user_cache'])
+        && $at > 0
+        && (time() - $at) < $ttlSeconds;
+}
+
+function vk_auth_load_user_cache(PDO $pdo, int $userId): ?array
+{
+    if ($userId < 1) {
+        return null;
+    }
+    $st = $pdo->prepare(
+        'SELECT id, username, fullname, email, phone, role, technician_id, status, department, user_uid, last_login_at
+         FROM users WHERE id = ? LIMIT 1'
+    );
+    $st->execute([$userId]);
+    vk_perf_mark_query();
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return null;
+    }
+    vk_auth_cache_user($row);
+
+    return $_SESSION['_user_cache'];
+}
+
 function vk_auth_create_pending_user(PDO $pdo, array $data): array
 {
     vk_auth_ensure_schema($pdo);
@@ -360,7 +435,7 @@ function vk_auth_attempt_login(PDO $pdo, string $identity, string $password, boo
     }
 
     $st = $pdo->prepare(
-        'SELECT id, username, email, password_hash, fullname, role, technician_id, status
+        'SELECT id, username, email, phone, password_hash, fullname, role, technician_id, status, department, user_uid, last_login_at
          FROM users WHERE username = ? OR email = ? LIMIT 1'
     );
     $st->execute([$identity, $identity]);
@@ -384,13 +459,12 @@ function vk_auth_attempt_login(PDO $pdo, string $identity, string $password, boo
     }
 
     session_regenerate_id(true);
-    $_SESSION['user_id'] = (int) $row['id'];
-    $_SESSION['user_role'] = (string) ($row['role'] ?? 'viewer');
-    $_SESSION['technician_id'] = isset($row['technician_id']) && $row['technician_id'] !== null ? (int) $row['technician_id'] : null;
+    vk_auth_cache_user($row);
     $_SESSION['auth_last_seen'] = time();
     $_SESSION['auth_login_at'] = time();
 
     $pdo->prepare('UPDATE users SET last_login_at = NOW() WHERE id = ?')->execute([(int) $row['id']]);
+    vk_perf_mark_query();
     vk_auth_log_login($pdo, (int) $row['id'], (string) $row['username'], 'success');
     vk_auth_activity($pdo, (int) $row['id'], (int) $row['id'], 'login_success', 'user', (int) $row['id']);
     if ($remember) {
@@ -444,7 +518,8 @@ function vk_auth_try_remember(PDO $pdo): void
         return;
     }
     $st = $pdo->prepare(
-        "SELECT rt.id, rt.user_id, rt.validator_hash, u.role, u.technician_id, u.status
+        "SELECT rt.id, rt.user_id, rt.validator_hash, u.id, u.username, u.fullname, u.email, u.phone,
+                u.role, u.technician_id, u.status, u.department, u.user_uid, u.last_login_at
          FROM remember_tokens rt JOIN users u ON u.id = rt.user_id
          WHERE rt.selector = ? AND rt.expires_at > NOW() LIMIT 1"
     );
@@ -455,11 +530,10 @@ function vk_auth_try_remember(PDO $pdo): void
         return;
     }
     session_regenerate_id(true);
-    $_SESSION['user_id'] = (int) $row['user_id'];
-    $_SESSION['user_role'] = (string) $row['role'];
-    $_SESSION['technician_id'] = $row['technician_id'] !== null ? (int) $row['technician_id'] : null;
+    vk_auth_cache_user($row);
     $_SESSION['auth_last_seen'] = time();
     $pdo->prepare('UPDATE remember_tokens SET last_used_at = NOW() WHERE id = ?')->execute([(int) $row['id']]);
+    vk_perf_mark_query();
 }
 
 function vk_auth_enforce_session_timeout(int $seconds = 7200): void

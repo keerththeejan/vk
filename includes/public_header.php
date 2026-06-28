@@ -28,8 +28,8 @@ foreach (['themePrimary' => '#3b82f6', 'themeSecondary' => '#14b8a6', 'themeAcce
         $$var = $fallback;
     }
 }
-$vkPublicStyleVersion = is_file(__DIR__ . '/../assets/css/style.css') ? (string) filemtime(__DIR__ . '/../assets/css/style.css') : (string) time();
-$vkPublicPremiumVersion = is_file(__DIR__ . '/../assets/css/public-premium.css') ? (string) filemtime(__DIR__ . '/../assets/css/public-premium.css') : (string) time();
+$vkPublicStyleVersion = vk_asset_mtime_version('assets/css/style.css');
+$vkPublicPremiumVersion = vk_asset_mtime_version('assets/css/public-premium.css');
 
 require_once __DIR__ . '/site_menus.php';
 try {
@@ -70,7 +70,6 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
     <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
     <link rel="preload" as="style" href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= e($vkPublicStyleVersion) ?>">
     <link rel="preload" as="style" href="<?= e(base_url('assets/css/public-premium.css')) ?>?v=<?= e($vkPublicPremiumVersion) ?>">
-    <link rel="preload" as="image" href="<?= e($siteLogoUrl) ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= e($vkPublicStyleVersion) ?>" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="<?= e(base_url('assets/css/public-premium.css')) ?>?v=<?= e($vkPublicPremiumVersion) ?>" media="print" onload="this.media='all'">
@@ -126,7 +125,7 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         <a class="navbar-brand d-flex align-items-center gap-3 py-2 mb-0 text-decoration-none" href="<?= e(BASE_URL) ?>/index.php" title="<?= e($seoBrand) ?> - <?= e((string) $companyTagline) ?>">
             <picture>
                 <source media="(max-width: 575.98px)" srcset="<?= e($mobileLogoUrl) ?>">
-                <img src="<?= e($siteLogoUrl) ?>" alt="<?= e($seoBrand) ?>" class="vk-public-logo-img" width="160" height="40" loading="eager" decoding="async">
+                <img src="<?= e($siteLogoUrl) ?>" alt="<?= e($seoBrand) ?>" class="vk-public-logo-img" loading="eager" decoding="async">
             </picture>
             <span class="d-flex flex-column align-items-start text-start lh-sm">
                 <span class="vk-public-brand-title"><?= e($seoBrand) ?></span>

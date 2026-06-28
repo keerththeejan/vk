@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
+vk_ensure_finance_schemas($pdo);
 
 $kind = (string) ($_GET['kind'] ?? $_POST['kind'] ?? 'repair');
 if (!in_array($kind, ['repair', 'cctv'], true)) {

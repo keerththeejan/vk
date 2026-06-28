@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/includes/init.php';
+require_once __DIR__ . '/includes/init_public.php';
 require_once __DIR__ . '/modules/service_templates/service_template_location.php';
 
 $pdo = db();

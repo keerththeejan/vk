@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
+vk_ensure_finance_schemas($pdo);
 
 $prefillRepairId = (int) ($_GET['repair_job_id'] ?? 0);
 $prefillCctvId = (int) ($_GET['cctv_job_id'] ?? 0);

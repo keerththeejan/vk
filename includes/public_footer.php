@@ -21,7 +21,7 @@ $socials = [
         <div class="row gy-4">
             <div class="col-lg-4">
                 <a class="vk-footer-logo d-inline-flex align-items-center gap-3 mb-3" href="<?= e(BASE_URL) ?>/index.php">
-                    <img class="vk-footer-logo-img" src="<?= e($footerLogo) ?>" alt="<?= e((string) $footerCompany) ?> logo" width="120" height="40" loading="lazy" decoding="async">
+                    <img class="vk-footer-logo-img" src="<?= e($footerLogo) ?>" alt="<?= e((string) $footerCompany) ?> logo" loading="lazy" decoding="async">
                     <div>
                         <div class="vk-footer-brand"><?= e((string) $footerCompany) ?></div>
                         <div class="small text-muted"><?= e((string) $footerTagline) ?></div>
@@ -82,7 +82,7 @@ $socials = [
 $waDigits = vk_app_setting('whatsapp_number', defined('VK_PUBLIC_WHATSAPP_NUMBER') ? (string) VK_PUBLIC_WHATSAPP_NUMBER : '94778870135');
 $waMsg = rawurlencode((string) vk_app_setting('whatsapp_default_message', 'Hello, I need service from VK Network.'));
 $waHref = 'https://wa.me/' . preg_replace('/\D+/', '', $waDigits) . '?text=' . $waMsg;
-$vkPublicScriptVersion = is_file(__DIR__ . '/../assets/js/public-site.js') ? (string) filemtime(__DIR__ . '/../assets/js/public-site.js') : (string) time();
+$vkPublicScriptVersion = vk_asset_mtime_version('assets/js/public-site.js');
 if (function_exists('vk_json_ld_local_business')) {
     echo "\n" . vk_json_ld_local_business() . "\n";
 }

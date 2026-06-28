@@ -1,6 +1,62 @@
 <?php
 declare(strict_types=1);
 
+/** @var array<string, true> */
+$GLOBALS['_vk_bootstrapped_modules'] = $GLOBALS['_vk_bootstrapped_modules'] ?? [];
+
+/**
+ * Lazy-load optional application modules (email, WhatsApp, gallery, etc.).
+ */
+function vk_bootstrap_module(string $module): void
+{
+    if (isset($GLOBALS['_vk_bootstrapped_modules'][$module])) {
+        return;
+    }
+
+    $map = [
+        'service_gallery' => __DIR__ . '/service_gallery.php',
+        'vehicle_booking' => __DIR__ . '/vehicle_booking.php',
+        'whatsapp_bridge' => __DIR__ . '/whatsapp_bridge.php',
+        'mailer' => __DIR__ . '/mailer.php',
+        'email_system' => __DIR__ . '/email_system.php',
+        'email_imap_poll' => __DIR__ . '/email_imap_poll.php',
+        'booking_automation' => __DIR__ . '/booking_automation.php',
+    ];
+
+    if (!isset($map[$module])) {
+        return;
+    }
+
+    require_once $map[$module];
+    $GLOBALS['_vk_bootstrapped_modules'][$module] = true;
+}
+
+/**
+ * Whether auth schema / remember-me should run on this request.
+ */
+function vk_wants_auth_bootstrap(): bool
+{
+    if (!empty($_SESSION['user_id'])) {
+        return true;
+    }
+
+    $cookie = $_COOKIE[SESSION_NAME] ?? '';
+    if (is_string($cookie) && $cookie !== '') {
+        return true;
+    }
+
+    $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    $authScripts = [
+        'login.php', 'signup.php', 'logout.php', 'dashboard.php', 'approve_users.php',
+    ];
+
+    return in_array($script, $authScripts, true)
+        || str_contains((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/modules/')
+        || str_contains((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/api/')
+        || str_contains((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/tech/')
+        || str_contains((string) ($_SERVER['SCRIPT_NAME'] ?? ''), '/vehicle/dashboard');
+}
+
 /**
  * Escape HTML output.
  */
@@ -20,39 +76,18 @@ function base_url(string $path = ''): string
     return $path === '' ? $base . '/' : $base . '/' . $path;
 }
 
-/**
- * Render a responsive image helper for WebP/AVIF-aware public assets.
- *
- * Example usage:
- * echo vk_public_responsive_image('assets/images/hero.jpg', 'Hero image', [480 => 'assets/images/hero-480w.webp', 768 => 'assets/images/hero-768w.webp', 1200 => 'assets/images/hero-1200w.webp']);
- */
-function vk_public_responsive_image(string $src, string $alt, array $srcset = [], string $sizes = '100vw', string $class = '', string $loading = 'lazy', string $decoding = 'async', int $width = 1200, int $height = 675): string
+/** Cache-busting version from a project-relative asset path. */
+function vk_asset_mtime_version(string $relativePath): string
 {
-    $srcsetParts = [];
-    foreach ($srcset as $w => $path) {
-        $srcsetParts[] = e(base_url((string) $path)) . ' ' . ((int) $w) . 'w';
+    static $cache = [];
+    $relativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
+    if (isset($cache[$relativePath])) {
+        return $cache[$relativePath];
     }
-    $srcsetAttr = implode(', ', $srcsetParts);
-    $imgAttrs = [
-        'src' => e(base_url($src)),
-        'alt' => e($alt),
-        'width' => (string) $width,
-        'height' => (string) $height,
-        'loading' => $loading,
-        'decoding' => $decoding,
-        'sizes' => e($sizes),
-        'class' => e($class),
-    ];
-    $attributes = '';
-    foreach ($imgAttrs as $name => $value) {
-        $attributes .= ' ' . $name . '="' . $value . '"';
-    }
+    $full = ROOT_PATH . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+    $cache[$relativePath] = is_file($full) ? (string) filemtime($full) : (string) time();
 
-    return '<picture>' .
-        '<source type="image/avif" srcset="' . $srcsetAttr . '" sizes="' . e($sizes) . '">' .
-        '<source type="image/webp" srcset="' . $srcsetAttr . '" sizes="' . e($sizes) . '">' .
-        '<img' . $attributes . '>' .
-        '</picture>';
+    return $cache[$relativePath];
 }
 
 function redirect(string $path): void
@@ -99,28 +134,50 @@ function require_login(): void
 function require_admin(): void
 {
     require_login();
+
+    if (vk_auth_user_cache_fresh(300)) {
+        $cached = vk_auth_cached_user();
+        $status = (string) ($cached['status'] ?? $_SESSION['user_status'] ?? 'approved');
+        if (!vk_auth_status_is_approved($status)) {
+            $_SESSION = [];
+            session_destroy();
+            flash_set('warning', 'Your account is not approved for access.');
+            redirect('/login.php');
+        }
+        $role = (string) ($cached['role'] ?? $_SESSION['user_role'] ?? 'viewer');
+        $_SESSION['user_role'] = $role;
+        if ($role === 'technician') {
+            flash_set('warning', 'Use the technician mobile dashboard for your account.');
+            redirect('/tech/index.php');
+        }
+
+        return;
+    }
+
     $pdo = db();
-    require_once __DIR__ . '/users_schema.php';
-    vk_ensure_users_management_schema($pdo);
+    if (empty($_SESSION['_users_schema_ready'])) {
+        require_once __DIR__ . '/users_schema.php';
+        vk_ensure_users_management_schema($pdo);
+        $_SESSION['_users_schema_ready'] = true;
+    }
 
     $uid = (int) $_SESSION['user_id'];
-    $st = $pdo->prepare('SELECT role, status FROM users WHERE id = ? LIMIT 1');
-    $st->execute([$uid]);
-    $row = $st->fetch(PDO::FETCH_ASSOC);
-    if (!$row) {
+    $user = vk_auth_load_user_cache($pdo, $uid);
+    if (!$user) {
         $_SESSION = [];
         session_destroy();
         flash_set('error', 'Account not found.');
         redirect('/login.php');
     }
-    $status = isset($row['status']) ? (string) $row['status'] : 'approved';
-    if (function_exists('vk_auth_status_is_approved') ? !vk_auth_status_is_approved($status) : $status !== 'active') {
+    $status = (string) ($user['status'] ?? 'approved');
+    if (!vk_auth_status_is_approved($status)) {
+        vk_auth_invalidate_user_cache();
         $_SESSION = [];
         session_destroy();
         flash_set('warning', 'Your account is not approved for access.');
         redirect('/login.php');
     }
-    $role = (string) ($row['role'] ?? 'admin');
+    $role = (string) ($user['role'] ?? 'admin');
     $_SESSION['user_role'] = $role;
     if ($role === 'technician') {
         flash_set('warning', 'Use the technician mobile dashboard for your account.');
@@ -175,6 +232,24 @@ function require_csrf(?string $token): void
     }
 }
 
+function vk_api_require_admin(): void
+{
+    header('Content-Type: application/json; charset=utf-8');
+    if (empty($_SESSION['user_id'])) {
+        http_response_code(401);
+        echo json_encode(['ok' => false, 'error' => 'Unauthorized'], JSON_THROW_ON_ERROR);
+        exit;
+    }
+    $cached = vk_auth_cached_user();
+    $role = (string) ($cached['role'] ?? $_SESSION['user_role'] ?? 'viewer');
+    $status = (string) ($cached['status'] ?? $_SESSION['user_status'] ?? 'approved');
+    if (!vk_auth_status_is_approved($status) || $role === 'technician') {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Forbidden'], JSON_THROW_ON_ERROR);
+        exit;
+    }
+}
+
 function users_has_role_column(PDO $pdo): bool
 {
     static $v = null;
@@ -194,28 +269,11 @@ function current_user(PDO $pdo): ?array
     if (empty($_SESSION['user_id'])) {
         return null;
     }
-    if (users_has_role_column($pdo)) {
-        $extra = '';
-        if (db_column_exists($pdo, 'users', 'email')) {
-            $extra .= ', email, phone, status';
-        }
-        $department = db_column_exists($pdo, 'users', 'department') ? ', department, user_uid, last_login_at' : '';
-        $st = $pdo->prepare(
-            'SELECT id, username, fullname, role, technician_id' . $extra . $department . ' FROM users WHERE id = ? LIMIT 1'
-        );
-    } else {
-        $st = $pdo->prepare('SELECT id, username, fullname FROM users WHERE id = ? LIMIT 1');
+    if (vk_auth_user_cache_fresh(300)) {
+        return vk_auth_cached_user();
     }
-    $st->execute([(int) $_SESSION['user_id']]);
-    $u = $st->fetch();
-    if ($u && !isset($u['role'])) {
-        $u['role'] = 'admin';
-        $u['technician_id'] = null;
-    }
-    if ($u && !isset($u['status'])) {
-        $u['status'] = 'approved';
-    }
-    return $u ?: null;
+
+    return vk_auth_load_user_cache($pdo, (int) $_SESSION['user_id']);
 }
 
 function next_booking_number(PDO $pdo): string
@@ -428,6 +486,7 @@ function db_table_exists(PDO $pdo, string $table): bool
         'SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1'
     );
     $st->execute([$table]);
+    vk_perf_mark_query();
     $cache[$table] = (bool) $st->fetchColumn();
     return $cache[$table];
 }
@@ -447,6 +506,7 @@ function db_column_exists(PDO $pdo, string $table, string $column): bool
         'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1'
     );
     $st->execute([$table, $column]);
+    vk_perf_mark_query();
     $cache[$key] = (bool) $st->fetchColumn();
     return $cache[$key];
 }

@@ -69,6 +69,7 @@ function vk_settings_all(PDO $pdo): array
     }
     try {
         $st = $pdo->query('SELECT key_name, `value` FROM settings');
+        vk_perf_mark_query();
         while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
             $k = (string) ($row['key_name'] ?? '');
             if ($k !== '') {
@@ -182,7 +183,12 @@ function vk_setting_asset_exists(?string $path): bool
 
 function getLogo(string $type = 'main'): string
 {
+    static $cache = [];
     $type = strtolower(trim($type));
+    if (isset($cache[$type])) {
+        return $cache[$type];
+    }
+
     $fallback = 'assets/images/default-logo.svg';
     $keys = [
         'main' => ['company_logo', 'site_logo'],
@@ -195,14 +201,18 @@ function getLogo(string $type = 'main'): string
     foreach ($keys as $key) {
         $path = vk_app_setting($key, '');
         if (is_string($path) && $path !== '' && vk_setting_asset_exists($path)) {
-            return vk_setting_asset_url($path, $fallback, true);
+            $cache[$type] = vk_setting_asset_url($path, $fallback, true);
+
+            return $cache[$type];
         }
         if (is_string($path) && $path !== '') {
             error_log('getLogo: missing or invalid logo asset for ' . $key . ': ' . $path);
         }
     }
 
-    return vk_setting_asset_url($fallback, '', true);
+    $cache[$type] = vk_setting_asset_url($fallback, '', true);
+
+    return $cache[$type];
 }
 
 function getLogoPath(string $type = 'main'): string

@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * Dynamic XML sitemap (public pages). Enable pretty URLs via .htaccess (optional).
  */
-require_once __DIR__ . '/includes/init.php';
+require_once __DIR__ . '/includes/init_public.php';
 
 header('Content-Type: application/xml; charset=utf-8');
 header('Cache-Control: public, max-age=3600');

@@ -78,6 +78,16 @@
     });
 
     document.querySelectorAll('.vk-dashboard-2026 .vk-kpi-card .fs-3, .vk-dashboard-2026 .vk-kpi-card .fs-4, .vk-dashboard-2026 .vk-kpi-card .fs-5').forEach(function (el) {
+        if (window.matchMedia && window.matchMedia('(max-width: 767.98px)').matches) {
+            return;
+        }
+        try {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                return;
+            }
+        } catch (e) {
+            return;
+        }
         const raw = (el.textContent || '').replace(/,/g, '').trim();
         const value = parseFloat(raw);
         if (!Number.isFinite(value) || value < 1) return;

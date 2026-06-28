@@ -60,17 +60,39 @@ function vk_staff_ensure_table(PDO $pdo): void
 }
 
 /** @return list<array<string,mixed>> */
+function vk_staff_get_public_list(PDO $pdo, int $limit = 8): array
+{
+    $limit = max(1, min(50, $limit));
+    if (!db_table_exists($pdo, 'staff')) {
+        return [];
+    }
+
+    $sql = 'SELECT id, name, role, image, image_thumb, description, skills, experience,
+            years_experience, completed_projects, specialization, certifications, email, phone,
+            social_links, status, active, sort_order
+            FROM staff
+            WHERE active = 1 AND status = \'active\'
+            ORDER BY
+                CASE WHEN LOWER(role) LIKE \'%owner%\' OR LOWER(role) LIKE \'%founder%\' THEN 0 ELSE 1 END ASC,
+                sort_order ASC,
+                id DESC
+            LIMIT ' . $limit;
+
+    return $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+}
+
+/** @return list<array<string,mixed>> */
 function vk_staff_get_all(PDO $pdo, bool $publicOnly = true): array
 {
-    vk_staff_ensure_table($pdo);
-    $sql = 'SELECT * FROM staff';
     if ($publicOnly) {
-        $sql .= " WHERE active = 1 AND status = 'active'";
+        return vk_staff_get_public_list($pdo, 500);
     }
-    $sql .= " ORDER BY
-        CASE WHEN LOWER(role) LIKE '%owner%' OR LOWER(role) LIKE '%founder%' THEN 0 ELSE 1 END ASC,
+
+    vk_staff_ensure_table($pdo);
+    $sql = 'SELECT * FROM staff ORDER BY
+        CASE WHEN LOWER(role) LIKE \'%owner%\' OR LOWER(role) LIKE \'%founder%\' THEN 0 ELSE 1 END ASC,
         sort_order ASC,
-        id DESC";
+        id DESC';
 
     return $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
 }

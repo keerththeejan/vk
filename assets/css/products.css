@@ -1,0 +1,49 @@
+/* Premium Products module styles (dark navy, glassmorphism) */
+:root{
+  --vk-bg-1:#061223; /* darkest */
+  --vk-bg-2:#071827; /* gradient */
+  --vk-card:#071824;
+  --vk-muted:#9fb0c8;
+  --vk-accent:#00b3ff;
+  --vk-glass:rgba(255,255,255,0.03);
+  --vk-radius:12px;
+}
+body.products-page, .products-page{background:linear-gradient(180deg,var(--vk-bg-1) 0%, var(--vk-bg-2) 100%);color:var(--vk-muted);min-height:60vh}
+.glass-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:var(--vk-radius);border:1px solid rgba(255,255,255,0.04);box-shadow:0 10px 30px rgba(2,6,23,0.6)}
+.vk-stat-card{border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 18px rgba(2,6,23,0.45)}
+.vk-stat-card .vk-stat-icon{width:48px;height:48px;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:20px}
+.bg-gradient-primary{background:linear-gradient(135deg,var(--vk-accent),#4d7bff)}
+.bg-gradient-warning{background:linear-gradient(135deg,#ffb020,#ff7b00)}
+.bg-gradient-danger{background:linear-gradient(135deg,#ff6b6b,#ff3b3b)}
+.bg-gradient-info{background:linear-gradient(135deg,#3ad3ff,#0077ff)}
+
+.filter-bar .form-control, .filter-bar .form-select{min-width:220px}
+.filter-bar .input-group-text{background:transparent;border-right:0;color:var(--vk-muted)}
+
+.modern-table{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border-radius:10px;padding:8px;border:1px solid rgba(255,255,255,0.03)}
+#products-table{background:transparent;border-collapse:separate;border-spacing:0}
+#products-table thead th{background:rgba(4,10,20,0.6);color:#eaf6ff;border-bottom:0;padding:12px 14px}
+#products-table tbody tr{background:transparent;transition:transform .12s ease, box-shadow .12s ease}
+#products-table tbody tr:hover{transform:translateY(-4px);box-shadow:0 6px 20px rgba(2,6,23,0.6)}
+#products-table tbody td{padding:12px 14px;vertical-align:middle}
+#products-table img{max-width:56px;border-radius:8px}
+.table-dark .badge{opacity:0.95}
+
+.vk-empty-state{padding:48px 24px;text-align:center;color:var(--vk-muted)}
+.vk-empty-state h3{color:#eaf6ff;margin-bottom:8px}
+
+.sticky-top{z-index:40}
+
+/* Responsive: convert table rows to cards on small screens */
+@media (max-width:767.98px){
+  .filter-bar .form-control{min-width:0;width:100%}
+  #products-table thead{display:none}
+  #products-table tbody tr{display:block;border-radius:10px;padding:12px;margin-bottom:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));box-shadow:0 6px 18px rgba(2,6,23,0.35)}
+  #products-table tbody td{display:flex;justify-content:space-between;padding:8px;border:none}
+  #products-table tbody td .label{color:var(--vk-muted);font-size:12px}
+}
+
+/* small helpers */
+.w-1{width:1%;white-space:nowrap}
+.text-neon{color:var(--vk-accent);text-shadow:0 6px 18px rgba(0,179,255,0.08)}
+.vk-card .card-body{padding:18px}

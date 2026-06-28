@@ -2404,3 +2404,27 @@ footer {
         display: inline-flex !important;
     }
 }
+
+@media (max-width: 767.98px) {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    .vk-app .btn,
+    .vk-app .nav-link,
+    .vk-app a.vk-action-tile {
+        touch-action: manipulation;
+    }
+
+    .vk-dashboard-2026 .vk-kpi-card,
+    .vk-dashboard-2026 .vk-command-card,
+    .vk-dashboard-2026 .vk-growth-card {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 120px;
+    }
+
+    .vk-dashboard-2026 .vk-hero-shine,
+    .vk-dashboard-2026 .vk-mini-bars span {
+        animation: none !important;
+    }
+}

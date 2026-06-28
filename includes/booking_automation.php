@@ -2,7 +2,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/assign_technician.php';
-require_once __DIR__ . '/whatsapp_bridge.php';
+if (function_exists('vk_bootstrap_module')) {
+    vk_bootstrap_module('whatsapp_bridge');
+} else {
+    require_once __DIR__ . '/whatsapp_bridge.php';
+}
 
 /**
  * @param array<string, string> $serviceTypes

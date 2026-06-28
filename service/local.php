@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once dirname(__DIR__) . '/includes/init.php';
+require_once dirname(__DIR__) . '/includes/init_public.php';
 
 $svcSlug = trim((string) ($_GET['local_service_slug'] ?? 'computer-repair'));
 $locSlug = trim((string) ($_GET['local_location_slug'] ?? 'jaffna'));

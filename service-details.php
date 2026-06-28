@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
-require_once __DIR__ . '/includes/init.php';
+require_once __DIR__ . '/includes/init_public.php';
+vk_bootstrap_module('service_gallery');
 
 $pdo = db();
 if (!db_table_exists($pdo, 'web_services')) {

@@ -1,8 +1,6 @@
 <?php
 declare(strict_types=1);
-ini_set('display_errors', '1');
-error_reporting(E_ALL);
-require_once __DIR__ . '/includes/init.php';
+require_once __DIR__ . '/includes/init_public.php';
 require_once __DIR__ . '/includes/staff_model.php';
 
 $requestPath = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '');
@@ -12,12 +10,16 @@ if (preg_match('#/index\.php/staff/?$#i', $requestPath)) {
 }
 
 $services = [];
+$teamMembers = [];
 try {
     $pdo = db();
     if (db_table_exists($pdo, 'web_services')) {
         $services = $pdo->query(
             'SELECT id, slug, name, short_description, lucide_icon FROM web_services WHERE active = 1 ORDER BY sort_order ASC, id ASC'
         )->fetchAll();
+    }
+    if (db_table_exists($pdo, 'staff')) {
+        $teamMembers = vk_staff_get_public_list($pdo, 8);
     }
 } catch (Throwable $e) {
     if (defined('APP_DEBUG') && APP_DEBUG) {
@@ -103,17 +105,6 @@ $teamFallbackMembers = [
     ],
 ];
 
-$teamMembers = [];
-try {
-    $pdo = $pdo ?? db();
-    if (db_table_exists($pdo, 'staff')) {
-        $teamMembers = array_slice(vk_staff_get_all($pdo, true), 0, 8);
-    }
-} catch (Throwable $e) {
-    if (defined('APP_DEBUG') && APP_DEBUG) {
-        error_log('index.php: staff unavailable - ' . $e->getMessage());
-    }
-}
 
 if (!$teamMembers) {
     $teamMembers = $teamFallbackMembers;
