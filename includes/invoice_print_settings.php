@@ -222,7 +222,7 @@ function vk_invoice_print_settings_css_vars(array $s): string
         '--ips-company-desc-size:' . $px($s['company_desc_size'] ?? 13),
         '--ips-company-desc-color:' . ($s['company_desc_color'] ?? '#222222'),
         '--ips-header-line-color:' . ($s['header_line_color'] ?? '#0B4DBA'),
-        '--ips-header-line-thickness:' . $px($s['header_line_thickness'] ?? 3),
+        '--ips-header-line-thickness:' . $px(max(3, (float) ($s['header_line_thickness'] ?? 3))),
         '--ips-invoice-title-size:' . $px($s['invoice_title_size'] ?? 28),
         '--ips-invoice-title-weight:' . (int) ($s['invoice_title_weight'] ?? 700),
         '--ips-invoice-title-color:' . ($s['invoice_title_color'] ?? '#0B4DBA'),

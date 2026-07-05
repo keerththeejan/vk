@@ -101,7 +101,6 @@ $ipsPageSize = (string) ($ipsSettings['page_size'] ?? 'A4');
 $ipsOrientation = (string) ($ipsSettings['page_orientation'] ?? 'portrait');
 $ipsAtPage = strtolower($ipsPageSize) . ' ' . strtolower($ipsOrientation);
 $showFooterQr = !empty($ipsSettings['footer_qr_enabled']);
-$showHeaderLine = !empty($ipsSettings['header_line_enabled']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -184,6 +183,7 @@ $showHeaderLine = !empty($ipsSettings['header_line_enabled']);
             overflow: visible !important;
             padding: 0;
             margin: 0;
+            border-bottom: var(--ips-header-line-thickness, 3px) solid var(--ips-header-line-color, #0B4DBA);
         }
 
         .header {
@@ -251,12 +251,14 @@ $showHeaderLine = !empty($ipsSettings['header_line_enabled']);
             font-family: var(--ips-global-font, Arial, Helvetica, "Segoe UI", sans-serif);
             font-size: var(--ips-company-name-size, 32px);
             font-weight: var(--ips-company-name-weight, 700);
-            color: var(--ips-company-name-color, var(--vk-brand));
+            color: #0B4DBA;
             letter-spacing: 1px;
             line-height: 1.08;
             margin: 0 0 4px;
             text-transform: uppercase;
             white-space: nowrap;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         .letterhead-services {
@@ -317,12 +319,17 @@ $showHeaderLine = !empty($ipsSettings['header_line_enabled']);
         }
 
         .header-rule {
+            display: block;
             height: var(--ips-header-line-thickness, 3px);
+            min-height: 3px;
             width: 100%;
-            background: var(--ips-header-line-color, var(--vk-brand));
             margin: 0;
             border: none;
             padding: 0;
+            background: var(--ips-header-line-color, #0B4DBA);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            flex-shrink: 0;
         }
 
         /* ── Watermark ── */
@@ -710,6 +717,7 @@ $showHeaderLine = !empty($ipsSettings['header_line_enabled']);
                 z-index: 100;
                 background: #fff;
                 overflow: visible !important;
+                border-bottom: var(--ips-header-line-thickness, 3px) solid var(--ips-header-line-color, #0B4DBA);
             }
 
             .header {
@@ -727,7 +735,17 @@ $showHeaderLine = !empty($ipsSettings['header_line_enabled']);
             }
 
             .header-rule {
-                margin-top: 10px;
+                margin-top: 0;
+                width: 100%;
+                min-height: 3px;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .letterhead-company {
+                color: #0B4DBA;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             .invoice-body {
@@ -857,9 +875,6 @@ $showHeaderLine = !empty($ipsSettings['header_line_enabled']);
                 </div>
             </div>
         </div>
-        <?php if ($showHeaderLine): ?>
-        <hr class="header-rule">
-        <?php endif; ?>
     </header>
 
     <main class="invoice-body">
