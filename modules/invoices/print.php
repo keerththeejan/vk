@@ -270,6 +270,10 @@ $showFooterQr = !empty($ipsSettings['footer_qr_enabled']);
             line-height: 1.45;
         }
 
+        .letterhead-services--primary {
+            white-space: nowrap;
+        }
+
         .letterhead-tagline {
             font-family: Arial, Helvetica, "Segoe UI", sans-serif;
             font-size: 12px;
@@ -854,7 +858,7 @@ $showFooterQr = !empty($ipsSettings['footer_qr_enabled']);
             <?php endif; ?>
             <div class="letterhead-col letterhead-col--center">
                 <h2 class="letterhead-company"><?= e($businessName) ?></h2>
-                <p class="letterhead-services">Software Development | Hardware Solutions</p>
+                <p class="letterhead-services letterhead-services--primary">Software Development | Hardware Solutions</p>
                 <p class="letterhead-services">CCTV Surveillance | Network Infrastructure</p>
                 <p class="letterhead-tagline"><?= e($businessTagline) ?></p>
             </div>
