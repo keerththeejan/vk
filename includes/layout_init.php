@@ -32,4 +32,6 @@ function vk_ensure_finance_schemas(PDO $pdo): void
     vk_ensure_invoice_items_table($pdo);
     vk_ensure_payments_table($pdo);
     vk_ensure_account_ledger_table($pdo);
+    require_once __DIR__ . '/invoice_print_settings.php';
+    vk_invoice_print_settings_ensure_schema($pdo);
 }

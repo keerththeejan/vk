@@ -43,7 +43,10 @@ $custs = $pdo->query('SELECT id, name FROM customers ORDER BY name')->fetchAll()
 ?>
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
     <h1 class="h3 mb-0">Invoices</h1>
-    <a class="btn btn-primary" href="<?= e(BASE_URL) ?>/modules/invoices/create.php"><i class="bi bi-plus-lg me-1"></i>Create invoice</a>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-secondary" href="<?= e(BASE_URL) ?>/modules/invoices/print_settings.php"><i class="bi bi-printer me-1"></i>Print Settings</a>
+        <a class="btn btn-primary" href="<?= e(BASE_URL) ?>/modules/invoices/create.php"><i class="bi bi-plus-lg me-1"></i>Create invoice</a>
+    </div>
 </div>
 <form class="row g-2 mb-3 align-items-end" method="get" action="">
     <div class="col-6 col-md-2">

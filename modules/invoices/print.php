@@ -49,7 +49,8 @@ $stampUrl = base_url('assets/images/company-stamp.png');
 $logoFile = $projectRoot . '/assets/images/vk-logo.png';
 $headerLogoVer = is_file($logoFile) ? (string) @filemtime($logoFile) : '2';
 $headerLogoUrl = base_url('assets/images/vk-logo.png?v=' . $headerLogoVer);
-$logoUrl = is_file($logoFile) ? $headerLogoUrl : '';
+$showHeaderLogo = is_file($logoFile);
+$watermarkUrl = $showHeaderLogo ? $headerLogoUrl : '';
 $qrUrl = is_file($qrPath)
     ? base_url('assets/images/invoice-qr.png')
     : 'https://api.qrserver.com/v1/create-qr-code/?size=55x55&margin=1&data=' . rawurlencode('https://www.vkitnet.info');
@@ -64,6 +65,43 @@ try {
 } catch (Throwable $e) {
     $dueDateDisplay = (string) $inv['invoice_date'];
 }
+
+require_once dirname(__DIR__, 2) . '/includes/invoice_print_settings.php';
+$ipsPreview = !empty($_GET['settings_preview']);
+$ipsSettings = $ipsPreview && !empty($_SESSION['invoice_print_preview_draft']) && is_array($_SESSION['invoice_print_preview_draft'])
+    ? array_merge(vk_invoice_print_settings_defaults(), $_SESSION['invoice_print_preview_draft'])
+    : vk_invoice_print_settings_get($pdo);
+
+$ipsAsset = static function (string $rel) use ($projectRoot): string {
+    $abs = $projectRoot . '/' . ltrim(str_replace('\\', '/', $rel), '/');
+    return is_file($abs) ? $rel : '';
+};
+
+$logoRel = $ipsAsset((string) ($ipsSettings['logo_path'] ?? 'assets/images/vk-logo.png')) ?: 'assets/images/vk-logo.png';
+$headerLogoUrl = vk_invoice_print_asset_url($logoRel);
+$showHeaderLogo = !empty($ipsSettings['logo_enabled']) && is_file($projectRoot . '/' . ltrim($logoRel, '/'));
+
+$watermarkRel = (string) ($ipsSettings['watermark_path'] ?? 'assets/images/vk-logo.png');
+$watermarkUrl = !empty($ipsSettings['watermark_enabled']) && $ipsAsset($watermarkRel) !== ''
+    ? vk_invoice_print_asset_url($watermarkRel)
+    : '';
+
+$signatureRel = (string) ($ipsSettings['signature_path'] ?? 'assets/images/digital-signature.png');
+$signaturePath = $projectRoot . '/' . ltrim($signatureRel, '/');
+$hasSignature = !empty($ipsSettings['signature_enabled']) && is_file($signaturePath);
+$signatureUrl = $hasSignature ? vk_invoice_print_asset_url($signatureRel) : $signatureUrl;
+
+$stampRel = (string) ($ipsSettings['stamp_path'] ?? 'assets/images/company-stamp.png');
+$stampPath = $projectRoot . '/' . ltrim($stampRel, '/');
+$hasStamp = !empty($ipsSettings['stamp_enabled']) && is_file($stampPath);
+$stampUrl = $hasStamp ? vk_invoice_print_asset_url($stampRel) : $stampUrl;
+
+$ipsCssVars = vk_invoice_print_settings_css_vars($ipsSettings);
+$ipsPageSize = (string) ($ipsSettings['page_size'] ?? 'A4');
+$ipsOrientation = (string) ($ipsSettings['page_orientation'] ?? 'portrait');
+$ipsAtPage = strtolower($ipsPageSize) . ' ' . strtolower($ipsOrientation);
+$showFooterQr = !empty($ipsSettings['footer_qr_enabled']);
+$showHeaderLine = !empty($ipsSettings['header_line_enabled']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -86,19 +124,23 @@ try {
             --vk-divider: #D8D8D8;
             --vk-table-head: #0B4DBA;
             --page-x: 30px;
+
+            --stamp-width: 85mm;
+            --stamp-height: 30mm;
+            <?= $ipsCssVars ?>
         }
 
         * { box-sizing: border-box; }
 
         @page {
-            size: A4 portrait;
-            margin: 10mm;
+            size: <?= e($ipsAtPage) ?>;
+            margin: var(--ips-page-margin-top, 10mm) var(--ips-page-margin-right, 10mm) var(--ips-page-margin-bottom, 10mm) var(--ips-page-margin-left, 10mm);
         }
 
         body {
             margin: 0;
-            font-family: Inter, "Segoe UI", Arial, sans-serif;
-            font-size: 11pt;
+            font-family: var(--ips-global-font, Inter, "Segoe UI", Arial, sans-serif);
+            font-size: var(--ips-global-font-size, 11pt);
             color: var(--vk-text);
             background: #e8edf3;
             line-height: 1.3;
@@ -146,16 +188,20 @@ try {
 
         .header {
             display: grid;
-            grid-template-columns: 180px 1fr 220px;
+            grid-template-columns: 160px minmax(0, 1fr) 210px;
             align-items: center;
-            column-gap: 30px;
-            padding: 20px 30px;
+            column-gap: 14px;
+            width: 100%;
+            max-width: 190mm;
+            margin: 0 auto;
+            padding: 16px 8mm;
+            box-sizing: border-box;
             overflow: visible !important;
         }
 
         .company-logo {
-            width: 180px;
-            height: 95px;
+            width: 160px;
+            height: 90px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -169,8 +215,8 @@ try {
             display: block;
             width: auto;
             height: auto;
-            max-width: 180px;
-            max-height: 95px;
+            max-width: var(--ips-logo-width, 160px);
+            max-height: var(--ips-logo-height, 90px);
             object-fit: contain;
             object-position: center;
             overflow: visible;
@@ -183,10 +229,12 @@ try {
 
         .letterhead-col--center {
             text-align: center;
-            padding: 0 8px;
+            padding: 0 4px;
             display: flex;
             flex-direction: column;
+            align-items: center;
             justify-content: center;
+            min-width: 0;
             overflow: visible;
         }
 
@@ -194,26 +242,28 @@ try {
             display: flex;
             align-items: center;
             justify-content: flex-end;
+            min-width: 210px;
             overflow: visible;
             flex-shrink: 0;
         }
 
         .letterhead-company {
-            font-family: Arial, Helvetica, "Segoe UI", sans-serif;
-            font-size: 36px;
-            font-weight: 700;
-            color: var(--vk-brand);
-            letter-spacing: 2px;
+            font-family: var(--ips-global-font, Arial, Helvetica, "Segoe UI", sans-serif);
+            font-size: var(--ips-company-name-size, 32px);
+            font-weight: var(--ips-company-name-weight, 700);
+            color: var(--ips-company-name-color, var(--vk-brand));
+            letter-spacing: 1px;
             line-height: 1.08;
             margin: 0 0 4px;
             text-transform: uppercase;
+            white-space: nowrap;
         }
 
         .letterhead-services {
-            font-family: Arial, Helvetica, "Segoe UI", sans-serif;
-            font-size: 13px;
+            font-family: var(--ips-global-font, Arial, Helvetica, "Segoe UI", sans-serif);
+            font-size: var(--ips-company-desc-size, 13px);
             font-weight: 500;
-            color: #222;
+            color: var(--ips-company-desc-color, #222);
             margin: 0;
             line-height: 1.45;
         }
@@ -239,9 +289,10 @@ try {
         .letterhead-contact-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 8px;
             white-space: nowrap;
+            font-size: 11px;
         }
 
         .letterhead-contact-item:last-child {
@@ -266,9 +317,9 @@ try {
         }
 
         .header-rule {
-            height: 3px;
+            height: var(--ips-header-line-thickness, 3px);
             width: 100%;
-            background: var(--vk-brand);
+            background: var(--ips-header-line-color, var(--vk-brand));
             margin: 0;
             border: none;
             padding: 0;
@@ -279,9 +330,9 @@ try {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            width: 380px;
-            opacity: 0.03;
+            transform: translate(-50%, -50%) rotate(var(--ips-watermark-rotation, 0deg));
+            width: var(--ips-watermark-width, 380px);
+            opacity: var(--ips-watermark-opacity, 0.03);
             z-index: 0;
             pointer-events: none;
             user-select: none;
@@ -307,17 +358,17 @@ try {
             justify-content: space-between;
             align-items: flex-start;
             gap: 24px;
-            padding-top: 25px;
+            padding-top: var(--ips-invoice-title-margin-top, 25px);
             margin-bottom: 12px;
             page-break-inside: avoid;
             break-inside: avoid;
         }
 
         .invoice-heading h1 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 700;
-            color: #0B4DBA;
+            margin: 0 0 0 var(--ips-invoice-title-margin-left, 0);
+            font-size: var(--ips-invoice-title-size, 28px);
+            font-weight: var(--ips-invoice-title-weight, 700);
+            color: var(--ips-invoice-title-color, #0B4DBA);
             letter-spacing: 0.08em;
             line-height: 1.2;
         }
@@ -369,7 +420,7 @@ try {
         }
 
         .section-title {
-            font-size: 10pt;
+            font-size: var(--ips-customer-label-size, 10pt);
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.08em;
@@ -379,12 +430,12 @@ try {
 
         .customer-block p {
             margin: 0 0 2px;
-            font-size: 11pt;
+            font-size: var(--ips-customer-address-size, 11pt);
         }
 
         .customer-name {
             font-weight: 700;
-            font-size: 12pt;
+            font-size: var(--ips-customer-name-size, 12pt);
         }
 
         /* ── Items table ── */
@@ -393,7 +444,7 @@ try {
             table-layout: fixed;
             border-collapse: collapse;
             margin-bottom: 12px;
-            font-size: 11pt;
+            font-size: var(--ips-table-body-size, 11pt);
         }
 
         .invoice-items thead {
@@ -401,14 +452,14 @@ try {
         }
 
         .invoice-items th {
-            background: var(--vk-table-head);
-            color: #fff;
+            background: var(--ips-table-header-bg, var(--vk-table-head));
+            color: var(--ips-table-header-color, #fff);
             font-weight: 700;
-            font-size: 9.5pt;
+            font-size: var(--ips-table-header-size, 9.5pt);
             text-transform: uppercase;
             letter-spacing: 0.03em;
-            padding: 6px 8px;
-            border: 1px solid #094099;
+            padding: var(--ips-table-row-padding, 6px) 8px;
+            border: 1px solid var(--ips-table-border, #094099);
             text-align: left;
         }
 
@@ -425,8 +476,8 @@ try {
         }
 
         .invoice-items td {
-            padding: 6px 8px;
-            border: 1px solid var(--vk-border);
+            padding: var(--ips-table-row-padding, 6px) 8px;
+            border: 1px solid var(--ips-table-border, var(--vk-border));
             vertical-align: middle;
         }
 
@@ -465,19 +516,19 @@ try {
         }
 
         .totals-table .total-row td {
-            background: #0B4DBA;
-            color: #fff;
+            background: var(--ips-total-bg, #0B4DBA);
+            color: var(--ips-total-color, #fff);
             padding: 10px 15px;
             border: none;
-            font-weight: 700;
+            font-weight: var(--ips-total-weight, 700);
         }
 
         .totals-table .total-row td:first-child {
-            font-size: 13px;
+            font-size: var(--ips-total-label-size, 13px);
         }
 
         .totals-table .total-row td:last-child {
-            font-size: 16px;
+            font-size: var(--ips-total-size, 16px);
             text-align: right;
             min-width: 100px;
         }
@@ -562,14 +613,16 @@ try {
             padding-top: 5px;
             border-top: 1px solid #d9d9d9;
             text-align: center;
-            font-size: 10px;
+            font-size: var(--ips-footer-font-size, 10px);
             color: #555;
             line-height: 1.3;
         }
 
         /* ── Authorized By approval section ── */
         .approval-section {
-            width: 170px;
+            width: var(--stamp-width);
+            min-width: var(--stamp-width);
+            max-width: 100%;
             margin-top: 15px;
             margin-bottom: 15px;
             display: flex;
@@ -581,10 +634,12 @@ try {
         }
 
         .approval-section .digital-signature {
-            width: 120px;
+            width: var(--ips-signature-width, 120px);
             height: auto;
             display: block;
             object-fit: contain;
+            opacity: var(--ips-signature-opacity, 1);
+            transform: rotate(var(--ips-signature-rotation, 0deg));
         }
 
         .signature-line {
@@ -594,7 +649,7 @@ try {
         }
 
         .approval-label {
-            font-size: 10px;
+            font-size: var(--ips-approval-label-size, 10px);
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -605,18 +660,20 @@ try {
         }
 
         .approval-section .company-stamp {
-            width: 69mm !important;
-            height: 25mm !important;
-            min-width: 69mm;
-            min-height: 25mm;
-            max-width: 69mm;
-            max-height: 25mm;
+            width: var(--stamp-width) !important;
+            height: var(--stamp-height) !important;
+            min-width: var(--stamp-width);
+            min-height: var(--stamp-height);
+            max-width: var(--stamp-width);
+            max-height: var(--stamp-height);
             display: block;
+            flex-shrink: 0;
+            margin: 0 auto;
             object-fit: contain;
             object-position: center;
-            opacity: 1;
-            transform: none;
-            filter: contrast(1.4) saturate(1.3) brightness(1.05);
+            opacity: var(--stamp-opacity, 1);
+            transform: rotate(var(--stamp-rotation, 0deg));
+            filter: contrast(var(--stamp-contrast, 1.5)) saturate(var(--stamp-saturation, 1.4)) brightness(var(--stamp-brightness, 1.08));
             image-rendering: -webkit-optimize-contrast;
             image-rendering: high-quality;
             -webkit-print-color-adjust: exact;
@@ -655,7 +712,15 @@ try {
                 overflow: visible !important;
             }
 
-            .header,
+            .header {
+                max-width: 190mm;
+                margin-left: auto;
+                margin-right: auto;
+                padding: 12px 10mm;
+                box-sizing: border-box;
+                overflow: visible !important;
+            }
+
             .company-logo,
             .company-logo img {
                 overflow: visible !important;
@@ -710,19 +775,19 @@ try {
             }
 
             .approval-section .company-stamp {
-                width: 69mm !important;
-                height: 25mm !important;
-                min-width: 69mm;
-                min-height: 25mm;
-                max-width: 69mm;
-                max-height: 25mm;
+                width: var(--stamp-width) !important;
+                height: var(--stamp-height) !important;
+                min-width: var(--stamp-width);
+                min-height: var(--stamp-height);
+                max-width: var(--stamp-width);
+                max-height: var(--stamp-height);
                 opacity: 1;
                 transform: none;
-                filter: contrast(1.4) saturate(1.3) brightness(1.05);
+                filter: contrast(1.5) saturate(1.4) brightness(1.08);
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
                 image-rendering: -webkit-optimize-contrast;
-                image-rendering: high-quality;
+                image-rendering: crisp-edges;
             }
 
             .approval-section .digital-signature {
@@ -754,17 +819,21 @@ try {
 </div>
 
 <div class="invoice-page">
-    <?php if ($logoUrl !== ''): ?>
+    <?php if ($watermarkUrl !== ''): ?>
     <div class="page-watermark" aria-hidden="true">
-        <img src="<?= e($logoUrl) ?>" alt="">
+        <img src="<?= e($watermarkUrl) ?>" alt="">
     </div>
     <?php endif; ?>
 
     <header class="letterhead-header">
         <div class="header">
+            <?php if ($showHeaderLogo): ?>
             <div class="company-logo">
                 <img id="invoiceHeaderLogo" src="<?= e($headerLogoUrl) ?>" alt="VK Network Logo">
             </div>
+            <?php else: ?>
+            <div class="company-logo" aria-hidden="true"></div>
+            <?php endif; ?>
             <div class="letterhead-col letterhead-col--center">
                 <h2 class="letterhead-company"><?= e($businessName) ?></h2>
                 <p class="letterhead-services">Software Development | Hardware Solutions</p>
@@ -788,7 +857,9 @@ try {
                 </div>
             </div>
         </div>
+        <?php if ($showHeaderLine): ?>
         <hr class="header-rule">
+        <?php endif; ?>
     </header>
 
     <main class="invoice-body">
@@ -893,9 +964,11 @@ try {
                     <span><?= e($businessWebsite) ?></span>
                 </div>
             </div>
+            <?php if ($showFooterQr): ?>
             <div class="footer-qr">
                 <img src="<?= e($qrUrl) ?>" alt="QR Code — www.vkitnet.info" width="55" height="55">
             </div>
+            <?php endif; ?>
         </div>
         <p class="footer-bottom"><?= e($businessServices) ?></p>
     </footer>

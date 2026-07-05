@@ -56,7 +56,20 @@ function nav_active(string $needle): string
 
             <span class="vk-nav-label">Finance</span>
             <a class="nav-link px-3 py-2 <?= nav_active('/products/') ?>" href="<?= e(BASE_URL) ?>/modules/products/list.php"><i class="bi bi-cpu me-2"></i><span>Parts &amp; products</span></a>
-            <a class="nav-link px-3 py-2 <?= nav_active('/invoices/') ?>" href="<?= e(BASE_URL) ?>/modules/invoices/list.php"><i class="bi bi-receipt me-2"></i><span>Invoices</span></a>
+            <?php $invoiceNavOpen = str_contains($path, '/invoices/'); ?>
+            <div class="vk-nav-group">
+                <button class="nav-link px-3 py-2 w-100 text-start border-0 bg-transparent text-white d-flex align-items-center <?= $invoiceNavOpen ? '' : 'collapsed' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#invoiceMgmtNav" aria-expanded="<?= $invoiceNavOpen ? 'true' : 'false' ?>">
+                    <i class="bi bi-receipt me-2"></i><span>Invoice Management</span><i class="bi bi-chevron-down ms-auto small"></i>
+                </button>
+                <div class="collapse <?= $invoiceNavOpen ? 'show' : '' ?>" id="invoiceMgmtNav">
+                    <a class="nav-link ps-5 py-2 small <?= nav_active('/invoices/list.php') ?>" href="<?= e(BASE_URL) ?>/modules/invoices/list.php"><span>Invoice List</span></a>
+                    <a class="nav-link ps-5 py-2 small <?= nav_active('/invoices/create.php') ?>" href="<?= e(BASE_URL) ?>/modules/invoices/create.php"><span>Create Invoice</span></a>
+                    <a class="nav-link ps-5 py-2 small <?= nav_active('/invoices/print_settings.php') ?>" href="<?= e(BASE_URL) ?>/modules/invoices/print_settings.php"><span>Invoice Print Settings</span></a>
+                    <a class="nav-link ps-5 py-2 small" href="<?= e(BASE_URL) ?>/modules/invoices/print_settings.php#section-signature"><span>Digital Signature</span></a>
+                    <a class="nav-link ps-5 py-2 small" href="<?= e(BASE_URL) ?>/modules/invoices/print_settings.php#section-stamp"><span>Company Stamp</span></a>
+                    <a class="nav-link ps-5 py-2 small" href="<?= e(BASE_URL) ?>/modules/invoices/print_settings.php#section-logo"><span>Company Logo</span></a>
+                </div>
+            </div>
             <a class="nav-link px-3 py-2 <?= nav_active('/payments/') ?>" href="<?= e(BASE_URL) ?>/modules/payments/list.php"><i class="bi bi-cash-coin me-2"></i><span>Payments</span></a>
             <a class="nav-link px-3 py-2 <?= nav_active('/accounts/') ?>" href="<?= e(BASE_URL) ?>/modules/accounts/list.php"><i class="bi bi-wallet2 me-2"></i><span>Accounts</span></a>
             <a class="nav-link px-3 py-2 <?= nav_active('/accounts/transfer') ?>" href="<?= e(BASE_URL) ?>/modules/accounts/transfer.php"><i class="bi bi-arrow-left-right me-2"></i><span>Transfer</span></a>
