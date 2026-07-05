@@ -1,5 +1,5 @@
 /**
- * Service template — single image upload (dark-theme friendly).
+ * Service template â€” single image upload (dark-theme friendly).
  */
 
 .st-svc-img-wrap {
@@ -24,14 +24,14 @@
 }
 
 [data-bs-theme="dark"] .st-svc-img-dropzone {
-    border-color: rgba(148, 163, 184, 0.22);
+    border-color: var(--border);
     background: linear-gradient(
         145deg,
-        rgba(59, 130, 246, 0.12) 0%,
-        rgba(15, 23, 42, 0.55) 45%,
-        rgba(99, 102, 241, 0.08) 100%
+        color-mix(in srgb, var(--primary) 12%, var(--card)) 0%,
+        var(--card) 45%,
+        color-mix(in srgb, var(--purple) 8%, var(--card)) 100%
     );
-    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(8px);
 }
 
@@ -129,12 +129,12 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.72);
+    background: color-mix(in srgb, var(--card, #ffffff) 72%, transparent);
     border-radius: 16px;
 }
 
 [data-bs-theme="dark"] .st-svc-img-spinner {
-    background: rgba(15, 23, 42, 0.65);
+    background: color-mix(in srgb, var(--card) 85%, transparent);
 }
 
 .st-glass-dz {
@@ -176,6 +176,163 @@
     justify-content: center;
 }
 
-[data-bs-theme="dark"] .st-svc-img-dropzone.is-busy::after {
-    background: rgba(15, 23, 42, 0.45);
+.st-svc-img-dropzone.is-busy::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--card, #ffffff) 35%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
+[data-bs-theme="dark"] .st-svc-img-dropzone.is-busy::after {
+    background: color-mix(in srgb, var(--card) 55%, transparent);
+}
+
+/* ── Shared design tokens (add/edit forms — mirrors list dashboard) ── */
+[data-bs-theme="dark"] {
+    --bg: #0B1220;
+    --card: #111827;
+    --table: #1E293B;
+    --surface: #273449;
+    --hover: #334155;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-grid: rgba(255, 255, 255, 0.05);
+    --text: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --muted: #94A3B8;
+    --primary: #3B82F6;
+    --primary-hover: #2563EB;
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --purple: #8B5CF6;
+    --focus-ring: rgba(59, 130, 246, 0.35);
+}
+
+[data-bs-theme="light"] {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --table: #ffffff;
+    --surface: #f1f5f9;
+    --hover: #e2e8f0;
+    --border: rgba(15, 23, 42, 0.1);
+    --text: #0f172a;
+    --text-secondary: #334155;
+    --muted: #64748b;
+    --primary: #3B82F6;
+    --primary-hover: #2563EB;
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --purple: #8B5CF6;
+    --focus-ring: rgba(59, 130, 246, 0.25);
+}
+
+/* ── Add/Edit form dark mode ── */
+[data-bs-theme="dark"] [data-st-service-form] .form-control,
+[data-bs-theme="dark"] [data-st-service-form] .form-select,
+[data-bs-theme="dark"] [data-st-service-form] textarea.form-control {
+    background-color: var(--card) !important;
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+}
+[data-bs-theme="dark"] [data-st-service-form] .form-control::placeholder {
+    color: var(--muted) !important;
+    opacity: 1;
+}
+[data-bs-theme="dark"] [data-st-service-form] .form-control:focus,
+[data-bs-theme="dark"] [data-st-service-form] .form-select:focus,
+[data-bs-theme="dark"] [data-st-service-form] textarea.form-control:focus {
+    background-color: var(--card) !important;
+    border-color: var(--primary) !important;
+    color: var(--text) !important;
+    box-shadow: 0 0 0 3px var(--focus-ring) !important;
+}
+[data-bs-theme="dark"] [data-st-service-form] .form-select option {
+    background-color: var(--card);
+    color: var(--text);
+}
+[data-bs-theme="dark"] [data-st-service-form] .form-label {
+    color: var(--text);
+}
+[data-bs-theme="dark"] [data-st-service-form] .input-group-text {
+    background-color: var(--surface);
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+[data-bs-theme="dark"] [data-st-service-form] .btn-outline-secondary {
+    background-color: var(--surface);
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+[data-bs-theme="dark"] [data-st-service-form] .btn-outline-secondary:hover {
+    background-color: var(--hover);
+    border-color: var(--border);
+    color: var(--text);
+}
+[data-bs-theme="dark"] [data-st-service-form] .btn-outline-primary {
+    background-color: transparent;
+    border-color: var(--primary);
+    color: var(--primary);
+}
+[data-bs-theme="dark"] [data-st-service-form] .btn-outline-primary:hover {
+    background-color: var(--primary);
+    color: var(--text);
+}
+[data-bs-theme="dark"] [data-st-service-form] .btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--text);
+}
+[data-bs-theme="dark"] [data-st-service-form] .btn-primary:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+[data-bs-theme="dark"] [data-st-service-form] .st-svc-img-replace.btn-light {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+[data-bs-theme="dark"] [data-st-service-form] .st-svc-img-replace.btn-light:hover {
+    background-color: var(--hover);
+    color: var(--text);
+}
+[data-bs-theme="dark"] [data-st-service-form] .st-svc-img-remove.btn-outline-danger {
+    background-color: transparent;
+    border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+    color: var(--danger);
+}
+[data-bs-theme="dark"] [data-st-service-form] .st-svc-img-remove.btn-outline-danger:hover {
+    background-color: color-mix(in srgb, var(--danger) 15%, transparent);
+    color: var(--danger);
+}
+[data-bs-theme="dark"] .vk-card:has([data-st-service-form]) {
+    background-color: var(--card);
+    border-color: var(--border);
+    color: var(--text);
+}
+[data-bs-theme="dark"] main:has([data-st-service-form]) {
+    color: var(--text);
+}
+[data-bs-theme="dark"] main:has([data-st-service-form]) .text-muted {
+    color: var(--muted) !important;
+}
+[data-bs-theme="dark"] [data-st-service-form] .alert-warning {
+    background-color: color-mix(in srgb, var(--warning) 12%, var(--card));
+    border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+    color: var(--text);
+}
+[data-bs-theme="dark"] [data-st-service-form] .alert-info {
+    background-color: color-mix(in srgb, var(--primary) 12%, var(--card));
+    border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+    color: var(--text);
+}
+[data-bs-theme="dark"] [data-st-service-form] .alert-secondary {
+    background-color: var(--surface);
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+
+/* ── Admin list styles moved to service-templates-list.css ── */

@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
 require_once __DIR__ . '/service_image_upload.php';
 require_once __DIR__ . '/service_template_location.php';
+require_once dirname(__DIR__, 2) . '/includes/service_templates_service.php';
 
 $allowedCat = ['printer', 'computer', 'cctv', 'general'];
 $hasImageCol = db_column_exists($pdo, 'service_templates', 'image');
@@ -64,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         flash_set('success', $msg);
+        vk_st_templates_after_create($pdo, $newId, (int) ($_SESSION['user_id'] ?? 0));
         redirect('/modules/service_templates/edit.php?id=' . $newId);
     }
 }

@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
             $st2->execute([$code, $accName, 'customer', $cid]);
             $pdo->commit();
+            vk_cache_flush_dashboard();
             flash_set('success', 'Customer and linked account created.');
             redirect('/modules/customers/list.php');
         } catch (Throwable $e) {

@@ -12,6 +12,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/settings.php';
 require_once __DIR__ . '/seo.php';
 require_once __DIR__ . '/performance.php';
+require_once __DIR__ . '/cache.php';
 
 vk_perf_bootstrap();
 

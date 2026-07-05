@@ -62,13 +62,22 @@ function nav_active(string $needle): string
             <a class="nav-link px-3 py-2 <?= nav_active('/accounts/transfer') ?>" href="<?= e(BASE_URL) ?>/modules/accounts/transfer.php"><i class="bi bi-arrow-left-right me-2"></i><span>Transfer</span></a>
 
             <span class="vk-nav-label">Admin</span>
-            <?php if (function_exists('vk_auth_role_can_manage') && vk_auth_role_can_manage((string) (($currentUser ?? [])['role'] ?? 'viewer'))): ?>
+            <?php
+            $navRole = (string) (($currentUser ?? [])['role'] ?? $_SESSION['user_role'] ?? 'viewer');
+            $showUsersNav = function_exists('vk_auth_role_can_manage')
+                && (vk_auth_role_can_manage($navRole) || in_array($navRole, ['manager', 'staff', 'viewer'], true));
+            if ($showUsersNav):
+            ?>
+            <?php if (vk_auth_role_can_manage($navRole)): ?>
             <a class="nav-link px-3 py-2 <?= nav_active('/approve_users.php') ?>" href="<?= e(BASE_URL) ?>/approve_users.php"><i class="bi bi-person-check me-2"></i><span>Approvals</span></a>
+            <?php endif; ?>
             <a class="nav-link px-3 py-2 <?= nav_active('/modules/users/') ?>" href="<?= e(BASE_URL) ?>/modules/users/index.php"><i class="bi bi-people me-2"></i><span>Users</span></a>
             <?php endif; ?>
+            <?php if (function_exists('vk_auth_role_can_manage') && vk_auth_role_can_manage($navRole)): ?>
             <a class="nav-link px-3 py-2 <?= nav_active('/modules/menus/') ?>" href="<?= e(BASE_URL) ?>/modules/menus/index.php"><i class="bi bi-list-nested me-2"></i><span>Site menus</span></a>
             <a class="nav-link px-3 py-2 <?= nav_active('/modules/settings/index.php') ?>" href="<?= e(BASE_URL) ?>/modules/settings/index.php"><i class="bi bi-gear-wide-connected me-2"></i><span>System Settings</span></a>
             <a class="nav-link px-3 py-2 <?= nav_active('/modules/settings/email.php') ?>" href="<?= e(BASE_URL) ?>/modules/settings/email.php"><i class="bi bi-inbox me-2"></i><span>Email &amp; Inbox</span></a>
+            <?php endif; ?>
         </nav>
         <div class="p-3 small text-white-50 border-top border-light border-opacity-10 vk-sidebar-foot">
             <div class="d-flex align-items-start gap-2">

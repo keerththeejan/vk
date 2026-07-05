@@ -627,6 +627,13 @@ function vk_auth_update_user_status(PDO $pdo, int $userId, string $status, ?int 
     if (!$user) {
         throw new RuntimeException('User not found.');
     }
+    $currentStatus = (string) $user['status'];
+    if (vk_auth_status_is_approved($status) && vk_auth_status_is_approved($currentStatus) && $currentStatus === $status) {
+        return;
+    }
+    if ($status === 'rejected' && $currentStatus === 'rejected') {
+        return;
+    }
     $updates = 'status = ?, updated_at = NOW()';
     $params = [$status];
     if (vk_auth_status_is_approved($status)) {

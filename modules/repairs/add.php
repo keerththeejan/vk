@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
+require_once dirname(__DIR__, 2) . '/includes/service_templates_service.php';
 
 $deviceAllowed = ['computer', 'printer', 'cctv_dvr', 'automobile', 'ac', 'electrical', 'other'];
 $printerIssues = [
@@ -82,7 +83,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 
 $customers = $pdo->query('SELECT id, name, phone FROM customers ORDER BY name')->fetchAll();
 $technicians = $pdo->query('SELECT id, name FROM technicians WHERE active = 1 ORDER BY name')->fetchAll();
-$templates = $pdo->query('SELECT id, name, category, default_amount FROM service_templates ORDER BY category, name')->fetchAll();
+$templates = vk_st_templates_for_select($pdo);
 ?>
 <div class="mb-3">
     <a href="<?= e(BASE_URL) ?>/modules/repairs/list.php" class="text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Back</a>

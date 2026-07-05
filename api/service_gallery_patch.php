@@ -2,7 +2,16 @@
 declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 require_once dirname(__DIR__) . '/includes/init.php';
+require_once dirname(__DIR__) . '/includes/service_gallery_admin_service.php';
 require_admin();
+
+$role = (string) ($_SESSION['user_role'] ?? 'viewer');
+$perms = vk_sg_admin_permissions($role);
+if (!$perms['can_edit']) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'Edit not permitted.'], JSON_THROW_ON_ERROR);
+    exit;
+}
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     http_response_code(405);
@@ -18,31 +27,9 @@ if (!is_array($data)) {
     exit;
 }
 
-$id = (int) ($data['id'] ?? 0);
-$title = trim((string) ($data['title'] ?? ''));
-if ($id <= 0) {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Invalid image id.'], JSON_THROW_ON_ERROR);
-    exit;
-}
-if ($title === '') {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Title is required.'], JSON_THROW_ON_ERROR);
-    exit;
-}
-if (mb_strlen($title) > 255) {
-    $title = mb_substr($title, 0, 255);
-}
+require_csrf((string) ($data['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
 
 $pdo = db();
-vk_service_gallery_auto_migrate($pdo);
-$exists = $pdo->prepare('SELECT id FROM service_gallery WHERE id = ? LIMIT 1');
-$exists->execute([$id]);
-if (!$exists->fetchColumn()) {
-    http_response_code(404);
-    echo json_encode(['ok' => false, 'error' => 'Image not found.'], JSON_THROW_ON_ERROR);
-    exit;
-}
-$pdo->prepare('UPDATE service_gallery SET title = ? WHERE id = ?')->execute([$title, $id]);
-
-echo json_encode(['ok' => true, 'title' => $title], JSON_THROW_ON_ERROR);
+$result = vk_sg_admin_update($pdo, (int) ($data['id'] ?? 0), $data, (int) ($_SESSION['user_id'] ?? 0));
+http_response_code($result['ok'] ? 200 : 422);
+echo json_encode($result['ok'] ? ['ok' => true, 'title' => $result['item']['title'] ?? ''] : $result, JSON_THROW_ON_ERROR);

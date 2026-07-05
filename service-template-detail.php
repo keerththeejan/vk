@@ -2,8 +2,10 @@
 declare(strict_types=1);
 require_once __DIR__ . '/includes/init_public.php';
 require_once __DIR__ . '/modules/service_templates/service_template_location.php';
+require_once __DIR__ . '/includes/service_templates_service.php';
 
 $pdo = db();
+vk_st_templates_auto_migrate($pdo);
 $id = (int) ($_GET['id'] ?? 0);
 
 if ($id <= 0) {
@@ -14,6 +16,12 @@ $st = $pdo->prepare('SELECT * FROM service_templates WHERE id = ? LIMIT 1');
 $st->execute([$id]);
 $tpl = $st->fetch(PDO::FETCH_ASSOC);
 if (!$tpl) {
+    redirect('/index.php');
+}
+if (vk_st_templates_column_exists($pdo, 'deleted_at') && !empty($tpl['deleted_at'])) {
+    redirect('/index.php');
+}
+if (vk_st_templates_column_exists($pdo, 'status') && in_array((string) ($tpl['status'] ?? 'active'), ['archived', 'inactive'], true)) {
     redirect('/index.php');
 }
 

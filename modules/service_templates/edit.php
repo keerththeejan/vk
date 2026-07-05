@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
 require_once __DIR__ . '/service_image_upload.php';
 require_once __DIR__ . '/service_template_location.php';
+require_once dirname(__DIR__, 2) . '/includes/service_templates_service.php';
 
 $allowedCat = ['printer', 'computer', 'cctv', 'general'];
 
@@ -10,7 +11,7 @@ $id = (int) ($_GET['id'] ?? 0);
 $st = $pdo->prepare('SELECT * FROM service_templates WHERE id = ?');
 $st->execute([$id]);
 $row = $st->fetch();
-if (!$row) {
+if (!$row || (vk_st_templates_column_exists($pdo, 'deleted_at') && !empty($row['deleted_at']))) {
     flash_set('error', 'Template not found.');
     redirect('/modules/service_templates/list.php');
 }
@@ -129,7 +130,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $params[] = $locParsed['address'];
         }
         $params[] = $id;
+        vk_st_templates_snapshot_version($pdo, $id, (int) ($_SESSION['user_id'] ?? 0), 'Before update');
         $pdo->prepare('UPDATE service_templates SET ' . implode(', ', $sets) . ' WHERE id=?')->execute($params);
+        vk_st_templates_bump_version($pdo, $id, (int) ($_SESSION['user_id'] ?? 0));
+        vk_st_templates_snapshot_version($pdo, $id, (int) ($_SESSION['user_id'] ?? 0), 'After update');
+        vk_st_templates_audit($pdo, (int) ($_SESSION['user_id'] ?? 0), 'template_updated', $id, ['name' => $name]);
         $msg = 'Template updated.';
         if ($hasImageCol && $imageChanged) {
             $msg = ($newMain !== '') ? 'Template updated. Images optimized and saved (hero + thumbnail).' : 'Template updated. Images removed.';

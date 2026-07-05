@@ -57,10 +57,7 @@ function vk_smtp_env_value(string $name): ?string
     return null;
 }
 
-/**
- * Password from DB/settings only (no .env merge) — used when saving so blank AJAX field does not depend on vk_smtp_settings_get().
- */
-function vk_smtp_get_stored_password_only(PDO $pdo): string
+function vk_smtp_get_stored_password_raw(PDO $pdo): string
 {
     vk_smtp_settings_table_migrate($pdo);
     $st = $pdo->query('SELECT smtp_pass FROM smtp_settings WHERE id = 1 LIMIT 1');
@@ -76,6 +73,62 @@ function vk_smtp_get_stored_password_only(PDO $pdo): string
         }
     }
     return '';
+}
+
+function vk_smtp_encryption_key(): string
+{
+    $seed = vk_smtp_env_value('VK_SMTP_ENC_KEY')
+        ?? vk_smtp_env_value('VK_CRON_SECRET')
+        ?? (defined('ROOT_PATH') ? ROOT_PATH : __DIR__);
+    return hash('sha256', (string) $seed, true);
+}
+
+function vk_smtp_encrypt_password(string $plain): string
+{
+    if ($plain === '') {
+        return '';
+    }
+    if (!function_exists('openssl_encrypt')) {
+        return $plain;
+    }
+    $key = vk_smtp_encryption_key();
+    $iv = random_bytes(12);
+    $tag = '';
+    $cipher = openssl_encrypt($plain, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag);
+    if ($cipher === false) {
+        return $plain;
+    }
+    return 'enc:v1:' . base64_encode($iv . $tag . $cipher);
+}
+
+function vk_smtp_decrypt_password(string $stored): string
+{
+    if ($stored === '') {
+        return '';
+    }
+    if (!str_starts_with($stored, 'enc:v1:')) {
+        return $stored;
+    }
+    if (!function_exists('openssl_decrypt')) {
+        return '';
+    }
+    $raw = base64_decode(substr($stored, 7), true);
+    if ($raw === false || strlen($raw) < 28) {
+        return '';
+    }
+    $iv = substr($raw, 0, 12);
+    $tag = substr($raw, 12, 16);
+    $cipher = substr($raw, 28);
+    $plain = openssl_decrypt($cipher, 'aes-256-gcm', vk_smtp_encryption_key(), OPENSSL_RAW_DATA, $iv, $tag);
+    return $plain !== false ? $plain : '';
+}
+
+/**
+ * Password from DB/settings only (no .env merge) — used when saving so blank AJAX field does not depend on vk_smtp_settings_get().
+ */
+function vk_smtp_get_stored_password_only(PDO $pdo): string
+{
+    return vk_smtp_decrypt_password(vk_smtp_get_stored_password_raw($pdo));
 }
 
 /**
@@ -176,7 +229,7 @@ function vk_smtp_settings_get(PDO $pdo): array
         'smtp_host' => (string) vk_settings_get($pdo, 'smtp_host', ''),
         'smtp_port' => (int) vk_settings_get($pdo, 'smtp_port', '587'),
         'smtp_user' => (string) vk_settings_get($pdo, 'smtp_username', ''),
-        'smtp_pass' => trim((string) vk_settings_get($pdo, 'smtp_password', '')),
+        'smtp_pass' => vk_smtp_decrypt_password(trim((string) vk_settings_get($pdo, 'smtp_password', ''))),
         'smtp_secure' => (string) vk_settings_get($pdo, 'smtp_secure', 'tls'),
         'from_email' => (string) vk_settings_get($pdo, 'email_from', ''),
         'from_name' => (string) vk_settings_get($pdo, 'from_name', (string) vk_settings_get($pdo, 'site_name', 'VK Network')),
@@ -188,13 +241,17 @@ function vk_smtp_settings_get(PDO $pdo): array
             'smtp_host' => trim((string) ($row['smtp_host'] ?? '')),
             'smtp_port' => max(1, (int) ($row['smtp_port'] ?? 587)),
             'smtp_user' => trim((string) ($row['smtp_user'] ?? '')),
-            'smtp_pass' => trim((string) ($row['smtp_pass'] ?? '')),
+            'smtp_pass' => vk_smtp_decrypt_password(trim((string) ($row['smtp_pass'] ?? ''))),
             'smtp_secure' => ((string) ($row['smtp_secure'] ?? 'tls')) === 'ssl' ? 'ssl' : 'tls',
             'from_email' => trim((string) ($row['from_email'] ?? '')),
             'from_name' => trim((string) ($row['from_name'] ?? '')),
         ];
     }
     $cfg['configured'] = $cfg['smtp_host'] !== '' && $cfg['from_email'] !== '';
+    $overrideSecure = strtolower(trim((string) vk_settings_get($pdo, 'smtp_secure', '')));
+    if ($overrideSecure === 'none') {
+        $cfg['smtp_secure'] = 'none';
+    }
     return vk_smtp_merge_env($cfg);
 }
 
@@ -223,24 +280,27 @@ function vk_smtp_settings_save(PDO $pdo, array $in): void
     $host = trim((string) ($in['smtp_host'] ?? ''));
     $port = max(1, (int) ($in['smtp_port'] ?? 587));
     $user = trim((string) ($in['smtp_user'] ?? ''));
-    $pass = trim((string) ($in['smtp_pass'] ?? ''));
-    $secure = ((string) ($in['smtp_secure'] ?? 'tls')) === 'ssl' ? 'ssl' : 'tls';
+    $secureRaw = strtolower(trim((string) ($in['smtp_secure'] ?? 'tls')));
+    $secure = $secureRaw === 'ssl' ? 'ssl' : 'tls';
     $fromEmail = trim((string) ($in['from_email'] ?? ''));
     $fromName = trim((string) ($in['from_name'] ?? ''));
+    $passPlain = trim((string) ($in['smtp_pass'] ?? ''));
 
-    if ($pass === '') {
-        $pass = vk_smtp_get_stored_password_only($pdo);
-    }
-    if ($pass === '') {
-        $e = vk_smtp_env_value('VK_SMTP_PASS');
-        if ($e !== null) {
-            $pass = $e;
+    if ($passPlain !== '') {
+        $pass = vk_smtp_encrypt_password($passPlain);
+    } else {
+        $pass = vk_smtp_get_stored_password_raw($pdo);
+        if ($pass === '') {
+            $e = vk_smtp_env_value('VK_SMTP_PASS');
+            if ($e !== null) {
+                $pass = vk_smtp_encrypt_password($e);
+            }
         }
-    }
-    if ($pass === '') {
-        $e = vk_smtp_env_value('MAIL_PASSWORD');
-        if ($e !== null) {
-            $pass = $e;
+        if ($pass === '') {
+            $e = vk_smtp_env_value('MAIL_PASSWORD');
+            if ($e !== null) {
+                $pass = vk_smtp_encrypt_password($e);
+            }
         }
     }
 
@@ -262,7 +322,7 @@ function vk_smtp_settings_save(PDO $pdo, array $in): void
     if ($pass !== '') {
         vk_settings_set($pdo, 'smtp_password', $pass);
     }
-    vk_settings_set($pdo, 'smtp_secure', $secure);
+    vk_settings_set($pdo, 'smtp_secure', $secureRaw === 'none' ? 'none' : $secure);
     vk_settings_set($pdo, 'email_from', $fromEmail);
     vk_settings_set($pdo, 'from_name', $fromName);
 }
@@ -300,7 +360,8 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
     $htmlBody = (string) ($options['html_body'] ?? '');
     $queueOnly = (bool) ($options['queue_only'] ?? false);
     $maxRetries = max(1, min(8, (int) ($options['max_retries'] ?? 3)));
-    $smtpTimeout = max(5, min(60, (int) ($options['smtp_timeout'] ?? 45)));
+    $storedTimeout = max(5, min(120, (int) vk_settings_get($pdo, 'smtp_timeout', '30')));
+    $smtpTimeout = max(5, min(60, (int) ($options['smtp_timeout'] ?? $storedTimeout)));
     $fallbackTls = (bool) ($options['fallback_tls'] ?? false);
     $relaxedSsl = (bool) ($options['relaxed_ssl'] ?? false);
     if (!$relaxedSsl) {
@@ -356,10 +417,11 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
         $logId = vk_email_send_log_insert($pdo, $templateType, $to, (string) ($toName ?? ''), $subject, $preview, 'sending');
     }
 
+    $secureRaw = strtolower((string) ($cfg['smtp_secure'] ?? 'tls'));
     $profiles = [[
         'host' => (string) $cfg['smtp_host'],
         'port' => (int) $cfg['smtp_port'],
-        'secure' => ((string) $cfg['smtp_secure']) === 'ssl' ? 'ssl' : 'tls',
+        'secure' => $secureRaw === 'ssl' ? 'ssl' : ($secureRaw === 'none' ? 'none' : 'tls'),
     ]];
     if (
         $fallbackTls
@@ -391,10 +453,15 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
                     $mail->Username = (string) $cfg['smtp_user'];
                     $mail->Password = (string) $cfg['smtp_pass'];
                 }
-                $mail->SMTPSecure = $prof['secure'] === 'ssl'
-                    ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS
-                    : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->SMTPAutoTLS = $prof['secure'] !== 'ssl';
+                if ($prof['secure'] === 'none') {
+                    $mail->SMTPSecure = '';
+                    $mail->SMTPAutoTLS = false;
+                } else {
+                    $mail->SMTPSecure = $prof['secure'] === 'ssl'
+                        ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS
+                        : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->SMTPAutoTLS = $prof['secure'] !== 'ssl';
+                }
                 if ($relaxedSsl) {
                     $mail->SMTPOptions = [
                         'ssl' => [
@@ -404,8 +471,12 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
                         ],
                     ];
                 }
-                $mail->CharSet = 'UTF-8';
+                $mail->CharSet = trim((string) vk_settings_get($pdo, 'smtp_charset', 'UTF-8')) ?: 'UTF-8';
                 $mail->setFrom((string) $cfg['from_email'], (string) ($cfg['from_name'] !== '' ? $cfg['from_name'] : 'VK Network'));
+                $replyTo = trim((string) vk_settings_get($pdo, 'reply_to_email', ''));
+                if ($replyTo !== '' && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+                    $mail->addReplyTo($replyTo, (string) ($cfg['from_name'] !== '' ? $cfg['from_name'] : 'VK Network'));
+                }
                 $mail->addAddress($to, (string) ($toName ?? ''));
                 if ($useHtml && $htmlBody !== '') {
                     $mail->isHTML(true);

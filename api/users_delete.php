@@ -1,14 +1,16 @@
 <?php
 declare(strict_types=1);
+
 header('Content-Type: application/json; charset=utf-8');
 require_once dirname(__DIR__) . '/includes/init.php';
 require_admin();
 
 $pdo = db();
-require_once dirname(__DIR__) . '/includes/users_schema.php';
-vk_ensure_users_management_schema($pdo);
+require_once dirname(__DIR__) . '/includes/users_management_service.php';
+vk_auth_ensure_schema($pdo);
 
-if (($_SESSION['user_role'] ?? 'admin') !== 'admin') {
+$perms = vk_users_session_permissions($pdo);
+if (!$perms['can_manage']) {
     http_response_code(403);
     echo json_encode(['ok' => false, 'error' => 'Forbidden'], JSON_THROW_ON_ERROR);
     exit;
@@ -28,41 +30,10 @@ if (!is_array($data)) {
     exit;
 }
 
-$id = (int) ($data['id'] ?? 0);
-if ($id <= 0) {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Invalid user.'], JSON_THROW_ON_ERROR);
-    exit;
+if (!empty($data['csrf_token']) || !empty($_SERVER['HTTP_X_CSRF_TOKEN'])) {
+    require_csrf((string) ($data['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
 }
 
-if ($id === (int) ($_SESSION['user_id'] ?? 0)) {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'You cannot deactivate your own account here.'], JSON_THROW_ON_ERROR);
-    exit;
-}
-
-$old = $pdo->prepare('SELECT role, status FROM users WHERE id = ? LIMIT 1');
-$old->execute([$id]);
-$oldRow = $old->fetch(PDO::FETCH_ASSOC);
-if (!$oldRow) {
-    http_response_code(404);
-    echo json_encode(['ok' => false, 'error' => 'User not found.'], JSON_THROW_ON_ERROR);
-    exit;
-}
-
-$wasActiveAdmin = ((string) ($oldRow['role'] ?? '') === 'admin') && ((string) ($oldRow['status'] ?? 'active') === 'active');
-if ($wasActiveAdmin) {
-    $cnt = $pdo->prepare(
-        "SELECT COUNT(*) FROM users WHERE role = 'admin' AND status = 'active' AND id != ?"
-    );
-    $cnt->execute([$id]);
-    if ((int) $cnt->fetchColumn() === 0) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Cannot deactivate the last active administrator.'], JSON_THROW_ON_ERROR);
-        exit;
-    }
-}
-
-$pdo->prepare("UPDATE users SET status = 'inactive' WHERE id = ?")->execute([$id]);
-
-echo json_encode(['ok' => true], JSON_THROW_ON_ERROR);
+$result = vk_users_soft_delete($pdo, (int) ($data['id'] ?? 0), (int) ($_SESSION['user_id'] ?? 0), $perms);
+http_response_code($result['ok'] ? 200 : 422);
+echo json_encode($result, JSON_THROW_ON_ERROR);

@@ -241,12 +241,57 @@ body.vk-auth-body::before,
     font-weight: 700;
 }
 
-.vk-status-pending { background: rgba(250, 204, 21, 0.14); color: #fef3c7; }
+.vk-status-pending { background: rgba(250, 204, 21, 0.18); color: #fef08a; }
 .vk-status-active,
-.vk-status-approved { background: rgba(53, 211, 153, 0.14); color: #d1fae5; }
-.vk-status-rejected,
-.vk-status-suspended,
-.vk-status-inactive { background: rgba(255, 107, 138, 0.14); color: #ffe4ea; }
+.vk-status-approved { background: rgba(53, 211, 153, 0.18); color: #bbf7d0; }
+.vk-status-rejected { background: rgba(239, 68, 68, 0.18); color: #fecaca; }
+.vk-status-inactive { background: rgba(148, 163, 184, 0.2); color: #e2e8f0; }
+.vk-status-suspended { background: rgba(15, 23, 42, 0.55); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.35); }
+
+.vk-approval-table thead.sticky-top {
+    z-index: 2;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+.approval-loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.65);
+    z-index: 3;
+}
+
+.approval-avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, rgba(47, 128, 255, 0.35), rgba(103, 232, 249, 0.2));
+    border: 2px solid rgba(103, 232, 249, 0.35);
+    color: #fff;
+}
+
+.approval-detail-list dt {
+    color: var(--auth-muted, #64748b);
+}
+
+@media (max-width: 767.98px) {
+    .vk-approval-table .btn-group-sm .btn {
+        padding: 0.2rem 0.35rem;
+        font-size: 0.72rem;
+    }
+}
+
+@media print {
+    .vk-sidebar, .vk-navbar, #approvalBulkBar, .approval-action-btn, .approval-row-check, .pagination {
+        display: none !important;
+    }
+}
 
 .vk-table-tools {
     display: flex;

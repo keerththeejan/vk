@@ -94,6 +94,11 @@ foreach ($settings as $key => $value) {
     vk_settings_audit($pdo, 'save', $key, in_array($key, ['smtp_password', 'imap_password'], true) ? '[secret]' : $str);
 }
 
+if ($tab === 'email' || $tab === 'all' || $tab === 'email_hub') {
+    vk_bootstrap_module('mailer');
+    vk_bootstrap_module('email_system');
+}
+
 if ($tab === 'email' || $tab === 'all') {
     $smtpIn = [
         'smtp_host' => trim((string) ($settings['smtp_host'] ?? '')),

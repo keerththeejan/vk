@@ -51,6 +51,9 @@ function vk_settings_ensure_schema(PDO $pdo): void
 function vk_settings_invalidate_cache(): void
 {
     $GLOBALS['_vk_settings_cache'] = null;
+    if (function_exists('vk_cache_flush_dashboard')) {
+        vk_cache_flush_dashboard();
+    }
 }
 
 /**

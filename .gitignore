@@ -13,5 +13,7 @@ uploads/staff/*
 uploads/settings/*
 !uploads/settings/.htaccess
 .env
+cache/*
+!cache/.htaccess
 # Local scratch / credentials — do not commit
 note

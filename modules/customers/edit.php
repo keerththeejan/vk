@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare('UPDATE customers SET name=?, phone=?, email=?, address=? WHERE id=?')
             ->execute([$name, $phone ?: null, $email ?: null, $address ?: null, $id]);
         $pdo->prepare('UPDATE accounts SET name = ? WHERE customer_id = ?')->execute([$name . ' — Account', $id]);
+        vk_cache_flush_dashboard();
         flash_set('success', 'Customer updated.');
         redirect('/modules/customers/list.php');
     }

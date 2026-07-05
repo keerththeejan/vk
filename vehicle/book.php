@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/init.php';
+vk_bootstrap_module('vehicle_booking');
 $pdo = db();
 vk_vehicle_auto_migrate($pdo);
 $customer = vk_vehicle_require_customer();

@@ -9,8 +9,8 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 $pdo = db();
 vk_settings_seed_defaults($pdo);
 $s = vk_settings_all($pdo);
+vk_bootstrap_module('mailer');
 $smtp = vk_smtp_settings_get($pdo);
-$ar = vk_autoresponder_settings_get($pdo);
 $smtpNeedsPassword = ((string) ($smtp['smtp_user'] ?? '')) !== '' && trim((string) ($smtp['smtp_pass'] ?? '')) === '';
 $defaults = static function (string $k, string $d = '') use ($s): string {
     return array_key_exists($k, $s) ? (string) $s[$k] : $d;

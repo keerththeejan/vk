@@ -49,6 +49,7 @@ try {
     }
     $pdo->prepare('DELETE FROM customers WHERE id = ?')->execute([$id]);
     $pdo->commit();
+    vk_cache_flush_dashboard();
     flash_set('success', 'Customer removed.');
 } catch (Throwable $e) {
     $pdo->rollBack();
