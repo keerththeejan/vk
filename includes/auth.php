@@ -12,6 +12,11 @@ function vk_auth_ensure_schema(PDO $pdo): void
     }
     $done = true;
 
+    // Skip expensive DDL on warm requests once schema is confirmed ready.
+    if (function_exists('vk_cache_get') && vk_cache_get('auth_schema_ready_v3') === '1') {
+        return;
+    }
+
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS roles (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -153,6 +158,10 @@ function vk_auth_ensure_schema(PDO $pdo): void
             KEY idx_remember_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+
+    if (function_exists('vk_cache_set')) {
+        vk_cache_set('auth_schema_ready_v3', '1', 604800);
+    }
 }
 
 function vk_auth_upgrade_users_table(PDO $pdo): void
@@ -172,7 +181,19 @@ function vk_auth_upgrade_users_table(PDO $pdo): void
     ] as $column => $sql) {
         if (!db_column_exists($pdo, 'users', $column)) {
             $pdo->exec($sql);
+            if (function_exists('db_column_exists_forget')) {
+                db_column_exists_forget('users', $column);
+            }
+            if (function_exists('vk_cache_delete')) {
+                vk_cache_delete('auth_schema_ready_v3');
+                vk_cache_delete('users_table_enum_ready_v1');
+            }
         }
+    }
+
+    // ENUM MODIFY + approved sync is expensive — run once then cache.
+    if (function_exists('vk_cache_get') && vk_cache_get('users_table_enum_ready_v1') === '1') {
+        return;
     }
 
     $pdo->exec(
@@ -181,7 +202,7 @@ function vk_auth_upgrade_users_table(PDO $pdo): void
     $pdo->exec(
         "ALTER TABLE users MODIFY COLUMN status ENUM('pending','approved','active','rejected','suspended','inactive') NOT NULL DEFAULT 'pending'"
     );
-    $pdo->exec("UPDATE users SET approved = 1 WHERE status IN ('approved','active')");
+    $pdo->exec("UPDATE users SET approved = 1 WHERE status IN ('approved','active') AND approved = 0");
 
     try {
         $pdo->exec('CREATE UNIQUE INDEX uq_users_uid ON users (user_uid)');
@@ -195,6 +216,10 @@ function vk_auth_upgrade_users_table(PDO $pdo): void
     try {
         $pdo->exec('CREATE UNIQUE INDEX uq_users_email ON users (email)');
     } catch (Throwable $e) {
+    }
+
+    if (function_exists('vk_cache_set')) {
+        vk_cache_set('users_table_enum_ready_v1', '1', 2592000);
     }
 }
 
@@ -646,6 +671,10 @@ function vk_auth_update_user_status(PDO $pdo, int $userId, string $status, ?int 
     }
     $params[] = $userId;
     $pdo->prepare("UPDATE users SET {$updates} WHERE id = ?")->execute($params);
+
+    if (function_exists('vk_cache_delete')) {
+        vk_cache_delete('pending_auth_regs_v1');
+    }
 
     $action = match ($status) {
         'approved', 'active' => 'approved',

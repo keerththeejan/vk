@@ -12,6 +12,15 @@ if (!defined('VK_LAYOUT_BOOTSTRAPPED')) {
     define('VK_LAYOUT_BOOTSTRAPPED', true);
 }
 
+if (function_exists('vk_perf_send_private_headers')) {
+    vk_perf_send_private_headers();
+}
+
+// Prepare CSRF + consume flash while the session is still writable, then unlock
+// the session lock so parallel AJAX (dashboard widgets, etc.) is not blocked.
+$GLOBALS['vk_csrf_token'] = csrf_token();
+$GLOBALS['vk_flash_payload'] = flash_get();
+
 if (session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
 }

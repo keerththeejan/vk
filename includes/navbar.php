@@ -8,7 +8,9 @@ $adminTagline = vk_app_setting('company_tagline', 'Service desk');
 $pendingAuthRegistrations = 0;
 if (isset($pdo) && function_exists('vk_auth_role_can_manage') && vk_auth_role_can_manage((string) ($cu['role'] ?? 'viewer'))) {
     try {
-        $pendingAuthRegistrations = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE status = 'pending' AND approved = 0")->fetchColumn();
+        $pendingAuthRegistrations = (int) vk_cache_remember('pending_auth_regs_v1', 60, static function () use ($pdo) {
+            return (int) $pdo->query("SELECT COUNT(*) FROM users WHERE status = 'pending' AND approved = 0")->fetchColumn();
+        });
     } catch (Throwable $e) {
         $pendingAuthRegistrations = 0;
     }

@@ -9,7 +9,11 @@
     </div>
 </div>
 <?php
-$f = flash_get();
+$f = $GLOBALS['vk_flash_payload'] ?? null;
+if (!is_array($f)) {
+    $f = flash_get();
+}
+$GLOBALS['vk_flash_payload'] = null;
 if ($f) {
     $type = match ($f['type']) {
         'error' => 'danger',

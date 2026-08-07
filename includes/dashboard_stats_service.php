@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 function vk_dashboard_stats_ttl(): int
 {
-    return max(10, (int) (getenv('VK_DASHBOARD_CACHE_TTL') ?: 30));
+    return max(15, (int) (getenv('VK_DASHBOARD_CACHE_TTL') ?: 45));
 }
 
 /**
@@ -60,8 +60,9 @@ function vk_dashboard_stats_compute(PDO $pdo): array
         $st = $pdo->prepare(
             'SELECT
                 COALESCE(SUM(CASE WHEN invoice_date = ? THEN grand_total ELSE 0 END), 0) AS sales_today,
-                COALESCE(SUM(CASE WHEN invoice_date >= ? AND invoice_date <= ? THEN grand_total ELSE 0 END), 0) AS sales_month
-             FROM invoices'
+                COALESCE(SUM(grand_total), 0) AS sales_month
+             FROM invoices
+             WHERE invoice_date >= ? AND invoice_date <= ?'
         );
         $st->execute([$today, $monthStart, $monthEnd]);
         vk_perf_mark_query();
@@ -218,7 +219,11 @@ function vk_dashboard_stats_compute(PDO $pdo): array
     $marketing = ['reach' => 0, 'active_campaigns' => 0, 'leads' => 0, 'conversion_rate' => 0, 'whatsapp_delivery_rate' => 0];
     try {
         require_once __DIR__ . '/marketing_suite.php';
-        vk_marketing_suite_seed($pdo);
+        // Seed once per day — avoid DDL/seed work on every dashboard cache miss.
+        if (vk_cache_get('marketing_seeded_v1') !== '1') {
+            vk_marketing_suite_seed($pdo);
+            vk_cache_set('marketing_seeded_v1', '1', 86400);
+        }
         $marketing = vk_marketing_metrics($pdo);
         if (db_table_exists($pdo, 'seo_settings')) {
             $seoAverage = (int) $pdo->query('SELECT COALESCE(ROUND(AVG(seo_score)),0) FROM seo_settings')->fetchColumn();
@@ -229,17 +234,25 @@ function vk_dashboard_stats_compute(PDO $pdo): array
 
     $smtpWarning = null;
     try {
-        vk_bootstrap_module('mailer');
-        $smtpCfg = vk_smtp_settings_get($pdo);
-        if (!($smtpCfg['configured'] ?? false)) {
-            $smtpWarning = 'unconfigured';
-        } elseif (
-            trim((string) ($smtpCfg['smtp_pass'] ?? '')) === ''
-            && !vk_smtp_env_key_set('VK_SMTP_PASS')
-            && vk_smtp_env_value('MAIL_PASSWORD') === null
-        ) {
-            $smtpWarning = 'missing_password';
-        }
+        $smtpCached = vk_cache_remember('smtp_warning_v1', 300, static function () use ($pdo) {
+            vk_bootstrap_module('mailer');
+            $smtpCfg = vk_smtp_settings_get($pdo);
+            if (!($smtpCfg['configured'] ?? false)) {
+                return 'unconfigured';
+            }
+            if (
+                trim((string) ($smtpCfg['smtp_pass'] ?? '')) === ''
+                && !vk_smtp_env_key_set('VK_SMTP_PASS')
+                && vk_smtp_env_value('MAIL_PASSWORD') === null
+            ) {
+                return 'missing_password';
+            }
+
+            return 'ok';
+        });
+        $smtpWarning = ($smtpCached === 'ok' || $smtpCached === null || $smtpCached === '')
+            ? null
+            : (string) $smtpCached;
     } catch (Throwable) {
     }
 

@@ -51,6 +51,9 @@ function vk_settings_ensure_schema(PDO $pdo): void
 function vk_settings_invalidate_cache(): void
 {
     $GLOBALS['_vk_settings_cache'] = null;
+    if (function_exists('vk_cache_delete')) {
+        vk_cache_delete('settings_all_v1');
+    }
     if (function_exists('vk_cache_flush_dashboard')) {
         vk_cache_flush_dashboard();
     }
@@ -63,6 +66,15 @@ function vk_settings_all(PDO $pdo): array
 {
     if ($GLOBALS['_vk_settings_cache'] !== null) {
         return $GLOBALS['_vk_settings_cache'];
+    }
+    if (function_exists('vk_cache_get')) {
+        $cached = vk_cache_get('settings_all_v1');
+        if (is_array($cached)) {
+            /** @var array<string, string> $cached */
+            $GLOBALS['_vk_settings_cache'] = $cached;
+
+            return $cached;
+        }
     }
     $out = [];
     if (!vk_settings_table_ready($pdo)) {
@@ -83,6 +95,9 @@ function vk_settings_all(PDO $pdo): array
         $out = [];
     }
     $GLOBALS['_vk_settings_cache'] = $out;
+    if (function_exists('vk_cache_set')) {
+        vk_cache_set('settings_all_v1', $out, 300);
+    }
 
     return $out;
 }

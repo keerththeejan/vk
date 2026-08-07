@@ -27,7 +27,7 @@ $vkAdminFavicon = getLogo('favicon');
     <link rel="icon" href="<?= e($vkAdminFavicon) ?>">
     <script>
         window.VK_BASE_URL = <?= json_encode(BASE_URL, JSON_THROW_ON_ERROR) ?>;
-        window.VK_CSRF_TOKEN = <?= json_encode(csrf_token(), JSON_THROW_ON_ERROR) ?>;
+        window.VK_CSRF_TOKEN = <?= json_encode((string) ($GLOBALS['vk_csrf_token'] ?? csrf_token()), JSON_THROW_ON_ERROR) ?>;
     </script>
     <?= $extraHead ?>
 </head>

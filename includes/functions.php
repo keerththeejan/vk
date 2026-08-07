@@ -494,6 +494,17 @@ function db_table_exists(PDO $pdo, string $table): bool
     if (array_key_exists($table, $cache)) {
         return $cache[$table];
     }
+
+    // Cross-request schema map (avoids repeated information_schema hits).
+    if (function_exists('vk_cache_get')) {
+        $map = vk_cache_get('schema_tables_v1');
+        if (is_array($map) && array_key_exists($table, $map)) {
+            $cache[$table] = (bool) $map[$table];
+
+            return $cache[$table];
+        }
+    }
+
     $st = $pdo->prepare(
         'SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? LIMIT 1'
     );
@@ -502,6 +513,16 @@ function db_table_exists(PDO $pdo, string $table): bool
         vk_perf_mark_query();
     }
     $cache[$table] = (bool) $st->fetchColumn();
+
+    if (function_exists('vk_cache_get') && function_exists('vk_cache_set')) {
+        $map = vk_cache_get('schema_tables_v1');
+        if (!is_array($map)) {
+            $map = [];
+        }
+        $map[$table] = $cache[$table];
+        vk_cache_set('schema_tables_v1', $map, 600);
+    }
+
     return $cache[$table];
 }
 
@@ -518,9 +539,20 @@ function db_table_exists_forget(?string $table = null): void
     $cache = &db_table_exists_cache();
     if ($table === null) {
         $cache = [];
+        if (function_exists('vk_cache_delete')) {
+            vk_cache_delete('schema_tables_v1');
+        }
+
         return;
     }
     unset($cache[$table]);
+    if (function_exists('vk_cache_get') && function_exists('vk_cache_set')) {
+        $map = vk_cache_get('schema_tables_v1');
+        if (is_array($map)) {
+            unset($map[$table]);
+            vk_cache_set('schema_tables_v1', $map, 600);
+        }
+    }
 }
 
 /** Whether a column exists on a table (for gradual schema upgrades). */
@@ -534,13 +566,64 @@ function db_column_exists(PDO $pdo, string $table, string $column): bool
     if (array_key_exists($key, $cache)) {
         return $cache[$key];
     }
+
+    if (function_exists('vk_cache_get')) {
+        $map = vk_cache_get('schema_columns_v1');
+        if (is_array($map) && array_key_exists($key, $map)) {
+            $cache[$key] = (bool) $map[$key];
+
+            return $cache[$key];
+        }
+    }
+
     $st = $pdo->prepare(
         'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1'
     );
     $st->execute([$table, $column]);
     vk_perf_mark_query();
     $cache[$key] = (bool) $st->fetchColumn();
+
+    if (function_exists('vk_cache_get') && function_exists('vk_cache_set')) {
+        $map = vk_cache_get('schema_columns_v1');
+        if (!is_array($map)) {
+            $map = [];
+        }
+        $map[$key] = $cache[$key];
+        vk_cache_set('schema_columns_v1', $map, 600);
+    }
+
     return $cache[$key];
+}
+
+function db_column_exists_forget(?string $table = null, ?string $column = null): void
+{
+    if (!function_exists('vk_cache_delete') && !function_exists('vk_cache_get')) {
+        return;
+    }
+    if ($table === null) {
+        if (function_exists('vk_cache_delete')) {
+            vk_cache_delete('schema_columns_v1');
+        }
+
+        return;
+    }
+    if (!function_exists('vk_cache_get') || !function_exists('vk_cache_set')) {
+        return;
+    }
+    $map = vk_cache_get('schema_columns_v1');
+    if (!is_array($map)) {
+        return;
+    }
+    if ($column !== null) {
+        unset($map[$table . '.' . $column]);
+    } else {
+        foreach (array_keys($map) as $k) {
+            if (str_starts_with((string) $k, $table . '.')) {
+                unset($map[$k]);
+            }
+        }
+    }
+    vk_cache_set('schema_columns_v1', $map, 600);
 }
 
 function next_maintenance_contract_number(PDO $pdo): string

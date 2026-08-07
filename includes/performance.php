@@ -42,3 +42,27 @@ function vk_perf_shutdown_headers(): void
 }
 
 register_shutdown_function('vk_perf_shutdown_headers');
+register_shutdown_function(static function (): void {
+    // Probabilistic housekeeping (~2% of requests) keeps pages fast.
+    if (random_int(1, 50) !== 1) {
+        return;
+    }
+    if (function_exists('vk_maintenance_cleanup')) {
+        try {
+            vk_maintenance_cleanup();
+        } catch (Throwable) {
+        }
+    }
+});
+
+/**
+ * Send no-store headers for authenticated HTML responses (overrides public PHP caching).
+ */
+function vk_perf_send_private_headers(): void
+{
+    if (headers_sent()) {
+        return;
+    }
+    header('Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+}
