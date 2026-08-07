@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" role="img" aria-label="Owner profile">
+  <rect width="320" height="320" rx="160" fill="#12355b"/>
+  <circle cx="160" cy="128" r="64" fill="#f1bd92"/>
+  <path d="M58 292c18-66 58-99 102-99s84 33 102 99" fill="#2f80ed"/>
+  <text x="160" y="285" text-anchor="middle" font-family="Arial, sans-serif" font-size="52" font-weight="700" fill="#fff">VK</text>
+</svg>

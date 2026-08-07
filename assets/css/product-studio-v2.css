@@ -1,0 +1,295 @@
+/**
+ * Product Studio v2 — Enterprise ERP polish layer
+ * Shopify / Fluent / NetSuite-inspired enhancements on top of product-admin.css
+ */
+
+.product-studio[data-studio-v2="1"] {
+  --erp-accent: #5b8cff;
+  --erp-accent-2: #22d3ee;
+  --erp-success: #34d399;
+  --erp-surface-glass: rgba(12, 24, 48, 0.72);
+  --erp-shadow-elevated: 0 32px 80px rgba(0, 0, 0, 0.38);
+}
+
+/* Wizard section order matches stepper (DOM reorder via flex) */
+.product-studio[data-studio-v2="1"] .studio-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.product-studio[data-studio-v2="1"] #section-basic { order: 1; }
+.product-studio[data-studio-v2="1"] #section-pricing { order: 2; }
+.product-studio[data-studio-v2="1"] #section-inventory { order: 3; }
+.product-studio[data-studio-v2="1"] #section-media { order: 4; }
+.product-studio[data-studio-v2="1"] #section-shipping { order: 5; }
+.product-studio[data-studio-v2="1"] #section-seo { order: 6; }
+.product-studio[data-studio-v2="1"] #section-warranty { order: 7; }
+.product-studio[data-studio-v2="1"] #section-variants { order: 8; }
+.product-studio[data-studio-v2="1"] #section-review { order: 9; }
+
+/* Global progress rail */
+.studio-progress-rail {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  margin-top: -0.25rem;
+}
+
+.studio-progress-rail__fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--erp-accent), var(--erp-accent-2));
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 18px rgba(91, 140, 255, 0.45);
+}
+
+.studio-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--studio-muted);
+}
+
+.studio-progress-meta strong {
+  color: var(--studio-text);
+}
+
+/* Completed wizard steps */
+.studio-stepper-item.is-complete .studio-step-icon {
+  background: rgba(52, 211, 153, 0.18);
+  border-color: rgba(52, 211, 153, 0.45);
+  color: var(--erp-success);
+}
+
+.studio-stepper-item.is-complete .studio-step-state::after {
+  content: "✓";
+  color: var(--erp-success);
+  font-weight: 800;
+  font-size: 0.7rem;
+}
+
+/* Premium card hover */
+.product-studio[data-studio-v2="1"] .studio-section {
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.product-studio[data-studio-v2="1"] .studio-section:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--erp-shadow-elevated);
+  border-color: rgba(91, 140, 255, 0.22);
+}
+
+.product-studio[data-studio-v2="1"] .studio-section.is-active-step {
+  border-color: rgba(91, 140, 255, 0.38);
+  box-shadow: 0 0 0 1px rgba(91, 140, 255, 0.12), var(--erp-shadow-elevated);
+}
+
+/* Field helpers */
+.studio-field-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  font-size: 0.76rem;
+  color: var(--studio-muted);
+}
+
+.studio-field-meta.is-warning {
+  color: var(--studio-warning);
+}
+
+.studio-field-meta.is-success {
+  color: var(--erp-success);
+}
+
+.studio-slug-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed var(--studio-border);
+  font-size: 0.8rem;
+  color: var(--studio-muted);
+  margin-bottom: 1rem;
+}
+
+.studio-slug-preview code {
+  color: var(--erp-accent-2);
+  font-size: 0.78rem;
+}
+
+/* Floating action cluster */
+.studio-fab-cluster {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 5.5rem;
+  z-index: 1040;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
+.studio-fab {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 179, 255, 0.28);
+  background: linear-gradient(145deg, rgba(91, 140, 255, 0.95), rgba(34, 211, 238, 0.85));
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 16px 40px rgba(43, 127, 255, 0.35);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  cursor: pointer;
+}
+
+.studio-fab:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 22px 48px rgba(43, 127, 255, 0.42);
+}
+
+.studio-fab--secondary {
+  width: 2.75rem;
+  height: 2.75rem;
+  background: var(--erp-surface-glass);
+  backdrop-filter: blur(16px);
+  color: var(--studio-text);
+  box-shadow: var(--studio-shadow-soft);
+}
+
+.studio-fab-menu {
+  display: none;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.5rem;
+  border-radius: 16px;
+  background: var(--erp-surface-glass);
+  border: 1px solid var(--studio-border);
+  backdrop-filter: blur(18px);
+}
+
+.studio-fab-cluster.is-open .studio-fab-menu {
+  display: flex;
+}
+
+.studio-fab-menu button {
+  border: 0;
+  background: transparent;
+  color: var(--studio-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.45rem 0.65rem;
+  border-radius: 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.studio-fab-menu button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Sticky desktop save strip */
+.studio-save-rail {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 25;
+  display: none;
+  padding: 0.85rem 1rem;
+  border-radius: 18px;
+  border: 1px solid var(--studio-border);
+  background: rgba(7, 17, 31, 0.92);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--studio-shadow-soft);
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (min-width: 992px) {
+  .studio-save-rail {
+    display: flex;
+  }
+}
+
+/* Button ripple */
+.studio-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.studio-btn .studio-ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: studio-ripple 0.55s ease-out;
+  background: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+@keyframes studio-ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Skeleton fade */
+.studio-skeleton-wrap.is-loaded [data-skeleton] {
+  display: none;
+}
+
+/* Sidebar timeline */
+.studio-timeline {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.studio-timeline-item {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  font-size: 0.8rem;
+  color: var(--studio-muted);
+}
+
+.studio-timeline-item i {
+  color: var(--erp-accent-2);
+  margin-top: 0.1rem;
+}
+
+/* Mobile FAB offset */
+@media (max-width: 991.98px) {
+  .studio-fab-cluster {
+    bottom: 6.25rem;
+    right: 1rem;
+  }
+
+  .studio-save-rail {
+    display: none !important;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .product-studio[data-studio-v2="1"] .studio-section,
+  .studio-progress-rail__fill,
+  .studio-fab {
+    transition: none !important;
+    animation: none !important;
+  }
+}

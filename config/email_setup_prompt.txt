@@ -1,0 +1,33 @@
+Copy everything below into Cursor / another AI or your runbook. Replace YOUR_MAIL_PASSWORD with the real mailbox password (never commit it to git).
+
+---
+GOAL: Configure VK IT Network (vanilla PHP) email for vkitnet.info with SMTP send, IMAP/POP3 receive, and optional auto-reply.
+
+SERVER FACTS (SSL + auth required):
+- SMTP outgoing: host vkitnet.info, port 465, encryption SSL, username = full email (e.g. info@vkitnet.info), password = mailbox password.
+- IMAP incoming: host vkitnet.info, port 993, SSL.
+- POP3 incoming (fallback): host vkitnet.info, port 995, SSL.
+
+ADMIN UI:
+1) System Settings → Email: click "VK IT mail (vkitnet.info)" preset, enter SMTP password, Save SMTP + auto-reply, Send test email.
+2) System Settings → Email: enable "Auto-reply to incoming mail", edit subject/body, Save.
+3) Email & Inbox: set IMAP host vkitnet.info, port 993, same username/password, enable IMAP polling, Save.
+4) .env: set VK_CRON_SECRET; schedule GET /VK/api/cron_email.php?token=SECRET every 1–5 minutes.
+
+OPTIONAL .env (no secrets in repo):
+VK_SMTP_HOST=vkitnet.info
+VK_SMTP_PORT=465
+VK_SMTP_USER=info@vkitnet.info
+VK_SMTP_PASS="YOUR_MAIL_PASSWORD"
+VK_SMTP_SECURE=ssl
+VK_MAIL_FROM=info@vkitnet.info
+VK_MAIL_FROM_NAME=VK IT
+VK_IMAP_HOST=vkitnet.info
+VK_IMAP_PORT=993
+VK_IMAP_USER=info@vkitnet.info
+VK_IMAP_PASS="YOUR_MAIL_PASSWORD"
+VK_IMAP_ENABLED=1
+VK_CRON_SECRET=long-random-string
+
+AUTO-REPLY RULES: one reply per sender per 24h; skips mailer-daemon, postmaster, noreply, Auto-Submitted, etc.
+---

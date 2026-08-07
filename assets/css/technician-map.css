@@ -1,0 +1,56 @@
+/**
+ * Technician base location picker (admin, dark-friendly).
+ */
+
+/* Bootstrap img max-width breaks Leaflet tiles */
+.tech-loc-map-card .leaflet-container img.leaflet-tile,
+.tech-loc-map-card .leaflet-container img.leaflet-marker-icon,
+.tech-loc-map-card .leaflet-container img.leaflet-marker-shadow {
+    max-width: none !important;
+    max-height: none !important;
+}
+
+#techMap {
+    height: 350px;
+    width: 100%;
+    border-radius: 16px;
+    margin-bottom: 10px;
+    z-index: 1;
+}
+
+@keyframes tech-loc-map-in {
+    from {
+        opacity: 0.88;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tech-loc-map-card {
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--bs-body-bg);
+    animation: tech-loc-map-in 0.4s ease-out;
+}
+
+[data-bs-theme="dark"] .tech-loc-map-card {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.tech-loc-map-card .leaflet-container {
+    font-family: inherit;
+    background: #e5e7eb;
+}
+
+[data-bs-theme="dark"] .tech-loc-map-card .leaflet-container {
+    background: #1e293b;
+}
+
+.tech-loc-hint {
+    font-size: 0.8125rem;
+    color: var(--bs-secondary-color);
+}

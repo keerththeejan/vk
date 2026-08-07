@@ -1,0 +1,2 @@
+# Staff uploads are restricted in PHP before files are saved.
+# Keep this file directive-free for Wamp/Apache compatibility.

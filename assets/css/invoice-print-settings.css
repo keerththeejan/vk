@@ -1,0 +1,50 @@
+.ips-page {
+    --ips-preview-h: min(78vh, 920px);
+}
+
+.ips-accordion .accordion-button {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.ips-accordion .accordion-button:not(.collapsed) {
+    background: rgba(11, 77, 186, 0.06);
+    color: #0B4DBA;
+}
+
+.ips-asset-preview {
+    min-height: 80px;
+    max-height: 140px;
+    overflow: hidden;
+}
+
+.ips-asset-preview img {
+    max-height: 120px;
+    object-fit: contain;
+}
+
+.ips-preview-sticky {
+    position: sticky;
+    top: 1rem;
+}
+
+.ips-preview-frame {
+    width: 100%;
+    height: var(--ips-preview-h);
+    border: 0;
+    background: #eef1f5;
+}
+
+.ips-range-val {
+    margin-top: -0.25rem;
+}
+
+@media (max-width: 991.98px) {
+    .ips-preview-sticky {
+        position: static;
+    }
+
+    .ips-preview-frame {
+        height: 60vh;
+    }
+}

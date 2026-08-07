@@ -1,0 +1,18 @@
+CREATE TABLE IF NOT EXISTS staff (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(150) NOT NULL,
+    role VARCHAR(80) NOT NULL,
+    image VARCHAR(255) DEFAULT NULL,
+    description TEXT DEFAULT NULL,
+    skills TEXT DEFAULT NULL,
+    experience VARCHAR(150) DEFAULT NULL,
+    email VARCHAR(150) DEFAULT NULL,
+    phone VARCHAR(40) DEFAULT NULL,
+    social_links TEXT DEFAULT NULL,
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_staff_active_sort (active, sort_order, id)
+);

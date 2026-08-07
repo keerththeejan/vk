@@ -1,0 +1,19 @@
+{
+  "name": "vk-whatsapp-bridge",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Local HTTP bridge: POST /send-message → WhatsApp (whatsapp-web.js). Pair once via QR in terminal.",
+  "main": "server.mjs",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.26.0"
+  }
+}

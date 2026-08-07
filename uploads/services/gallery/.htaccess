@@ -1,0 +1,7 @@
+# Block script execution in gallery uploads (images only)
+<IfModule mod_authz_core.c>
+    <FilesMatch "(?i)\.(php|phtml|php[0-9]|phar|pl|py|jsp|asp|aspx|sh|cgi)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+Options -Indexes

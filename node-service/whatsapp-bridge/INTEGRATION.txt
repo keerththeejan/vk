@@ -1,0 +1,35 @@
+SMART BOOKING + WHATSAPP BRIDGE — SETUP
+======================================
+
+1) MySQL (phpMyAdmin)
+   Run: sql/upgrade_smart_assignment.sql
+   (Adds technicians.latitude/longitude, availability, web_bookings.assignment_distance_km)
+
+2) PHP config (config/config.php)
+   VK_ASSIGN_MAX_RADIUS_KM = 20
+   VK_WHATSAPP_BRIDGE_URL = http://127.0.0.1:3999/send-message
+   VK_WHATSAPP_BRIDGE_SECRET = choose-a-long-random-string
+   VK_WHATSAPP_ADMIN_PHONE = optional admin mobile (same format as technician phones)
+
+3) Technicians
+   Admin → Technicians → set Latitude/Longitude (home base) and WhatsApp-capable phone.
+   Mark "Availability" = Available for auto-assign.
+
+4) Node bridge (this folder)
+   cd node-service/whatsapp-bridge
+   npm install
+   set VK_WHATSAPP_SECRET=same-as-PHP-VK_WHATSAPP_BRIDGE_SECRET
+   npm start
+   Scan QR once when prompted.
+
+5) Book flow
+   Customer submits book.php with map coordinates → nearest technician within radius →
+   assigned_technician_id saved → WhatsApp message POSTed to bridge.
+
+Notes
+-----
+- whatsapp-web.js uses Puppeteer (Chromium). First npm install may download Chromium.
+- For production, run the Node service under PM2/systemd on the same host as PHP, or
+  use SSH tunnel if PHP is remote.
+- Baileys (@whiskeysockets/baileys) is a lighter alternative without Puppeteer; swap
+  server.mjs implementation if you prefer.

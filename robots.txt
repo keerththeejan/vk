@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /modules/
+Disallow: /api/
+Disallow: /includes/
+Sitemap: https://vkitnet.info/sitemap.xml

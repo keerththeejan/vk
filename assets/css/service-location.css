@@ -1,0 +1,117 @@
+/**
+ * Leaflet service location — admin + public (rounded card, dark-friendly).
+ */
+
+/* Bootstrap reboot sets img { max-width: 100% }, which breaks Leaflet tiles */
+.leaflet-container img.leaflet-tile,
+.leaflet-container img.leaflet-marker-icon,
+.leaflet-container img.leaflet-marker-shadow,
+.leaflet-container img.leaflet-image-layer {
+    max-width: none !important;
+    max-height: none !important;
+}
+
+.st-loc-card,
+.vk-svc-loc-card {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+    background: var(--bs-body-bg);
+}
+
+[data-bs-theme="dark"] .st-loc-card,
+[data-bs-theme="dark"] .vk-svc-loc-card {
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.35);
+}
+
+.st-loc-map-wrap,
+.vk-svc-loc-map-wrap {
+    position: relative;
+    width: 100%;
+    min-height: 280px;
+    height: 400px;
+}
+
+@media (max-width: 767.98px) {
+    .st-loc-map-wrap,
+    .vk-svc-loc-map-wrap {
+        min-height: 260px;
+        height: min(400px, 55vh);
+    }
+}
+
+/* Primary map target — explicit height so Leaflet always has dimensions */
+#map.st-loc-map,
+#map.vk-svc-loc-map {
+    width: 100%;
+    height: 100%;
+    min-height: 280px;
+    border-radius: 16px;
+    z-index: 1;
+}
+
+.st-loc-map,
+.vk-svc-loc-map {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    z-index: 1;
+}
+
+.st-loc-map-wrap #map.st-loc-map {
+    border-radius: 0;
+}
+
+.vk-svc-loc-map-wrap #map.vk-svc-loc-map {
+    border-radius: 16px;
+}
+
+.st-loc-search-wrap {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    background: rgba(248, 250, 252, 0.6);
+}
+
+[data-bs-theme="dark"] .st-loc-search-wrap {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+    background: rgba(15, 23, 42, 0.4);
+}
+
+.st-loc-coords {
+    padding: 0.75rem 1rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.st-loc-nominatim-note {
+    font-size: 0.7rem;
+    opacity: 0.75;
+}
+
+/* Leaflet container inherits rounded corners when wrapped */
+.st-loc-map-wrap .leaflet-container {
+    font-family: inherit;
+    background: #e5e7eb;
+}
+
+[data-bs-theme="dark"] .st-loc-map-wrap .leaflet-container {
+    background: #1e293b;
+}
+
+.vk-svc-loc-map-wrap .leaflet-container {
+    background: #e5e7eb;
+}
+
+[data-bs-theme="dark"] .vk-pub-page .vk-svc-loc-map-wrap .leaflet-container {
+    background: #1e293b;
+}
+
+.vk-svc-loc-actions .btn {
+    border-radius: 12px;
+}
+
+.vk-svc-loc-distance {
+    font-size: 0.9rem;
+    color: var(--bs-secondary-color);
+}

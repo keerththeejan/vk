@@ -1,0 +1,187 @@
+/**
+ * Enterprise Inventory Management module styles (Bootstrap 5)
+ */
+
+.inventory-management-module {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.inventory-module-header,
+.inventory-form-card,
+.inventory-metric-card {
+  background: linear-gradient(180deg, rgba(12, 24, 48, 0.92), rgba(7, 17, 31, 0.9));
+  border: 1px solid rgba(148, 179, 255, 0.14) !important;
+  border-radius: 18px;
+  color: var(--studio-text, #e8f0ff);
+}
+
+.inventory-module-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.inventory-module-subtitle {
+  color: var(--studio-muted, #8fa3c7);
+  font-size: 0.88rem;
+}
+
+.inventory-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid rgba(148, 179, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.inventory-status-pill.is-healthy {
+  border-color: rgba(52, 211, 153, 0.35);
+  color: #6ee7b7;
+}
+
+.inventory-status-pill.is-monitor {
+  border-color: rgba(251, 191, 36, 0.35);
+  color: #fcd34d;
+}
+
+.inventory-status-pill.is-critical {
+  border-color: rgba(248, 113, 113, 0.35);
+  color: #fca5a5;
+}
+
+.inventory-metric-card .card-body {
+  padding: 1rem;
+}
+
+.inventory-metric-label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--studio-muted, #8fa3c7);
+  margin-bottom: 0.35rem;
+}
+
+.inventory-metric-value {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.inventory-metric-value--sm {
+  font-size: 1rem;
+}
+
+.inventory-form-card .card-header h4 {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.inventory-progress {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+
+.inventory-progress-item {
+  font-size: 0.82rem;
+  color: var(--studio-muted, #8fa3c7);
+}
+
+.inventory-field-shell.is-invalid .form-control,
+.inventory-field-shell.is-invalid .form-select {
+  border-color: rgba(248, 113, 113, 0.65) !important;
+}
+
+.inventory-field-shell.is-valid .form-control,
+.inventory-field-shell.is-valid .form-select {
+  border-color: rgba(52, 211, 153, 0.55) !important;
+}
+
+.inventory-invalid-message {
+  margin-top: 0.35rem;
+  font-size: 0.76rem;
+  color: #fca5a5;
+}
+
+.inventory-chip {
+  display: inline-flex;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(91, 140, 255, 0.15);
+  border: 1px solid rgba(91, 140, 255, 0.25);
+  color: #bfdbfe;
+}
+
+.inventory-history-table {
+  color: var(--studio-text, #e8f0ff);
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--studio-text, #e8f0ff);
+  --bs-table-border-color: rgba(148, 179, 255, 0.12);
+  font-size: 0.82rem;
+}
+
+.inventory-history-table thead th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--studio-muted, #8fa3c7);
+  border-bottom-width: 1px;
+  white-space: nowrap;
+}
+
+.inventory-history-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.inventory-history-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.inventory-movement-badge {
+  display: inline-flex;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.inventory-movement-badge.is-in {
+  background: rgba(52, 211, 153, 0.15);
+  color: #6ee7b7;
+}
+
+.inventory-movement-badge.is-out {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fca5a5;
+}
+
+.inventory-movement-badge.is-reserve {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fcd34d;
+}
+
+.inventory-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+  cursor: pointer;
+}
+
+@media (max-width: 575.98px) {
+  .inventory-metric-value {
+    font-size: 1rem;
+  }
+
+  .inventory-history-table {
+    font-size: 0.76rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inventory-history-table tbody tr {
+    transition: none;
+  }
+}

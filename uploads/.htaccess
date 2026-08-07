@@ -1,0 +1,3 @@
+# Upload security is enforced by the PHP upload handlers before files are saved.
+# This file is intentionally directive-free because some Wamp/Apache builds
+# return 500 errors for php_flag, Order/Deny, or handler overrides in .htaccess.

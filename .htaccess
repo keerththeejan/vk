@@ -1,0 +1,88 @@
+# VK Network - shared hosting rewrite + caching rules.
+# Works in public_html on cPanel and in /vk on localhost.
+
+DirectoryIndex index.php
+Options -Indexes
+
+<FilesMatch "^(\.env|\.env\..*|composer\.(json|lock)|README\.md)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Uncomment on production after SSL is active.
+    # RewriteCond %{HTTPS} !=on
+    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Serve uploaded files directly; do not rewrite user media.
+    RewriteRule ^uploads/ - [L]
+
+    # Serve static robots.txt if the file exists, otherwise fall back to dynamic generator.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^robots\.txt$ robots.php [L]
+
+    # /service/my-slug -> service.php?slug=my-slug.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^service/(.*)$ service.php?slug=$1 [L,QSA]
+
+    RewriteRule ^book/?$ book.php [L]
+    RewriteRule ^track/?$ track.php [L]
+    RewriteRule ^portfolio/?$ portfolio.php [L]
+    RewriteRule ^staff/?$ staff.php [L,QSA]
+    RewriteRule ^staff/([0-9]+)/?$ staff.php?id=$1 [L,QSA]
+
+    # CodeIgniter-style fallback if this app is later moved behind a front controller.
+    # Existing files and folders continue to load normally.
+    # RewriteCond %{REQUEST_FILENAME} !-f
+    # RewriteCond %{REQUEST_FILENAME} !-d
+    # RewriteRule ^(.*)$ index.php/$1 [L,QSA]
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 month"
+    ExpiresByType text/html "access plus 10 minutes"
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+FileETag MTime Size
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain text/html text/css application/javascript application/json application/xml application/rss+xml text/javascript application/x-javascript application/font-sfnt application/font-woff application/font-woff2 image/svg+xml
+    BrowserMatch ^Mozilla/4 gzip-only-text/html
+    BrowserMatch ^Mozilla/4\.0[678] no-gzip
+    BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
+    Header append Vary User-Agent
+</IfModule>
+
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css application/javascript application/json application/xml application/rss+xml image/svg+xml
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType image/webp .webp
+    AddType image/avif .avif
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(js|css|png|jpg|jpeg|gif|webp|avif|svg|woff2|woff|ttf|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    <FilesMatch "\.(html|php)$">
+        Header set Cache-Control "public, max-age=600, s-maxage=900, stale-while-revalidate=60"
+    </FilesMatch>
+    <FilesMatch "\.(txt|xml)$">
+        Header set Cache-Control "public, max-age=86400, stale-while-revalidate=86400"
+    </FilesMatch>
+    Header set X-Content-Type-Options nosniff
+    Header set X-Frame-Options DENY
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

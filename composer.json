@@ -1,0 +1,12 @@
+{
+    "name": "vk/network-billing",
+    "description": "VK IT Network billing and public site",
+    "require": {
+        "php": ">=8.1",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}
