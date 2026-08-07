@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 /**
- * Enterprise Quotation Print / PDF — alignment / spacing polish only.
- * Keeps VK NETWORK letterhead branding, colors, fonts, and all business logic.
+ * Enterprise Quotation Print / PDF — VK NETWORK letterhead layout.
+ * Letterhead + footer match invoice branding. Body logic unchanged.
  */
 require_once dirname(__DIR__, 2) . '/includes/init.php';
 require_admin();
@@ -20,15 +20,16 @@ if (!$q) {
 $items = vk_quotation_items($pdo, $id);
 
 $projectRoot = dirname(__DIR__, 2);
-$letterheadRel = vk_quotation_setting($pdo, 'letterhead_path', 'assets/images/vk-letterhead.png');
-$letterheadAbs = $projectRoot . '/' . ltrim(str_replace('\\', '/', $letterheadRel), '/');
-if (!is_file($letterheadAbs)) {
-    $letterheadRel = 'assets/images/vk-letterhead.png';
-    $letterheadAbs = $projectRoot . '/' . $letterheadRel;
+
+$logoRel = 'assets/images/vk-logo.png';
+$logoAbs = $projectRoot . '/' . $logoRel;
+if (!is_file($logoAbs) && is_file($projectRoot . '/assets/images/vk-network-logo.png')) {
+    $logoRel = 'assets/images/vk-network-logo.png';
+    $logoAbs = $projectRoot . '/' . $logoRel;
 }
-$letterheadUrl = is_file($letterheadAbs)
-    ? base_url($letterheadRel . '?v=' . (string) filemtime($letterheadAbs))
-    : '';
+$showLogo = is_file($logoAbs);
+$logoUrl = $showLogo ? base_url($logoRel . '?v=' . (string) filemtime($logoAbs)) : '';
+$watermarkUrl = $logoUrl;
 
 $signatureRel = vk_quotation_setting($pdo, 'signature_path', 'assets/images/digital-signature.png');
 $stampRel = vk_quotation_setting($pdo, 'stamp_path', 'assets/images/company-stamp.png');
@@ -47,29 +48,40 @@ $hasStamp = is_file($stampAbs);
 $signatureUrl = $hasSignature ? base_url($signatureRel . '?v=' . filemtime($signatureAbs)) : '';
 $stampUrl = $hasStamp ? base_url($stampRel . '?v=' . filemtime($stampAbs)) : '';
 
-$qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=80x80&margin=0&data=' . rawurlencode(
-    'https://vkitnet.info/quote/' . rawurlencode((string) $q['quotation_number']) . '?id=' . $id
-);
+$verifyUrl = 'https://vkitnet.info/quote/' . rawurlencode((string) $q['quotation_number']) . '?id=' . $id;
+$qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=' . rawurlencode($verifyUrl);
+$footerQrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=' . rawurlencode('https://www.vkitnet.info');
 
 $bankName = vk_quotation_setting($pdo, 'bank_name', 'Commercial Bank');
 $bankAccountName = vk_quotation_setting($pdo, 'bank_account_name', 'VK Network');
 $bankAccountNumber = vk_quotation_setting($pdo, 'bank_account_number', '');
 $bankBranch = vk_quotation_setting($pdo, 'bank_branch', 'Kilinochchi');
+$bankSwift = vk_quotation_setting($pdo, 'bank_swift', '');
+
+$businessName = 'VK NETWORK';
+$businessPhone = '+94 70 588 6782';
+$businessEmail = 'info@vkitnet.info';
+$businessWebsite = 'www.vkitnet.info';
+$businessAddress = 'Kilinochchi, Sri Lanka';
+$businessTagline = 'Connecting You to a Smarter Digital World';
+$businessServices = 'VK NETWORK | Software Development • Hardware Solutions • CCTV Surveillance • Network Infrastructure';
 
 $currency = (string) ($q['currency'] ?? 'LKR');
 $customerName = (string) ($q['company_name'] ?: $q['customer_name']);
-$contactPerson = (string) ($q['contact_person'] ?: '');
 $phone = (string) ($q['phone'] ?: $q['customer_phone_db'] ?: '');
-$mobile = (string) ($q['mobile'] ?? '');
-$email = (string) ($q['email'] ?: $q['customer_email_db'] ?: '');
-$billing = (string) ($q['billing_address'] ?: $q['customer_address_db'] ?: '');
 $amountWords = vk_quotation_amount_in_words((float) $q['grand_total'], $currency);
 $preparedBy = (string) ($q['created_by_name'] ?: $q['sales_executive_name'] ?: 'VK Network');
-$statusLabel = strtoupper(vk_quotation_status_label($q['status']));
-$showDraftMark = in_array($q['status'], ['draft', 'pending_approval', 'rejected', 'cancelled', 'expired'], true);
+$showDraftMark = ((string) $q['status'] === 'draft');
 $autoPrint = isset($_GET['autoprint']);
-$generatedAt = date('Y-m-d H:i');
+$download = isset($_GET['download']);
 $totalDisc = (float) $q['item_discount_total'] + (float) $q['overall_discount_amount'];
+
+$defaultTerms = "1. This quotation is valid until the date shown above.\n"
+    . "2. Prices are in {$currency} and exclusive of unforeseen taxes unless stated.\n"
+    . "3. Payment terms as agreed with VK Network.\n"
+    . "4. Delivery subject to stock availability and confirmation.\n"
+    . "5. Warranty applies as per manufacturer / company policy.";
+$termsText = trim((string) ($q['terms_html'] ?: $q['warranty_terms'] ?: $defaultTerms));
 
 $fmtDate = static function (?string $d): string {
     if ($d === null || $d === '' || $d === '—') {
@@ -98,89 +110,97 @@ $money = static function (float $n): string {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #123C7A;
-            --secondary: #0B5ED7;
-            --blue: #0B4DBA;
-            --gray: #6C757D;
-            --border: #DEE2E6;
-            --text: #212529;
-            --alt-row: #F8F9FA;
-            --label: #6C757D;
-            /* Letterhead safe zone (preserves branded header/footer art) */
-            --pad-top: 38mm;
-            --pad-bottom: 32mm;
-            --pad-left: 15mm;
-            --pad-right: 15mm;
-            --section-gap: 18px;
+            --vk-brand: #0B4DBA;
+            --vk-navy: #0A2F7A;
+            --vk-text: #222222;
+            --vk-muted: #555555;
+            --vk-border: #D9E3F0;
+            --vk-alt: #F5F8FC;
+            --page-x: 12mm;
+            --radius: 6px;
+            --header-pad-y: 20px;
+            --header-height: 128px;
+            --footer-height: 78px;
+            --lh-gap: 16px;
+            --lh-divider: #D0DAE8;
         }
-        * { box-sizing: border-box; }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         @page {
             size: A4 portrait;
             margin: 0;
         }
+
         html, body {
-            margin: 0;
-            padding: 0;
-            background: #d5dde8;
-            color: var(--text);
-            font-family: Poppins, Arial, sans-serif;
+            background: #e8edf3;
+            color: var(--vk-text);
+            font-family: Poppins, Arial, Helvetica, sans-serif;
             font-size: 11px;
-            line-height: 1.45;
+            line-height: 1.3;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
         .toolbar {
-            max-width: 210mm;
-            margin: 14px auto;
+            width: 210mm;
+            max-width: 100%;
+            margin: 10px auto;
             padding: 0 12px;
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
             justify-content: flex-end;
         }
-        .toolbar a, .toolbar button {
+        .toolbar a,
+        .toolbar button {
             appearance: none;
             border: 0;
-            border-radius: 8px;
-            padding: 9px 14px;
+            border-radius: 6px;
+            padding: 8px 12px;
             font: 600 12px Poppins, Arial, sans-serif;
             cursor: pointer;
             text-decoration: none;
-            background: var(--secondary);
+            background: var(--vk-brand);
             color: #fff;
         }
         .toolbar .ghost {
             background: #fff;
-            color: var(--primary);
-            border: 1px solid var(--border);
+            color: var(--vk-navy);
+            border: 1px solid var(--vk-border);
         }
 
-        .sheet {
+        /* ── Page shell — exact A4 canvas ── */
+        .quote-page {
             position: relative;
-            width: 210mm;
-            min-height: 297mm;
-            height: 297mm;
-            margin: 0 auto 18px;
-            background-color: #fff;
-            background-image: <?= $letterheadUrl !== '' ? "url('" . e($letterheadUrl) . "')" : 'none' ?>;
-            background-repeat: no-repeat;
-            background-position: center top;
-            background-size: 210mm 297mm;
-            box-shadow: 0 12px 36px rgba(18, 60, 122, .14);
-            overflow: hidden;
-        }
-
-        .content {
-            position: absolute;
-            top: var(--pad-top);
-            right: var(--pad-right);
-            bottom: var(--pad-bottom);
-            left: var(--pad-left);
-            z-index: 2;
             display: flex;
             flex-direction: column;
+            width: 210mm;
+            height: 297mm;
+            min-height: 297mm;
+            max-height: 297mm;
+            margin: 0 auto 12px;
+            padding: 0;
+            background: #fff;
+            box-shadow: 0 10px 40px rgba(15, 23, 42, .12);
             overflow: hidden;
+        }
+
+        .page-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 360px;
+            opacity: 0.04;
+            z-index: 0;
+            pointer-events: none;
+            user-select: none;
+        }
+        .page-watermark img {
+            width: 100%;
+            height: auto;
+            display: block;
         }
 
         .draft-mark {
@@ -188,458 +208,649 @@ $money = static function (float $n): string {
             top: 48%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-28deg);
-            font-size: 60px;
+            font-size: 56px;
             font-weight: 700;
-            color: rgba(18, 60, 122, .055);
+            color: rgba(11, 77, 186, .06);
             letter-spacing: .12em;
-            z-index: 1;
+            z-index: 0;
             pointer-events: none;
             white-space: nowrap;
         }
 
-        /* ── Title + 3-column meta ── */
-        .title-block {
-            text-align: center;
-            margin: 0 0 var(--section-gap);
+        /* ── HEADER — Bootstrap 3/6/3, fixed height ── */
+        .letterhead-header {
+            position: relative;
+            z-index: 2;
+            flex: 0 0 var(--header-height);
+            height: var(--header-height);
+            max-height: var(--header-height);
+            background: #fff;
+            border-bottom: 3px solid var(--vk-brand);
+            box-sizing: border-box;
         }
-        .header-title {
-            margin: 0 0 14px;
-            text-align: center;
-            font-size: 32px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            color: var(--primary);
-            text-transform: uppercase;
-            line-height: 1.15;
-        }
-        .header-meta {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            column-gap: 16px;
+        .lh-row {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
             width: 100%;
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 12px 8px;
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
+            height: 100%;
+            padding: var(--header-pad-y) var(--page-x);
+            box-sizing: border-box;
         }
-        .header-meta .item {
-            text-align: center;
+        .lh-col {
+            display: flex;
+            align-items: center;
             min-width: 0;
+            height: 100%;
+            box-sizing: border-box;
         }
-        .header-meta .label {
-            display: block;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--label);
-            margin-bottom: 4px;
-            letter-spacing: 0.02em;
+        .lh-col-3 {
+            flex: 0 0 25%;
+            max-width: 25%;
         }
-        .header-meta .value {
-            display: block;
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--primary);
-            word-break: break-word;
+        .lh-col-6 {
+            flex: 0 0 50%;
+            max-width: 50%;
+            justify-content: center;
+            border-left: 1px solid var(--lh-divider);
+            border-right: 1px solid var(--lh-divider);
+            padding: 0 var(--lh-gap);
+        }
+        .lh-col--logo {
+            justify-content: flex-start;
+            padding-right: var(--lh-gap);
+        }
+        .lh-col--contact {
+            justify-content: flex-end;
+            padding-left: var(--lh-gap);
         }
 
-        /* ── Bill To / Sales cards ── */
-        .parties {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            align-items: stretch;
-            margin: 0 0 var(--section-gap);
+        .company-logo {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+            height: 100%;
         }
-        .party-card {
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 20px;
-            background: #fff;
+        .company-logo img {
+            display: block;
+            width: auto;
+            height: 88px;
+            max-width: 100%;
+            max-height: 88px;
+            object-fit: contain;
+            object-position: left center;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        .letterhead-col--center {
+            width: 100%;
+            text-align: center;
             display: flex;
             flex-direction: column;
-            min-height: 100%;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
         }
-        .party-card h3 {
-            margin: 0 0 12px;
-            font-size: 14px;
+        .letterhead-company {
+            font-family: Poppins, Arial, Helvetica, sans-serif;
+            font-size: 28px;
             font-weight: 700;
-            color: var(--blue);
+            color: var(--vk-brand);
+            letter-spacing: 1px;
+            line-height: 1.1;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border);
+            margin: 0;
+            white-space: nowrap;
         }
-        .party-card .field {
-            display: grid;
-            grid-template-columns: 110px 1fr;
-            column-gap: 8px;
-            align-items: start;
-            margin: 0 0 6px;
-            font-size: 11px;
-            line-height: 1.45;
-        }
-        .party-card .field:last-child { margin-bottom: 0; }
-        .party-card .field .k {
-            color: var(--label);
+        .letterhead-services {
+            font-family: Poppins, Arial, Helvetica, sans-serif;
+            font-size: 16px;
             font-weight: 500;
+            color: #222;
+            margin: 0;
+            line-height: 1.25;
+            white-space: nowrap;
         }
-        .party-card .field .v {
-            color: var(--text);
-            font-weight: 700;
-            word-break: break-word;
-        }
-        .party-card .name-row .v {
+        .letterhead-tagline {
+            font-family: Poppins, Arial, Helvetica, sans-serif;
             font-size: 12px;
-            color: var(--primary);
+            font-style: italic;
+            font-weight: 400;
+            color: var(--vk-brand);
+            margin: 2px 0 0;
+            line-height: 1.25;
+            text-align: center;
+            white-space: nowrap;
         }
 
-        /* ── Item table ── */
-        .table-wrap {
+        .letterhead-contact {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 8px;
             width: 100%;
-            border-radius: 6px;
+        }
+        .letterhead-contact-item {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 8px;
+            white-space: nowrap;
+            font-size: 12px;
+            color: #222;
+            line-height: 1;
+            margin: 0;
+        }
+        .icon-circle {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--vk-brand);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .icon-circle svg {
+            width: 11px;
+            height: 11px;
+            fill: #fff;
+            display: block;
+        }
+
+        /* ── Body — fills space between fixed header & footer ── */
+        .quote-body {
+            position: relative;
+            z-index: 1;
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            padding: 8px var(--page-x) 6px;
+            min-height: 0;
             overflow: hidden;
-            border: 1px solid var(--border);
-            margin: 0 0 var(--section-gap);
+        }
+
+        .doc-title {
+            text-align: center;
+            margin: 4px 0 10px;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: var(--vk-navy);
+            text-transform: uppercase;
+            line-height: 1;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* Info cards */
+        .cards {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 8px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        .cards--3 { grid-template-columns: repeat(3, 1fr); }
+        .cards--2 { grid-template-columns: repeat(2, 1fr); }
+        .info-card {
+            border: 1px solid var(--vk-border);
+            border-radius: var(--radius);
+            padding: 8px 12px;
+            min-height: 48px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: #fff;
+        }
+        .info-card__lbl {
+            font-size: 9px;
+            font-weight: 600;
+            color: #6B7A90;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            margin-bottom: 2px;
+        }
+        .info-card__val {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--vk-navy);
+            line-height: 1.25;
+            word-break: break-word;
+        }
+
+        /* Product table */
+        .table-wrap {
+            border: 1px solid var(--vk-border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: 8px;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         .items {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
         }
+        .items col.c-no { width: 30px; }
+        .items col.c-qty { width: 46px; }
+        .items col.c-unit { width: 46px; }
+        .items col.c-price { width: 74px; }
+        .items col.c-disc { width: 62px; }
+        .items col.c-tax { width: 56px; }
+        .items col.c-amt { width: 74px; }
         .items thead th {
-            height: 40px;
-            background: var(--primary);
+            height: 32px;
+            background: var(--vk-navy);
             color: #fff;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 700;
-            padding: 8px 6px;
-            text-align: center;
-            border: 1px solid #0e2f5f;
+            padding: 0 6px;
+            border: 1px solid #06204f;
             vertical-align: middle;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            text-align: center;
         }
-        .items thead th.desc { text-align: left; padding-left: 10px; }
-        .items thead th.num,
-        .items tbody td.num {
+        .items thead th.desc { text-align: left; padding-left: 8px; }
+        .items tbody td {
+            height: 26px;
+            padding: 2px 6px;
+            border: 1px solid var(--vk-border);
+            vertical-align: middle;
+            font-size: 10px;
+            color: #333;
+        }
+        .items tbody td.desc { text-align: left; padding-left: 8px; }
+        .items .ctr { text-align: center; }
+        .items .num {
             text-align: right;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
         }
-        .items thead th.ctr,
-        .items tbody td.ctr { text-align: center; }
-        .items tbody td {
-            height: 40px;
-            padding: 10px 6px;
-            border: 1px solid var(--border);
-            vertical-align: middle;
-            font-size: 11px;
-            color: #343a40;
-            word-wrap: break-word;
-        }
-        .items tbody td.desc {
-            text-align: left;
-            padding-left: 10px;
-            padding-right: 8px;
-        }
-        .items tbody tr:nth-child(even) td { background: var(--alt-row); }
+        .items tbody tr:nth-child(even) td { background: var(--vk-alt); }
         .item-sub {
             display: block;
-            margin-top: 2px;
-            font-size: 10px;
-            color: var(--gray);
-            font-weight: 400;
+            font-size: 8px;
+            color: #6B7A90;
+            margin-top: 1px;
         }
 
-        /* ── Words + Totals ── */
-        .mid {
+        /* Words + totals */
+        .totals-row {
             display: grid;
-            grid-template-columns: 1fr 280px;
-            gap: 16px;
+            grid-template-columns: 1fr 220px;
+            gap: 12px;
             align-items: start;
-            margin: 0 0 var(--section-gap);
+            margin-bottom: 8px;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
-        .words {
-            padding: 14px 4px;
-            text-align: left;
-        }
-        .words .lbl {
+        .words__lbl {
             display: block;
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 6px;
+            color: var(--vk-navy);
             text-transform: uppercase;
-            letter-spacing: 0.03em;
+            margin-bottom: 2px;
         }
-        .words .val {
-            font-size: 11px;
-            color: #495057;
-            font-weight: 500;
+        .words__val {
+            font-size: 10px;
+            color: #445;
             font-style: italic;
-            line-height: 1.6;
+            line-height: 1.35;
         }
-
         .summary {
-            width: 100%;
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            border: 1px solid var(--vk-border);
+            border-radius: var(--radius);
             overflow: hidden;
-            background: #fff;
         }
-        .summary table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+        .summary table { width: 100%; border-collapse: collapse; }
         .summary td {
-            padding: 9px 14px;
-            font-size: 11px;
-            color: #495057;
-            border-bottom: 1px solid #eef1f5;
+            height: 24px;
+            padding: 0 10px;
+            font-size: 10px;
+            border-bottom: 1px solid #eef2f7;
             vertical-align: middle;
         }
-        .summary tr:last-child td { border-bottom: none; }
-        .summary td:first-child {
-            text-align: left;
-            font-weight: 600;
-            color: var(--label);
-        }
+        .summary tr:last-child td { border-bottom: 0; }
+        .summary td:first-child { text-align: left; font-weight: 600; color: #6B7A90; }
         .summary td:last-child {
             text-align: right;
             font-weight: 700;
-            color: var(--text);
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
         }
         .summary .grand td {
-            background: var(--primary);
+            height: 30px;
+            background: var(--vk-navy);
             color: #fff;
-            padding: 12px 14px;
-            border: none;
-            font-weight: 700;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            border: 0;
         }
-        .summary .grand td:first-child {
-            font-size: 12px;
-            color: #fff;
-        }
-        .summary .grand td:last-child {
-            font-size: 18px;
-            color: #fff;
-        }
+        .summary .grand td:first-child { color: #fff; font-size: 11px; }
+        .summary .grand td:last-child { color: #fff; font-size: 13px; }
 
-        /* ── Terms ── */
-        .terms-block {
-            margin: 0 0 var(--section-gap);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+        /* Terms + Bank — equal height */
+        .bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            align-items: stretch;
+            margin-bottom: 8px;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        .panel {
+            border: 1px solid var(--vk-border);
+            border-radius: var(--radius);
             overflow: hidden;
             background: #fff;
-        }
-        .terms-block h4 {
-            margin: 0;
-            padding: 10px 15px;
-            font-size: 14px;
-            font-weight: 700;
-            color: #fff;
-            background: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-        .terms-block .terms-body {
-            padding: 15px;
-        }
-        .terms-block pre,
-        .terms-block p {
-            margin: 0;
-            white-space: pre-wrap;
-            font-family: inherit;
-            font-size: 11px;
-            color: #495057;
-            line-height: 1.7;
-        }
-
-        .notes-block {
-            margin: 0 0 var(--section-gap);
-        }
-        .notes-block h4 {
-            margin: 0 0 6px;
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--blue);
-            text-transform: uppercase;
-        }
-        .notes-block p {
-            margin: 0;
-            font-size: 11px;
-            color: #495057;
-            line-height: 1.7;
-        }
-
-        /* ── Bank + QR ── */
-        .bank-qr {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-            margin: 0 0 var(--section-gap);
-            padding: 14px 0;
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-        }
-        .bank-qr .bank {
-            flex: 1;
-            min-width: 0;
-            font-size: 11px;
-            color: #495057;
-            line-height: 1.65;
-        }
-        .bank-qr .bank strong {
-            display: block;
-            color: var(--blue);
-            font-size: 14px;
-            font-weight: 700;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-        .bank-qr .qr {
-            text-align: center;
-            flex-shrink: 0;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            min-height: 98px;
+            height: 100%;
         }
-        .bank-qr .qr img {
-            width: 72px;
-            height: 72px;
+        .panel__head {
+            padding: 5px 10px;
+            font-size: 9.5px;
+            font-weight: 700;
+            color: #fff;
+            background: var(--vk-navy);
+            text-transform: uppercase;
+            letter-spacing: .03em;
+        }
+        .panel__body {
+            padding: 8px 10px;
+            flex: 1;
+        }
+        .terms-text {
+            font-family: inherit;
+            font-size: 9px;
+            color: #445;
+            line-height: 1.35;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 0;
+            max-height: 72px;
+            overflow: hidden;
+        }
+        .bank {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+        }
+        .bank__lines {
+            flex: 1;
+            min-width: 0;
+            font-size: 9.5px;
+            color: #445;
+            line-height: 1.4;
+        }
+        .bank__lines b { color: #222; font-weight: 600; }
+        .bank__qr {
+            flex-shrink: 0;
+            width: 62px;
+        }
+        .bank__qr img {
+            width: 62px;
+            height: 62px;
             display: block;
-            border: 1px solid var(--border);
-            border-radius: 6px;
+            border: 1px solid var(--vk-border);
+            border-radius: 3px;
             background: #fff;
         }
-        .bank-qr .qr small {
-            display: block;
-            margin-top: 4px;
-            font-size: 9px;
-            color: var(--gray);
-            font-weight: 500;
-        }
 
-        /* ── Signatures ── */
+        /* Signatures */
         .signs {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            column-gap: 20px;
+            grid-template-columns: repeat(3, 1fr);
+            column-gap: 16px;
             align-items: end;
-            margin-top: auto;
-            padding-top: 12px;
+            margin: 4px 0 8px;
             page-break-inside: avoid;
+            break-inside: avoid;
         }
         .sign {
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-end;
-            min-width: 0;
         }
-        .sign-slot {
-            min-height: 56px;
+        .sign__slot {
+            height: 30px;
             width: 100%;
             display: flex;
             align-items: flex-end;
             justify-content: center;
-            margin-bottom: 4px;
         }
         .sign img.sig {
-            max-height: 40px;
-            max-width: 140px;
-            display: block;
+            max-height: 26px;
+            max-width: 110px;
             object-fit: contain;
+            display: block;
         }
         .sign img.stamp {
-            max-height: 52px;
-            max-width: 130px;
-            display: block;
+            max-height: 28px;
+            max-width: 80px;
             object-fit: contain;
-            opacity: 0.45;
+            opacity: .4;
+            display: block;
         }
-        .sign .line {
-            width: 90%;
-            max-width: 180px;
+        .sign__line {
+            width: 140px;
+            max-width: 90%;
             border-top: 1px solid #444;
-            margin: 6px auto 0;
-            padding-top: 8px;
+            margin-top: 2px;
+            padding-top: 4px;
         }
-        .sign .label {
-            font-size: 11px;
+        .sign__label {
+            font-size: 9.5px;
             font-weight: 700;
-            color: var(--primary);
-            text-align: center;
+            color: var(--vk-navy);
         }
-        .sign .who {
-            margin-top: 3px;
-            font-size: 10px;
-            font-weight: 500;
-            color: var(--gray);
-            text-align: center;
+        .sign__who {
+            margin-top: 1px;
+            font-size: 8.5px;
+            color: #6B7A90;
         }
 
-        .gen-meta {
-            margin-top: 10px;
-            font-size: 9px;
-            color: #adb5bd;
+        /* ── FOOTER — fixed height at bottom of A4 ── */
+        .footer.letterhead-footer {
+            position: relative;
+            z-index: 2;
+            flex: 0 0 var(--footer-height);
+            height: var(--footer-height);
+            max-height: var(--footer-height);
+            margin-top: auto;
+            margin-bottom: 0;
+            padding: 8px var(--page-x) 6px;
+            border-top: 2px solid var(--vk-brand);
+            background: #fff;
+            width: 100%;
+            box-sizing: border-box;
             display: flex;
-            justify-content: space-between;
-            gap: 12px;
+            flex-direction: column;
+            justify-content: center;
         }
-
-        /* Contact strip (above letterhead footer band) */
-        .print-footer {
-            display: none;
+        .footer-content {
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            min-height: 44px;
+        }
+        .footer-left {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0;
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .footer-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            white-space: nowrap;
+            line-height: 1;
+            color: #333;
+            padding: 0 12px;
+        }
+        .footer-item:first-child { padding-left: 0; }
+        .footer-item + .footer-item {
+            border-left: 1px solid #d0d0d0;
+        }
+        .footer-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--vk-brand);
+            flex-shrink: 0;
+        }
+        .footer-icon svg {
+            width: 9px;
+            height: 9px;
+            fill: #fff;
+            display: block;
+        }
+        .footer-qr {
+            flex: 0 0 44px;
+            width: 44px;
+            height: 44px;
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .footer-qr img {
+            width: 44px;
+            height: 44px;
+            display: block;
+        }
+        .footer-bottom {
+            margin: 6px 0 0;
+            padding-top: 5px;
+            border-top: 1px solid #d9d9d9;
+            text-align: center;
+            font-size: 9px;
+            color: #555;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         @media print {
-            body { background: #fff !important; }
+            html, body { background: #fff !important; }
             .toolbar { display: none !important; }
-            .sheet {
-                margin: 0 !important;
-                box-shadow: none !important;
+            .quote-page {
                 width: 210mm;
                 height: 297mm;
-                page-break-after: always;
+                min-height: 297mm;
+                max-height: 297mm;
+                margin: 0 !important;
+                box-shadow: none !important;
+                overflow: hidden;
             }
-            .summary .grand td,
+            .letterhead-header {
+                flex: 0 0 var(--header-height);
+                height: var(--header-height);
+            }
+            .footer.letterhead-footer {
+                flex: 0 0 var(--footer-height);
+                height: var(--footer-height);
+                margin-top: auto;
+                margin-bottom: 0;
+            }
+            .quote-body {
+                padding: 6px var(--page-x) 4px;
+                overflow: hidden;
+            }
+            .page-watermark {
+                position: fixed;
+                opacity: 0.04;
+            }
+            .letterhead-company,
+            .icon-circle,
+            .footer-icon,
             .items thead th,
-            .terms-block h4 {
+            .panel__head,
+            .summary .grand td,
+            .letterhead-header,
+            .footer.letterhead-footer {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
+            .letterhead-header,
+            .doc-title,
+            .cards,
+            .table-wrap,
+            .totals-row,
+            .bottom,
+            .signs,
+            .footer.letterhead-footer {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
         }
+
         @media screen and (max-width: 900px) {
-            .sheet {
+            .quote-page {
                 width: 100%;
                 height: auto;
-                min-height: 100vh;
-                background-size: 100% auto;
+                min-height: auto;
+                max-height: none;
             }
-            .content {
-                position: relative;
-                top: auto; right: auto; bottom: auto; left: auto;
-                padding: 38mm 15mm 32mm;
-                min-height: 100vh;
+            .letterhead-header {
+                height: auto;
+                max-height: none;
+                flex: 0 0 auto;
             }
-            .parties { grid-template-columns: 1fr; }
-            .mid { grid-template-columns: 1fr; }
-            .header-meta { grid-template-columns: 1fr; row-gap: 10px; }
-            .signs { grid-template-columns: 1fr; row-gap: 20px; }
-            .bank-qr { flex-direction: column; align-items: flex-start; }
+            .lh-row {
+                flex-wrap: wrap;
+                height: auto;
+            }
+            .lh-col-3,
+            .lh-col-6 {
+                flex: 0 0 100%;
+                max-width: 100%;
+                border: 0;
+                padding: 8px 0;
+                justify-content: center;
+            }
+            .lh-col--logo,
+            .lh-col--contact { justify-content: center; padding: 8px 0; }
+            .letterhead-contact { align-items: center; }
+            .letterhead-services,
+            .letterhead-company,
+            .letterhead-tagline { white-space: normal; }
+            .footer.letterhead-footer {
+                height: auto;
+                max-height: none;
+                flex: 0 0 auto;
+            }
+            .footer-left { flex-wrap: wrap; }
+            .footer-item + .footer-item { border-left: 0; }
+            .footer-bottom { white-space: normal; }
+            .cards--3,
+            .cards--2,
+            .totals-row,
+            .bottom,
+            .signs { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -648,85 +859,102 @@ $money = static function (float $n): string {
     <a class="ghost" href="<?= e(BASE_URL) ?>/modules/quotations/view.php?id=<?= $id ?>">Back</a>
     <a class="ghost" href="<?= e(BASE_URL) ?>/modules/quotations/email.php?id=<?= $id ?>">Email</a>
     <a class="ghost" target="_blank" href="<?= e(vk_quotation_whatsapp_url($pdo, $q)) ?>">WhatsApp</a>
-    <button type="button" onclick="window.print()">Print / Save PDF</button>
+    <button type="button" onclick="window.print()"><?= $download ? 'Download PDF' : 'Print / Save PDF' ?></button>
 </div>
 
-<article class="sheet" aria-label="Quotation <?= e($q['quotation_number']) ?>">
+<div class="quote-page">
+    <?php if ($watermarkUrl !== ''): ?>
+    <div class="page-watermark" aria-hidden="true"><img src="<?= e($watermarkUrl) ?>" alt=""></div>
+    <?php endif; ?>
     <?php if ($showDraftMark): ?>
-        <div class="draft-mark"><?= e($statusLabel) ?></div>
+    <div class="draft-mark">DRAFT</div>
     <?php endif; ?>
 
-    <div class="content">
-        <header class="title-block">
-            <h1 class="header-title">Quotation</h1>
-            <div class="header-meta">
-                <div class="item">
-                    <span class="label">Quotation No.</span>
-                    <span class="value"><?= e($q['quotation_number']) ?></span>
-                </div>
-                <div class="item">
-                    <span class="label">Date</span>
-                    <span class="value"><?= e($dateDisp) ?></span>
-                </div>
-                <div class="item">
-                    <span class="label">Valid Until</span>
-                    <span class="value"><?= e($expiryDisp) ?></span>
+    <header class="letterhead-header">
+        <div class="lh-row">
+            <div class="lh-col lh-col-3 lh-col--logo">
+                <div class="company-logo">
+                    <?php if ($showLogo): ?>
+                    <img src="<?= e($logoUrl) ?>" alt="VK Network Logo" width="150" height="88">
+                    <?php endif; ?>
                 </div>
             </div>
-        </header>
+            <div class="lh-col lh-col-6">
+                <div class="letterhead-col--center">
+                    <h2 class="letterhead-company"><?= e($businessName) ?></h2>
+                    <p class="letterhead-services">Software Development | Hardware Solutions</p>
+                    <p class="letterhead-services">CCTV Surveillance | Network Infrastructure</p>
+                    <p class="letterhead-tagline"><?= e($businessTagline) ?></p>
+                </div>
+            </div>
+            <div class="lh-col lh-col-3 lh-col--contact">
+                <div class="letterhead-contact">
+                    <div class="letterhead-contact-item">
+                        <span class="icon-circle"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.7 5.1 6.5 6.5l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.5.6.6 0 1 .4 1 1V21c0 .6-.4 1-1 1C10.3 22 2 13.7 2 3c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.5.1.3 0 .7-.2 1L6.6 10.8z"/></svg></span>
+                        <span><?= e($businessPhone) ?></span>
+                    </div>
+                    <div class="letterhead-contact-item">
+                        <span class="icon-circle"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5L4 8V6l8 5 8-5v2z"/></svg></span>
+                        <span><?= e($businessEmail) ?></span>
+                    </div>
+                    <div class="letterhead-contact-item">
+                        <span class="icon-circle"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm7.9 9H15.8a15.7 15.7 0 0 0-1.2-5.1A8 8 0 0 1 19.9 11zM12 4c.9 1.2 1.6 2.6 2 4.1H10c.4-1.5 1.1-2.9 2-4.1zM8.4 5.9A15.7 15.7 0 0 0 7.2 11H4.1a8 8 0 0 1 4.3-5.1zM4.1 13h3.1c.3 1.8.8 3.5 1.2 5.1A8 8 0 0 1 4.1 13zm7.9 7c-.9-1.2-1.6-2.6-2-4.1h4c-.4 1.5-1.1 2.9-2 4.1zm3.5-1.9c.5-1.6.9-3.3 1.2-5.1h3.9a8 8 0 0 1-5.1 5.1z"/></svg></span>
+                        <span><?= e($businessWebsite) ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
 
-        <section class="parties">
-            <div class="party-card">
-                <h3>Bill To</h3>
-                <div class="field name-row"><span class="k">Customer Name</span><span class="v"><?= e($customerName) ?></span></div>
-                <?php if ($contactPerson !== '' && $contactPerson !== $customerName): ?>
-                    <div class="field"><span class="k">Contact</span><span class="v"><?= e($contactPerson) ?></span></div>
-                <?php endif; ?>
-                <div class="field"><span class="k">Customer Code</span><span class="v"><?= e((string) ($q['customer_code'] ?: '—')) ?></span></div>
-                <div class="field"><span class="k">Address</span><span class="v"><?= $billing !== '' ? nl2br(e($billing)) : '—' ?></span></div>
-                <div class="field"><span class="k">Phone</span><span class="v"><?= e($phone !== '' ? $phone : '—') ?></span></div>
-                <?php if ($mobile !== '' && $mobile !== $phone): ?>
-                    <div class="field"><span class="k">Mobile</span><span class="v"><?= e($mobile) ?></span></div>
-                <?php endif; ?>
-                <?php if ($email !== ''): ?>
-                    <div class="field"><span class="k">Email</span><span class="v"><?= e($email) ?></span></div>
-                <?php endif; ?>
+    <main class="quote-body">
+        <h1 class="doc-title">Quotation</h1>
+
+        <div class="cards cards--3">
+            <div class="info-card">
+                <div class="info-card__lbl">Quotation Number</div>
+                <div class="info-card__val"><?= e($q['quotation_number']) ?></div>
             </div>
-            <div class="party-card">
-                <h3>Sales Details</h3>
-                <div class="field"><span class="k">Sales Executive</span><span class="v"><?= e((string) ($q['sales_executive_name'] ?: '—')) ?></span></div>
-                <div class="field"><span class="k">Prepared By</span><span class="v"><?= e($preparedBy) ?></span></div>
-                <div class="field"><span class="k">Branch</span><span class="v"><?= e((string) ($q['branch'] ?: 'Kilinochchi')) ?></span></div>
-                <div class="field"><span class="k">Currency</span><span class="v"><?= e($currency) ?></span></div>
-                <?php if (!empty($q['payment_terms'])): ?>
-                    <div class="field"><span class="k">Payment</span><span class="v"><?= e($q['payment_terms']) ?></span></div>
-                <?php endif; ?>
-                <?php if (!empty($q['delivery_terms'])): ?>
-                    <div class="field"><span class="k">Delivery</span><span class="v"><?= e($q['delivery_terms']) ?></span></div>
-                <?php endif; ?>
-                <?php if (!empty($q['reference_number'])): ?>
-                    <div class="field"><span class="k">Reference</span><span class="v"><?= e($q['reference_number']) ?></span></div>
-                <?php endif; ?>
+            <div class="info-card">
+                <div class="info-card__lbl">Date</div>
+                <div class="info-card__val"><?= e($dateDisp) ?></div>
             </div>
-        </section>
+            <div class="info-card">
+                <div class="info-card__lbl">Valid Until</div>
+                <div class="info-card__val"><?= e($expiryDisp) ?></div>
+            </div>
+        </div>
+        <div class="cards cards--2">
+            <div class="info-card">
+                <div class="info-card__lbl">Customer Name</div>
+                <div class="info-card__val"><?= e($customerName) ?></div>
+            </div>
+            <div class="info-card">
+                <div class="info-card__lbl">Phone Number</div>
+                <div class="info-card__val"><?= e($phone !== '' ? $phone : '—') ?></div>
+            </div>
+        </div>
 
         <div class="table-wrap">
             <table class="items">
+                <colgroup>
+                    <col class="c-no"><col class="c-desc"><col class="c-qty"><col class="c-unit">
+                    <col class="c-price"><col class="c-disc"><col class="c-tax"><col class="c-amt">
+                </colgroup>
                 <thead>
                     <tr>
-                        <th style="width:36px" class="ctr">#</th>
+                        <th class="ctr">#</th>
                         <th class="desc">Description</th>
-                        <th style="width:52px" class="ctr">Qty</th>
-                        <th style="width:52px" class="ctr">Unit</th>
-                        <th style="width:78px" class="num">Unit Price</th>
-                        <th style="width:68px" class="num">Discount</th>
-                        <th style="width:60px" class="num">Tax</th>
-                        <th style="width:80px" class="num">Amount</th>
+                        <th class="ctr">Qty</th>
+                        <th class="ctr">Unit</th>
+                        <th class="num">Unit Price</th>
+                        <th class="num">Discount</th>
+                        <th class="num">Tax</th>
+                        <th class="num">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
                 <?php if (!$items): ?>
-                    <tr><td colspan="8" class="ctr" style="height:48px;color:#adb5bd">No line items</td></tr>
+                    <tr><td colspan="8" class="ctr" style="color:#adb5bd">No line items</td></tr>
                 <?php else: $n = 1; foreach ($items as $ln): ?>
                     <tr>
                         <td class="ctr"><?= $n++ ?></td>
@@ -746,10 +974,10 @@ $money = static function (float $n): string {
             </table>
         </div>
 
-        <section class="mid">
+        <section class="totals-row">
             <div class="words">
-                <span class="lbl">Amount in Words</span>
-                <div class="val"><?= e($amountWords) ?></div>
+                <span class="words__lbl">Amount in Words</span>
+                <div class="words__val"><?= e($amountWords) ?></div>
             </div>
             <aside class="summary">
                 <table>
@@ -770,83 +998,89 @@ $money = static function (float $n): string {
             </aside>
         </section>
 
-        <?php if (!empty($q['notes'])): ?>
-        <section class="notes-block">
-            <h4>Customer Notes</h4>
-            <p><?= nl2br(e($q['notes'])) ?></p>
-        </section>
-        <?php endif; ?>
-
-        <?php if (!empty($q['terms_html'])): ?>
-        <section class="terms-block">
-            <h4>Terms &amp; Conditions</h4>
-            <div class="terms-body"><pre><?= e($q['terms_html']) ?></pre></div>
-        </section>
-        <?php elseif (!empty($q['warranty_terms'])): ?>
-        <section class="terms-block">
-            <h4>Warranty</h4>
-            <div class="terms-body"><p><?= e($q['warranty_terms']) ?></p></div>
-        </section>
-        <?php endif; ?>
-
-        <?php if (!empty($q['warranty_terms']) && !empty($q['terms_html'])): ?>
-        <section class="notes-block">
-            <h4>Warranty</h4>
-            <p><?= e($q['warranty_terms']) ?></p>
-        </section>
-        <?php endif; ?>
-
-        <section class="bank-qr">
-            <div class="bank">
-                <strong>Bank Details</strong>
-                <?= e($bankName) ?> · <?= e($bankAccountName) ?>
-                <?php if ($bankAccountNumber !== ''): ?><br>A/C No : <?= e($bankAccountNumber) ?><?php endif; ?>
-                <?php if ($bankBranch !== ''): ?> · Branch : <?= e($bankBranch) ?><?php endif; ?>
-                <?php if (!empty($q['payment_terms'])): ?><br>Payment Terms : <?= e($q['payment_terms']) ?><?php endif; ?>
-            </div>
-            <div class="qr">
-                <img src="<?= e($qrUrl) ?>" alt="QR verification" width="72" height="72">
-                <small>Scan to Verify</small>
-            </div>
-        </section>
+        <div class="bottom">
+            <section class="panel">
+                <div class="panel__head">Terms &amp; Conditions</div>
+                <div class="panel__body"><pre class="terms-text"><?= e($termsText) ?></pre></div>
+            </section>
+            <section class="panel">
+                <div class="panel__head">Bank Details</div>
+                <div class="panel__body">
+                    <div class="bank">
+                        <div class="bank__lines">
+                            <div><b>Bank Name:</b> <?= e($bankName) ?></div>
+                            <div><b>Account Name:</b> <?= e($bankAccountName) ?></div>
+                            <?php if ($bankBranch !== ''): ?><div><b>Branch:</b> <?= e($bankBranch) ?></div><?php endif; ?>
+                            <?php if ($bankAccountNumber !== ''): ?><div><b>Account No:</b> <?= e($bankAccountNumber) ?></div><?php endif; ?>
+                            <?php if ($bankSwift !== ''): ?><div><b>Swift:</b> <?= e($bankSwift) ?></div><?php endif; ?>
+                        </div>
+                        <div class="bank__qr">
+                            <img src="<?= e($qrUrl) ?>" alt="Quotation QR">
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
 
         <section class="signs">
             <div class="sign">
-                <div class="sign-slot">
-                    <?php if ($hasSignature): ?><img class="sig" src="<?= e($signatureUrl) ?>" alt="Digital signature"><?php endif; ?>
+                <div class="sign__slot">
+                    <?php if ($hasSignature): ?><img class="sig" src="<?= e($signatureUrl) ?>" alt=""><?php endif; ?>
                 </div>
-                <div class="line">
-                    <div class="label">Prepared By</div>
-                    <div class="who"><?= e($preparedBy) ?></div>
-                </div>
-            </div>
-            <div class="sign">
-                <div class="sign-slot">
-                    <?php if ($hasStamp): ?><img class="stamp" src="<?= e($stampUrl) ?>" alt="Company seal"><?php endif; ?>
-                </div>
-                <div class="line">
-                    <div class="label">Authorized Signature</div>
-                    <div class="who">VK NETWORK</div>
+                <div class="sign__line">
+                    <div class="sign__label">Prepared By</div>
+                    <div class="sign__who"><?= e($preparedBy) ?></div>
                 </div>
             </div>
             <div class="sign">
-                <div class="sign-slot" aria-hidden="true"></div>
-                <div class="line">
-                    <div class="label">Customer Signature</div>
-                    <div class="who">Accepted &amp; Confirmed</div>
+                <div class="sign__slot">
+                    <?php if ($hasStamp): ?><img class="stamp" src="<?= e($stampUrl) ?>" alt=""><?php endif; ?>
+                </div>
+                <div class="sign__line">
+                    <div class="sign__label">Authorized Signature</div>
+                    <div class="sign__who">VK NETWORK</div>
+                </div>
+            </div>
+            <div class="sign">
+                <div class="sign__slot" aria-hidden="true"></div>
+                <div class="sign__line">
+                    <div class="sign__label">Customer Signature</div>
+                    <div class="sign__who">Accepted &amp; Confirmed</div>
                 </div>
             </div>
         </section>
+    </main>
 
-        <div class="gen-meta">
-            <span>Generated <?= e($generatedAt) ?> · vkitnet.info</span>
-            <span>Page 1 of 1</span>
+    <footer class="footer letterhead-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <div class="footer-item">
+                    <span class="footer-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5s2.5 1.1 2.5 2.5S13.4 11.5 12 11.5z"/></svg></span>
+                    <span><?= e($businessAddress) ?></span>
+                </div>
+                <div class="footer-item">
+                    <span class="footer-icon"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.7 5.1 6.5 6.5l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.5.6.6 0 1 .4 1 1V21c0 .6-.4 1-1 1C10.3 22 2 13.7 2 3c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.5.1.3 0 .7-.2 1L6.6 10.8z"/></svg></span>
+                    <span><?= e($businessPhone) ?></span>
+                </div>
+                <div class="footer-item">
+                    <span class="footer-icon"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5L4 8V6l8 5 8-5v2z"/></svg></span>
+                    <span><?= e($businessEmail) ?></span>
+                </div>
+                <div class="footer-item">
+                    <span class="footer-icon"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm7.9 9H15.8a15.7 15.7 0 0 0-1.2-5.1A8 8 0 0 1 19.9 11zM12 4c.9 1.2 1.6 2.6 2 4.1H10c.4-1.5 1.1-2.9 2-4.1zM8.4 5.9A15.7 15.7 0 0 0 7.2 11H4.1a8 8 0 0 1 4.3-5.1zM4.1 13h3.1c.3 1.8.8 3.5 1.2 5.1A8 8 0 0 1 4.1 13zm7.9 7c-.9-1.2-1.6-2.6-2-4.1h4c-.4 1.5-1.1 2.9-2 4.1zm3.5-1.9c.5-1.6.9-3.3 1.2-5.1h3.9a8 8 0 0 1-5.1 5.1z"/></svg></span>
+                    <span><?= e($businessWebsite) ?></span>
+                </div>
+            </div>
+            <div class="footer-qr">
+                <img src="<?= e($footerQrUrl) ?>" alt="QR Code — www.vkitnet.info" width="48" height="48">
+            </div>
         </div>
-    </div>
-</article>
+        <p class="footer-bottom"><?= e($businessServices) ?></p>
+    </footer>
+</div>
 
-<?php if ($autoPrint): ?>
-<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 350); });</script>
+<?php if ($autoPrint || $download): ?>
+<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 400); });</script>
 <?php endif; ?>
 </body>
 </html>

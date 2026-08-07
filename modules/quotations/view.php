@@ -53,6 +53,14 @@ $revisions = $pdo->prepare('SELECT id, revision_no, change_summary, created_at F
 $revisions->execute([$id]);
 $revRows = $revisions->fetchAll();
 
+$currency = (string) ($q['currency'] ?? 'LKR');
+$customerName = (string) ($q['company_name'] ?: $q['customer_name']);
+$phone = (string) ($q['phone'] ?: $q['customer_phone_db'] ?: '');
+$totalDisc = (float) $q['item_discount_total'] + (float) $q['overall_discount_amount'];
+$amountWords = vk_quotation_amount_in_words((float) $q['grand_total'], $currency);
+$printUrl = BASE_URL . '/modules/quotations/print.php?id=' . $id;
+$pdfUrl = $printUrl . '&download=1';
+
 $pageTitle = $q['quotation_number'];
 $extraHead = '<link rel="stylesheet" href="' . e(base_url('assets/css/quotations.css')) . '?v=' . e(vk_asset_mtime_version('assets/css/quotations.css')) . '">';
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
@@ -60,11 +68,11 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 <div class="qtn-page">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
         <div>
-            <a href="<?= e(BASE_URL) ?>/modules/quotations/list.php" class="text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Back to list</a>
+            <a href="<?= e(BASE_URL) ?>/modules/quotations/list.php" class="text-decoration-none small"><i class="bi bi-arrow-left me-1"></i>Back to list</a>
             <h1 class="h3 mt-2 mb-1"><?= e($q['quotation_number']) ?>
                 <?php if ((int) $q['revision_no'] > 0): ?><span class="badge text-bg-light border">Rev <?= (int) $q['revision_no'] ?></span><?php endif; ?>
             </h1>
-            <p class="text-muted mb-0"><?= e($q['customer_name']) ?> · <?= e($q['quotation_date']) ?> ·
+            <p class="text-muted mb-0"><?= e($customerName) ?> · <?= e($q['quotation_date']) ?> ·
                 <span class="badge text-bg-<?= e(vk_quotation_status_badge($q['status'])) ?>"><?= e(vk_quotation_status_label($q['status'])) ?></span>
             </p>
         </div>
@@ -78,7 +86,8 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
             <?php if ($perms['convert'] && in_array($q['status'], ['approved','accepted'], true)): ?>
             <a class="btn btn-success" href="<?= e(BASE_URL) ?>/modules/quotations/convert.php?id=<?= $id ?>&to=invoice"><i class="bi bi-receipt me-1"></i>To Invoice</a>
             <?php endif; ?>
-            <a class="btn btn-outline-secondary" target="_blank" href="<?= e(BASE_URL) ?>/modules/quotations/print.php?id=<?= $id ?>"><i class="bi bi-printer me-1"></i>Print / PDF</a>
+            <a class="btn btn-outline-secondary" target="_blank" href="<?= e($printUrl) ?>"><i class="bi bi-printer me-1"></i>Print</a>
+            <a class="btn btn-qtn-primary" target="_blank" href="<?= e($pdfUrl) ?>"><i class="bi bi-filetype-pdf me-1"></i>Download PDF</a>
             <a class="btn btn-outline-secondary" href="<?= e(BASE_URL) ?>/modules/quotations/email.php?id=<?= $id ?>"><i class="bi bi-envelope me-1"></i>Email</a>
             <a class="btn btn-outline-success" target="_blank" href="<?= e(vk_quotation_whatsapp_url($pdo, $q)) ?>"><i class="bi bi-whatsapp me-1"></i>WhatsApp</a>
             <a class="btn btn-outline-secondary" href="<?= e(BASE_URL) ?>/modules/quotations/duplicate.php?id=<?= $id ?>"><i class="bi bi-copy me-1"></i>Duplicate</a>
@@ -87,41 +96,101 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 
     <div class="row g-3">
         <div class="col-lg-8">
-            <div class="card vk-card mb-3">
-                <div class="card-header bg-transparent fw-semibold">Line items</div>
-                <div class="table-responsive">
-                    <table class="table mb-0 align-middle">
-                        <thead class="table-light">
+            <div class="qtn-doc-preview mb-3">
+                <div class="qtn-doc-title">Quotation</div>
+
+                <div class="qtn-doc-meta">
+                    <div class="qtn-doc-chip">
+                        <span class="lbl">Quotation Number</span>
+                        <span class="val"><?= e($q['quotation_number']) ?></span>
+                    </div>
+                    <div class="qtn-doc-chip">
+                        <span class="lbl">Date</span>
+                        <span class="val"><?= e($q['quotation_date']) ?></span>
+                    </div>
+                    <div class="qtn-doc-chip">
+                        <span class="lbl">Valid Until</span>
+                        <span class="val"><?= e((string) ($q['expiry_date'] ?: '—')) ?></span>
+                    </div>
+                </div>
+                <div class="qtn-doc-meta two">
+                    <div class="qtn-doc-chip">
+                        <span class="lbl">Customer Name</span>
+                        <span class="val"><?= e($customerName) ?></span>
+                    </div>
+                    <div class="qtn-doc-chip">
+                        <span class="lbl">Phone Number</span>
+                        <span class="val"><?= e($phone !== '' ? $phone : '—') ?></span>
+                    </div>
+                </div>
+
+                <div class="table-responsive mt-2">
+                    <table class="table table-sm align-middle mb-0 qtn-doc-table">
+                        <thead>
                             <tr>
-                                <th>#</th><th>Code</th><th>Product</th><th>Unit</th>
-                                <th class="text-end">Qty</th><th class="text-end">Price</th>
-                                <th class="text-end">Disc</th><th class="text-end">Tax</th><th class="text-end">Total</th>
+                                <th style="width:40px">#</th>
+                                <th>Description</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-center">Unit</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Discount</th>
+                                <th class="text-end">Tax</th>
+                                <th class="text-end">Amount</th>
                             </tr>
                         </thead>
                         <tbody>
-                        <?php foreach ($items as $i => $ln): ?>
+                        <?php if (!$items): ?>
+                            <tr><td colspan="8" class="text-center text-muted py-4">No line items</td></tr>
+                        <?php else: foreach ($items as $i => $ln): ?>
                             <tr>
-                                <td><?= $i + 1 ?></td>
-                                <td><?= e((string) ($ln['product_code'] ?: '—')) ?></td>
+                                <td class="text-center"><?= $i + 1 ?></td>
                                 <td>
                                     <div class="fw-semibold"><?= e($ln['product_name']) ?></div>
                                     <?php if ($ln['description']): ?><div class="small text-muted"><?= e($ln['description']) ?></div><?php endif; ?>
                                 </td>
-                                <td><?= e($ln['unit']) ?></td>
-                                <td class="text-end"><?= e(rtrim(rtrim(number_format((float) $ln['quantity'], 3), '0'), '.')) ?></td>
+                                <td class="text-center"><?= e(rtrim(rtrim(number_format((float) $ln['quantity'], 3), '0'), '.')) ?></td>
+                                <td class="text-center"><?= e((string) ($ln['unit'] ?: 'pcs')) ?></td>
                                 <td class="text-end"><?= e(number_format((float) $ln['unit_price'], 2)) ?></td>
                                 <td class="text-end"><?= e(number_format((float) $ln['discount_amount'], 2)) ?></td>
                                 <td class="text-end"><?= e(number_format((float) $ln['tax_amount'], 2)) ?></td>
                                 <td class="text-end fw-semibold"><?= e(number_format((float) $ln['line_total'], 2)) ?></td>
                             </tr>
-                        <?php endforeach; ?>
+                        <?php endforeach; endif; ?>
                         </tbody>
                     </table>
+                </div>
+
+                <div class="row g-3 mt-2 align-items-start">
+                    <div class="col-md-7">
+                        <div class="small text-uppercase fw-semibold text-muted mb-1">Amount in Words</div>
+                        <div class="fst-italic"><?= e($amountWords) ?></div>
+                        <?php if (!empty($q['terms_html']) || !empty($q['warranty_terms'])): ?>
+                        <div class="mt-3 p-3 border rounded-3" style="border-color:#D9E3F0!important">
+                            <div class="fw-semibold small text-uppercase mb-2" style="color:#0A2F7A">Terms &amp; Conditions</div>
+                            <pre class="small mb-0" style="white-space:pre-wrap;font-family:inherit"><?= e((string) ($q['terms_html'] ?: $q['warranty_terms'])) ?></pre>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($q['notes'])): ?>
+                        <div class="mt-2 small"><strong>Notes:</strong> <?= nl2br(e($q['notes'])) ?></div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="card qtn-summary-card border-0 shadow-sm">
+                            <div class="card-body py-2">
+                                <table class="table table-sm mb-0">
+                                    <tr><td class="text-muted">Subtotal</td><td class="text-end fw-semibold"><?= e(number_format((float) $q['subtotal'], 2)) ?></td></tr>
+                                    <tr><td class="text-muted">Discount</td><td class="text-end fw-semibold"><?= $totalDisc > 0 ? '-' . e(number_format($totalDisc, 2)) : e(number_format(0, 2)) ?></td></tr>
+                                    <tr><td class="text-muted">Tax</td><td class="text-end fw-semibold"><?= e(number_format((float) $q['tax_total'], 2)) ?></td></tr>
+                                    <tr class="qtn-grand-row"><td>Grand Total</td><td class="text-end"><?= e($currency) ?> <?= e(number_format((float) $q['grand_total'], 2)) ?></td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <?php if ($approvalRows): ?>
-            <div class="card vk-card mb-3">
+            <div class="card qtn-card mb-3">
                 <div class="card-header bg-transparent fw-semibold">Approval workflow</div>
                 <div class="card-body">
                     <div class="qtn-approval-track">
@@ -138,7 +207,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
             </div>
             <?php endif; ?>
 
-            <div class="card vk-card mb-3">
+            <div class="card qtn-card mb-3">
                 <div class="card-header bg-transparent d-flex justify-content-between">
                     <strong>Follow-ups</strong>
                     <a class="btn btn-sm btn-outline-primary" href="<?= e(BASE_URL) ?>/modules/quotations/followup.php?quotation_id=<?= $id ?>">Manage</a>
@@ -154,21 +223,11 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     <?php endforeach; endif; ?>
                 </ul>
             </div>
-
-            <?php if ($q['notes'] || $q['terms_html']): ?>
-            <div class="card vk-card mb-3">
-                <div class="card-header bg-transparent fw-semibold">Notes &amp; terms</div>
-                <div class="card-body">
-                    <?php if ($q['notes']): ?><p><?= nl2br(e($q['notes'])) ?></p><?php endif; ?>
-                    <?php if ($q['terms_html']): ?><pre class="small mb-0 bg-body-secondary p-3 rounded"><?= e($q['terms_html']) ?></pre><?php endif; ?>
-                </div>
-            </div>
-            <?php endif; ?>
         </div>
 
         <div class="col-lg-4">
-            <div class="card vk-card mb-3 qtn-summary-card">
-                <div class="card-header bg-transparent fw-semibold">Totals</div>
+            <div class="card qtn-card mb-3 qtn-summary-card">
+                <div class="card-header bg-transparent fw-semibold">Financial Summary</div>
                 <div class="card-body">
                     <dl class="qtn-totals mb-0">
                         <div><dt>Subtotal</dt><dd><?= e(number_format((float) $q['subtotal'], 2)) ?></dd></div>
@@ -178,7 +237,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                         <div><dt>Shipping</dt><dd><?= e(number_format((float) $q['shipping_amount'], 2)) ?></dd></div>
                         <div><dt>Additional</dt><dd><?= e(number_format((float) $q['additional_charges'], 2)) ?></dd></div>
                         <div><dt>Round off</dt><dd><?= e(number_format((float) $q['round_off'], 2)) ?></dd></div>
-                        <div class="qtn-grand"><dt>Grand total</dt><dd><?= e($q['currency']) ?> <?= e(number_format((float) $q['grand_total'], 2)) ?></dd></div>
+                        <div class="qtn-grand"><dt>Grand total</dt><dd><?= e($currency) ?> <?= e(number_format((float) $q['grand_total'], 2)) ?></dd></div>
                         <div><dt>Est. cost</dt><dd><?= e(number_format((float) $q['estimated_cost'], 2)) ?></dd></div>
                         <div><dt>Net profit</dt><dd><?= e(number_format((float) $q['net_profit'], 2)) ?></dd></div>
                         <div><dt>Margin</dt><dd><?= e(number_format((float) $q['profit_margin_pct'], 2)) ?>%</dd></div>
@@ -186,14 +245,14 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 </div>
             </div>
 
-            <div class="card vk-card mb-3">
+            <div class="card qtn-card mb-3">
                 <div class="card-header bg-transparent fw-semibold">Customer intelligence</div>
                 <div class="card-body small">
                     <div class="mb-2"><strong><?= e($q['customer_name']) ?></strong></div>
-                    <div>Phone: <?= e((string) ($q['phone'] ?: $q['customer_phone_db'] ?: '—')) ?></div>
+                    <div>Phone: <?= e($phone !== '' ? $phone : '—') ?></div>
                     <div>Email: <?= e((string) ($q['email'] ?: $q['customer_email_db'] ?: '—')) ?></div>
                     <div class="mt-2">Outstanding balance: <strong><?= e(number_format($balance, 2)) ?></strong></div>
-                    <div>Credit limit: <strong><?= e(number_format($creditLimit, 2)) ?></strong> <span class="text-muted">(configure in settings)</span></div>
+                    <div>Credit limit: <strong><?= e(number_format($creditLimit, 2)) ?></strong></div>
                     <hr>
                     <div class="fw-semibold mb-1">Previous quotations</div>
                     <?php if (!$prevRows): ?>
@@ -208,7 +267,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
             </div>
 
             <?php if ($revRows): ?>
-            <div class="card vk-card mb-3">
+            <div class="card qtn-card mb-3">
                 <div class="card-header bg-transparent d-flex justify-content-between">
                     <strong>Revisions</strong>
                     <a class="small" href="<?= e(BASE_URL) ?>/modules/quotations/revisions.php?id=<?= $id ?>">Compare</a>
@@ -223,7 +282,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
             </div>
             <?php endif; ?>
 
-            <div class="card vk-card mb-3">
+            <div class="card qtn-card mb-3">
                 <div class="card-header bg-transparent fw-semibold">Activity</div>
                 <ul class="list-group list-group-flush qtn-activity">
                     <?php foreach ($logRows as $a): ?>
@@ -236,7 +295,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 </ul>
             </div>
 
-            <div class="card vk-card">
+            <div class="card qtn-card">
                 <div class="card-body small">
                     <div>Payment: <?= e((string) ($q['payment_terms'] ?: '—')) ?></div>
                     <div>Delivery: <?= e((string) ($q['delivery_terms'] ?: '—')) ?></div>

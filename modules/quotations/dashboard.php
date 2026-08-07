@@ -61,17 +61,14 @@ $extraHead = '<link rel="stylesheet" href="' . e(base_url('assets/css/quotations
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 
 $cards = [
-    ["Today's Quotations", $kpi['today'], 'bi-calendar-day', 'info', 'list.php?from=' . date('Y-m-d') . '&to=' . date('Y-m-d')],
-    ['Weekly Quotations', $kpi['week'], 'bi-calendar-week', 'primary', null],
-    ['Monthly Quotations', $kpi['month'], 'bi-calendar3', 'primary', null],
+    ['Total Quotations', $kpi['total'], 'bi-files', 'primary', 'list.php'],
+    ['Draft', $kpi['draft'], 'bi-pencil-square', 'secondary', 'list.php?status=draft'],
     ['Pending', $kpi['pending_approval'], 'bi-hourglass-split', 'warning', 'approval.php'],
     ['Approved', $kpi['approved'], 'bi-check2-circle', 'success', 'list.php?status=approved'],
     ['Rejected', $kpi['rejected'], 'bi-x-circle', 'danger', 'list.php?status=rejected'],
     ['Expired', $kpi['expired'], 'bi-clock-history', 'secondary', 'expired.php'],
-    ['Quotation Value', 'LKR ' . number_format($kpi['value'], 0), 'bi-cash-stack', 'indigo', null],
-    ['Monthly Revenue', 'LKR ' . number_format($kpi['month_revenue'], 0), 'bi-graph-up-arrow', 'teal', 'analytics.php'],
-    ['Customers', $kpi['customers'], 'bi-people', 'primary', BASE_URL . '/modules/customers/list.php'],
-    ['Products', $kpi['products'], 'bi-box-seam', 'secondary', BASE_URL . '/modules/products/list.php'],
+    ['Converted', $kpi['converted'], 'bi-arrow-left-right', 'teal', 'converted.php'],
+    ['Monthly Revenue', 'LKR ' . number_format($kpi['month_revenue'], 0), 'bi-graph-up-arrow', 'indigo', 'analytics.php'],
 ];
 ?>
 <div class="qtn-page qtn-dash-premium">
@@ -101,7 +98,7 @@ $cards = [
 
     <div class="row g-3 mb-4">
         <?php foreach ($cards as [$label, $val, $icon, $tone, $href]): ?>
-        <div class="col-6 col-md-4 col-xl">
+        <div class="col-6 col-md-4 col-xl-3">
             <?php
             $link = $href;
             if ($link && !str_starts_with((string) $link, 'http') && !str_starts_with((string) $link, BASE_URL)) {
@@ -109,7 +106,7 @@ $cards = [
             }
             ?>
             <?php if ($link): ?><a href="<?= e((string) $link) ?>" class="text-decoration-none"><?php endif; ?>
-            <div class="card vk-card qtn-kpi qtn-kpi--<?= e($tone) ?> qtn-kpi-glass h-100">
+            <div class="card qtn-kpi qtn-kpi--<?= e($tone) ?> qtn-kpi-glass h-100">
                 <div class="card-body">
                     <span class="qtn-kpi-icon"><i class="bi <?= e($icon) ?>"></i></span>
                     <div class="qtn-kpi-value mt-2"><?= is_string($val) ? e($val) : e((string) $val) ?></div>

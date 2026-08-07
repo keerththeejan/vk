@@ -233,10 +233,10 @@ $selExec = (int) ($h['sales_executive_id'] ?? ($_SESSION['user_id'] ?? 0));
                 </div>
                 <div class="qtn-toolbar-actions d-flex flex-wrap gap-1">
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="btnSaveDraft" title="Ctrl+S"><i class="bi bi-floppy me-1"></i>Save Draft</button>
-                    <button type="button" class="btn btn-sm btn-primary" id="btnSaveQuote"><i class="bi bi-check2-circle me-1"></i>Save Quotation</button>
+                    <button type="button" class="btn btn-sm btn-qtn-primary" id="btnSaveQuote"><i class="bi bi-check2-circle me-1"></i>Save Quotation</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPreview" <?= $isEdit ? '' : 'disabled' ?>><i class="bi bi-eye me-1"></i>Preview</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPrint" <?= $isEdit ? '' : 'disabled' ?>><i class="bi bi-printer me-1"></i>Print</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPdf" <?= $isEdit ? '' : 'disabled' ?>><i class="bi bi-filetype-pdf me-1"></i>PDF</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnPdf" <?= $isEdit ? '' : 'disabled' ?>><i class="bi bi-filetype-pdf me-1"></i>Download PDF</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="btnEmail" <?= $isEdit ? '' : 'disabled' ?>><i class="bi bi-envelope me-1"></i>Email</button>
                     <?php if ($isEdit): ?>
                     <a class="btn btn-sm btn-outline-secondary" href="<?= e(BASE_URL) ?>/modules/quotations/duplicate.php?id=<?= $editId ?>"><i class="bi bi-copy me-1"></i>Duplicate</a>
@@ -609,7 +609,7 @@ $selExec = (int) ($h['sales_executive_id'] ?? ($_SESSION['user_id'] ?? 0));
                         <div class="card-footer bg-transparent">
                             <div class="d-grid gap-2">
                                 <button type="button" class="btn btn-outline-primary" id="btnSaveDraftSide">Save Draft</button>
-                                <button type="button" class="btn btn-primary" id="btnSaveQuoteSide">Save Quotation</button>
+                                <button type="button" class="btn btn-qtn-primary" id="btnSaveQuoteSide">Save Quotation</button>
                             </div>
                             <p class="small text-muted mt-2 mb-0" id="autosaveStatus">Ready</p>
                         </div>

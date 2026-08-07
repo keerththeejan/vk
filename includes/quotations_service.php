@@ -726,8 +726,8 @@ function vk_quotation_dashboard_kpis(PDO $pdo): array
 {
     vk_quotation_mark_expired($pdo);
     $kpi = [
-        'total' => 0, 'today' => 0, 'week' => 0, 'month' => 0, 'pending_approval' => 0, 'approved' => 0,
-        'rejected' => 0, 'expired' => 0, 'accepted' => 0, 'converted_invoice' => 0,
+        'total' => 0, 'today' => 0, 'week' => 0, 'month' => 0, 'draft' => 0, 'pending_approval' => 0, 'approved' => 0,
+        'rejected' => 0, 'expired' => 0, 'accepted' => 0, 'converted_invoice' => 0, 'converted' => 0,
         'value' => 0.0, 'forecast' => 0.0, 'month_revenue' => 0.0,
         'customers' => 0, 'products' => 0,
     ];
@@ -739,12 +739,14 @@ function vk_quotation_dashboard_kpis(PDO $pdo): array
                 SUM(quotation_date >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
                     AND quotation_date <= CURDATE()) AS week,
                 SUM(YEAR(quotation_date)=YEAR(CURDATE()) AND MONTH(quotation_date)=MONTH(CURDATE())) AS month,
+                SUM(status = 'draft') AS draft,
                 SUM(status = 'pending_approval') AS pending_approval,
                 SUM(status = 'approved') AS approved,
                 SUM(status = 'rejected') AS rejected,
                 SUM(status = 'expired') AS expired,
                 SUM(status = 'accepted') AS accepted,
                 SUM(status = 'converted_invoice') AS converted_invoice,
+                SUM(status IN ('converted_invoice','converted_so','accepted')) AS converted,
                 COALESCE(SUM(grand_total),0) AS value,
                 COALESCE(SUM(CASE WHEN status IN ('approved','accepted','pending_approval')
                     AND MONTH(quotation_date)=MONTH(CURDATE()) AND YEAR(quotation_date)=YEAR(CURDATE())
@@ -755,7 +757,7 @@ function vk_quotation_dashboard_kpis(PDO $pdo): array
              FROM quotations"
         )->fetch();
         if ($row) {
-            foreach (['total','today','week','month','pending_approval','approved','rejected','expired','accepted','converted_invoice'] as $k) {
+            foreach (['total','today','week','month','draft','pending_approval','approved','rejected','expired','accepted','converted_invoice','converted'] as $k) {
                 $kpi[$k] = (int) ($row[$k] ?? 0);
             }
             $kpi['value'] = (float) ($row['value'] ?? 0);

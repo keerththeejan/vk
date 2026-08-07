@@ -507,7 +507,11 @@
     }
     document.getElementById('btnPreview').addEventListener('click', function () { openAction('view.php'); });
     document.getElementById('btnPrint').addEventListener('click', function () { openAction('print.php'); });
-    document.getElementById('btnPdf').addEventListener('click', function () { openAction('print.php'); });
+    document.getElementById('btnPdf').addEventListener('click', function () {
+        var id = parseInt(document.getElementById('quotation_id').value || '0', 10);
+        if (!id) return;
+        window.open(window.QTN_VIEW_BASE + 'print.php?id=' + id + '&download=1', '_blank');
+    });
     document.getElementById('btnEmail').addEventListener('click', function () { openAction('email.php'); });
 
     /* ── New customer modal ────────────────────────────────── */
