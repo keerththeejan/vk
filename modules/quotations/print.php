@@ -1,9 +1,8 @@
 <?php
 declare(strict_types=1);
 /**
- * Enterprise Quotation Print / PDF — layout-only polish.
- * Letterhead background · printable area top 145 / bottom 120 / sides 55.
- * Business logic, calculations, and data queries unchanged.
+ * Enterprise Quotation Print / PDF — alignment / spacing polish only.
+ * Keeps VK NETWORK letterhead branding, colors, fonts, and all business logic.
  */
 require_once dirname(__DIR__, 2) . '/includes/init.php';
 require_admin();
@@ -84,6 +83,9 @@ $fmtDate = static function (?string $d): string {
 };
 $dateDisp = $fmtDate((string) $q['quotation_date']);
 $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
+$money = static function (float $n): string {
+    return number_format($n, 2);
+};
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -98,18 +100,24 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
         :root {
             --primary: #123C7A;
             --secondary: #0B5ED7;
+            --blue: #0B4DBA;
             --gray: #6C757D;
             --border: #DEE2E6;
             --text: #212529;
-            --alt-row: #FAFAFA;
-            --pad-top: 145px;
-            --pad-bottom: 120px;
-            --pad-left: 55px;
-            --pad-right: 55px;
-            --section-gap: 25px;
+            --alt-row: #F8F9FA;
+            --label: #6C757D;
+            /* Letterhead safe zone (preserves branded header/footer art) */
+            --pad-top: 38mm;
+            --pad-bottom: 32mm;
+            --pad-left: 15mm;
+            --pad-right: 15mm;
+            --section-gap: 18px;
         }
         * { box-sizing: border-box; }
-        @page { size: A4 portrait; margin: 0; }
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
         html, body {
             margin: 0;
             padding: 0;
@@ -117,7 +125,7 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
             color: var(--text);
             font-family: Poppins, Arial, sans-serif;
             font-size: 11px;
-            line-height: 1.5;
+            line-height: 1.45;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -151,6 +159,7 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
         .sheet {
             position: relative;
             width: 210mm;
+            min-height: 297mm;
             height: 297mm;
             margin: 0 auto 18px;
             background-color: #fff;
@@ -188,89 +197,110 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
             white-space: nowrap;
         }
 
-        /* ── Title ── */
+        /* ── Title + 3-column meta ── */
         .title-block {
             text-align: center;
-            margin-top: 10px;
-            margin-bottom: 0;
+            margin: 0 0 var(--section-gap);
         }
         .header-title {
-            margin: 10px 0 20px;
+            margin: 0 0 14px;
             text-align: center;
-            font-size: 26px;
+            font-size: 32px;
             font-weight: 700;
-            letter-spacing: 1px;
-            color: #123C7A;
+            letter-spacing: 0.08em;
+            color: var(--primary);
             text-transform: uppercase;
+            line-height: 1.15;
         }
         .header-meta {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 60px;
-            margin-top: 10px;
-            margin-bottom: 30px;
-            font-size: 12px;
-            font-weight: 600;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            column-gap: 16px;
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 12px 8px;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
         }
         .header-meta .item {
-            white-space: nowrap;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+            text-align: center;
+            min-width: 0;
         }
         .header-meta .label {
+            display: block;
             font-size: 11px;
             font-weight: 600;
-            color: #666666;
+            color: var(--label);
+            margin-bottom: 4px;
+            letter-spacing: 0.02em;
         }
         .header-meta .value {
-            font-size: 12px;
-            font-weight: 700;
-            color: #123C7A;
-        }
-
-        /* ── Bill To / Sales — 48% + 4% + 48% ── */
-        .parties {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 4%;
-            margin-top: 0;
-            margin-bottom: var(--section-gap);
-        }
-        .party {
-            width: 48%;
-        }
-        .party h3 {
-            margin: 0 0 8px;
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--secondary);
-            text-transform: uppercase;
-            letter-spacing: .04em;
-        }
-        .party .name {
-            font-size: 12px;
+            display: block;
+            font-size: 11px;
             font-weight: 700;
             color: var(--primary);
-            margin-bottom: 4px;
-        }
-        .party p {
-            margin: 0 0 3px;
-            font-size: 11px;
-            color: #495057;
-            line-height: 1.55;
+            word-break: break-word;
         }
 
-        /* ── Product table ── */
+        /* ── Bill To / Sales cards ── */
+        .parties {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            align-items: stretch;
+            margin: 0 0 var(--section-gap);
+        }
+        .party-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+        .party-card h3 {
+            margin: 0 0 12px;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--blue);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .party-card .field {
+            display: grid;
+            grid-template-columns: 110px 1fr;
+            column-gap: 8px;
+            align-items: start;
+            margin: 0 0 6px;
+            font-size: 11px;
+            line-height: 1.45;
+        }
+        .party-card .field:last-child { margin-bottom: 0; }
+        .party-card .field .k {
+            color: var(--label);
+            font-weight: 500;
+        }
+        .party-card .field .v {
+            color: var(--text);
+            font-weight: 700;
+            word-break: break-word;
+        }
+        .party-card .name-row .v {
+            font-size: 12px;
+            color: var(--primary);
+        }
+
+        /* ── Item table ── */
         .table-wrap {
             width: 100%;
             border-radius: 6px;
             overflow: hidden;
             border: 1px solid var(--border);
-            margin-bottom: var(--section-gap);
+            margin: 0 0 var(--section-gap);
         }
         .items {
             width: 100%;
@@ -278,30 +308,41 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
             table-layout: fixed;
         }
         .items thead th {
-            height: 42px;
+            height: 40px;
             background: var(--primary);
             color: #fff;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 10px;
-            text-align: left;
-            border: 0;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 8px 6px;
+            text-align: center;
+            border: 1px solid #0e2f5f;
             vertical-align: middle;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
+        .items thead th.desc { text-align: left; padding-left: 10px; }
         .items thead th.num,
-        .items tbody td.num { text-align: right; }
+        .items tbody td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
         .items thead th.ctr,
         .items tbody td.ctr { text-align: center; }
         .items tbody td {
-            height: 38px;
-            padding: 10px;
-            border-bottom: 1px solid var(--border);
+            height: 40px;
+            padding: 10px 6px;
+            border: 1px solid var(--border);
             vertical-align: middle;
             font-size: 11px;
             color: #343a40;
             word-wrap: break-word;
         }
-        .items tbody tr:last-child td { border-bottom: 0; }
+        .items tbody td.desc {
+            text-align: left;
+            padding-left: 10px;
+            padding-right: 8px;
+        }
         .items tbody tr:nth-child(even) td { background: var(--alt-row); }
         .item-sub {
             display: block;
@@ -311,23 +352,17 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
             font-weight: 400;
         }
 
-        /* ── Amount in words + Summary (equal height) ── */
+        /* ── Words + Totals ── */
         .mid {
-            display: flex;
-            align-items: stretch;
+            display: grid;
+            grid-template-columns: 1fr 280px;
             gap: 16px;
-            margin-bottom: 0;
+            align-items: start;
+            margin: 0 0 var(--section-gap);
         }
         .words {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            background: #F1F3F5;
-            border-left: 4px solid var(--secondary);
-            border-radius: 0 10px 10px 0;
-            padding: 20px;
-            min-height: 100%;
+            padding: 14px 4px;
+            text-align: left;
         }
         .words .lbl {
             display: block;
@@ -336,65 +371,87 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
             color: var(--primary);
             margin-bottom: 6px;
             text-transform: uppercase;
-            letter-spacing: .03em;
+            letter-spacing: 0.03em;
         }
         .words .val {
             font-size: 11px;
             color: #495057;
             font-weight: 500;
+            font-style: italic;
             line-height: 1.6;
         }
 
         .summary {
-            width: 320px;
-            flex-shrink: 0;
-            background: #fff;
+            width: 100%;
             border: 1px solid var(--border);
-            border-radius: 12px;
-            box-shadow: 0 6px 18px rgba(18, 60, 122, .08);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
         }
-        .summary table { width: 100%; border-collapse: collapse; }
+        .summary table {
+            width: 100%;
+            border-collapse: collapse;
+        }
         .summary td {
-            padding: 6px 0;
+            padding: 9px 14px;
             font-size: 11px;
             color: #495057;
+            border-bottom: 1px solid #eef1f5;
+            vertical-align: middle;
+        }
+        .summary tr:last-child td { border-bottom: none; }
+        .summary td:first-child {
+            text-align: left;
+            font-weight: 600;
+            color: var(--label);
         }
         .summary td:last-child {
             text-align: right;
-            font-weight: 600;
-            color: var(--primary);
+            font-weight: 700;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
         }
         .summary .grand td {
-            border-top: 2px solid var(--primary);
-            padding-top: 12px;
-            font-size: 22px;
+            background: var(--primary);
+            color: #fff;
+            padding: 12px 14px;
+            border: none;
             font-weight: 700;
-            color: var(--secondary);
-            line-height: 1.2;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
         .summary .grand td:first-child {
             font-size: 12px;
-            font-weight: 700;
-            color: var(--primary);
-            vertical-align: middle;
+            color: #fff;
+        }
+        .summary .grand td:last-child {
+            font-size: 18px;
+            color: #fff;
         }
 
         /* ── Terms ── */
         .terms-block {
-            margin-top: 25px;
-            margin-bottom: 30px;
+            margin: 0 0 var(--section-gap);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
         }
         .terms-block h4 {
-            margin: 0 0 8px;
-            font-size: 13px;
+            margin: 0;
+            padding: 10px 15px;
+            font-size: 14px;
             font-weight: 700;
-            color: var(--primary);
+            color: #fff;
+            background: var(--primary);
             text-transform: uppercase;
-            letter-spacing: .04em;
+            letter-spacing: 0.04em;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .terms-block .terms-body {
+            padding: 15px;
         }
         .terms-block pre,
         .terms-block p {
@@ -403,17 +460,17 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
             font-family: inherit;
             font-size: 11px;
             color: #495057;
-            line-height: 1.8;
+            line-height: 1.7;
         }
 
         .notes-block {
-            margin-bottom: 16px;
+            margin: 0 0 var(--section-gap);
         }
         .notes-block h4 {
             margin: 0 0 6px;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
-            color: var(--primary);
+            color: var(--blue);
             text-transform: uppercase;
         }
         .notes-block p {
@@ -428,35 +485,39 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 16px;
-            margin-bottom: var(--section-gap);
-            padding: 15px 0;
+            gap: 20px;
+            margin: 0 0 var(--section-gap);
+            padding: 14px 0;
             border-top: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
         }
         .bank-qr .bank {
             flex: 1;
+            min-width: 0;
             font-size: 11px;
             color: #495057;
             line-height: 1.65;
         }
         .bank-qr .bank strong {
             display: block;
-            color: var(--primary);
-            font-size: 13px;
+            color: var(--blue);
+            font-size: 14px;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             text-transform: uppercase;
-            letter-spacing: .03em;
+            letter-spacing: 0.03em;
         }
         .bank-qr .qr {
             text-align: center;
             flex-shrink: 0;
-            padding: 0 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
         .bank-qr .qr img {
-            width: 80px;
-            height: 80px;
+            width: 72px;
+            height: 72px;
             display: block;
             border: 1px solid var(--border);
             border-radius: 6px;
@@ -470,65 +531,78 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
             font-weight: 500;
         }
 
-        /* ── Signatures — 33.33% equal columns ── */
+        /* ── Signatures ── */
         .signs {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            column-gap: 20px;
+            align-items: end;
             margin-top: auto;
+            padding-top: 12px;
             page-break-inside: avoid;
         }
         .sign {
-            width: 33.33%;
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-end;
-            min-height: 110px;
+            min-width: 0;
+        }
+        .sign-slot {
+            min-height: 56px;
+            width: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            margin-bottom: 4px;
         }
         .sign img.sig {
-            max-height: 42px;
-            max-width: 150px;
-            margin: 0 auto 8px;
+            max-height: 40px;
+            max-width: 140px;
             display: block;
             object-fit: contain;
         }
         .sign img.stamp {
-            max-height: 54px;
-            max-width: 120px;
-            margin: 0 auto 8px;
+            max-height: 52px;
+            max-width: 130px;
             display: block;
             object-fit: contain;
-            opacity: .92;
+            opacity: 0.45;
         }
         .sign .line {
-            width: 180px;
-            max-width: 100%;
-            border-top: 1px solid #adb5bd;
-            margin-top: 45px;
+            width: 90%;
+            max-width: 180px;
+            border-top: 1px solid #444;
+            margin: 6px auto 0;
             padding-top: 8px;
         }
-        .sign.has-img .line { margin-top: 8px; }
         .sign .label {
             font-size: 11px;
             font-weight: 700;
             color: var(--primary);
+            text-align: center;
         }
         .sign .who {
             margin-top: 3px;
             font-size: 10px;
             font-weight: 500;
             color: var(--gray);
+            text-align: center;
         }
 
         .gen-meta {
-            margin-top: 12px;
+            margin-top: 10px;
             font-size: 9px;
             color: #adb5bd;
             display: flex;
             justify-content: space-between;
             gap: 12px;
+        }
+
+        /* Contact strip (above letterhead footer band) */
+        .print-footer {
+            display: none;
         }
 
         @media print {
@@ -541,6 +615,12 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
                 height: 297mm;
                 page-break-after: always;
             }
+            .summary .grand td,
+            .items thead th,
+            .terms-block h4 {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
         @media screen and (max-width: 900px) {
             .sheet {
@@ -552,15 +632,13 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
             .content {
                 position: relative;
                 top: auto; right: auto; bottom: auto; left: auto;
-                padding: 145px 55px 120px;
+                padding: 38mm 15mm 32mm;
                 min-height: 100vh;
             }
-            .parties { flex-direction: column; gap: 16px; }
-            .party { width: 100%; }
-            .mid { flex-direction: column; }
-            .summary { width: 100%; }
-            .signs { flex-direction: column; align-items: center; }
-            .sign { width: 100%; min-height: 90px; }
+            .parties { grid-template-columns: 1fr; }
+            .mid { grid-template-columns: 1fr; }
+            .header-meta { grid-template-columns: 1fr; row-gap: 10px; }
+            .signs { grid-template-columns: 1fr; row-gap: 20px; }
             .bank-qr { flex-direction: column; align-items: flex-start; }
         }
     </style>
@@ -583,44 +661,52 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
             <h1 class="header-title">Quotation</h1>
             <div class="header-meta">
                 <div class="item">
-                    <span class="label">Quotation No :</span>
+                    <span class="label">Quotation No.</span>
                     <span class="value"><?= e($q['quotation_number']) ?></span>
                 </div>
                 <div class="item">
-                    <span class="label">Date :</span>
+                    <span class="label">Date</span>
                     <span class="value"><?= e($dateDisp) ?></span>
                 </div>
                 <div class="item">
-                    <span class="label">Validity :</span>
+                    <span class="label">Valid Until</span>
                     <span class="value"><?= e($expiryDisp) ?></span>
                 </div>
             </div>
         </header>
 
         <section class="parties">
-            <div class="party">
+            <div class="party-card">
                 <h3>Bill To</h3>
-                <div class="name"><?= e($customerName) ?></div>
+                <div class="field name-row"><span class="k">Customer Name</span><span class="v"><?= e($customerName) ?></span></div>
                 <?php if ($contactPerson !== '' && $contactPerson !== $customerName): ?>
-                    <p><?= e($contactPerson) ?></p>
+                    <div class="field"><span class="k">Contact</span><span class="v"><?= e($contactPerson) ?></span></div>
                 <?php endif; ?>
-                <?php if (!empty($q['customer_code'])): ?><p>Code : <?= e($q['customer_code']) ?></p><?php endif; ?>
-                <?php if ($billing !== ''): ?><p><?= nl2br(e($billing)) ?></p><?php endif; ?>
-                <?php if ($phone !== ''): ?><p>Phone : <?= e($phone) ?></p><?php endif; ?>
-                <?php if ($mobile !== '' && $mobile !== $phone): ?><p>Mobile : <?= e($mobile) ?></p><?php endif; ?>
-                <?php if ($email !== ''): ?><p>Email : <?= e($email) ?></p><?php endif; ?>
-                <?php if (!empty($q['tax_number'])): ?><p>TIN/VAT : <?= e($q['tax_number']) ?></p><?php endif; ?>
+                <div class="field"><span class="k">Customer Code</span><span class="v"><?= e((string) ($q['customer_code'] ?: '—')) ?></span></div>
+                <div class="field"><span class="k">Address</span><span class="v"><?= $billing !== '' ? nl2br(e($billing)) : '—' ?></span></div>
+                <div class="field"><span class="k">Phone</span><span class="v"><?= e($phone !== '' ? $phone : '—') ?></span></div>
+                <?php if ($mobile !== '' && $mobile !== $phone): ?>
+                    <div class="field"><span class="k">Mobile</span><span class="v"><?= e($mobile) ?></span></div>
+                <?php endif; ?>
+                <?php if ($email !== ''): ?>
+                    <div class="field"><span class="k">Email</span><span class="v"><?= e($email) ?></span></div>
+                <?php endif; ?>
             </div>
-            <div class="party">
+            <div class="party-card">
                 <h3>Sales Details</h3>
-                <p>Sales Executive : <?= e((string) ($q['sales_executive_name'] ?: '—')) ?></p>
-                <p>Prepared By : <?= e($preparedBy) ?></p>
-                <p>Branch : <?= e((string) ($q['branch'] ?: 'Kilinochchi')) ?></p>
-                <p>Currency : <?= e($currency) ?></p>
-                <?php if (!empty($q['payment_terms'])): ?><p>Payment : <?= e($q['payment_terms']) ?></p><?php endif; ?>
-                <?php if (!empty($q['delivery_terms'])): ?><p>Delivery : <?= e($q['delivery_terms']) ?></p><?php endif; ?>
-                <?php if (!empty($q['customer_po_number'])): ?><p>Customer PO : <?= e($q['customer_po_number']) ?></p><?php endif; ?>
-                <?php if (!empty($q['reference_number'])): ?><p>Reference : <?= e($q['reference_number']) ?></p><?php endif; ?>
+                <div class="field"><span class="k">Sales Executive</span><span class="v"><?= e((string) ($q['sales_executive_name'] ?: '—')) ?></span></div>
+                <div class="field"><span class="k">Prepared By</span><span class="v"><?= e($preparedBy) ?></span></div>
+                <div class="field"><span class="k">Branch</span><span class="v"><?= e((string) ($q['branch'] ?: 'Kilinochchi')) ?></span></div>
+                <div class="field"><span class="k">Currency</span><span class="v"><?= e($currency) ?></span></div>
+                <?php if (!empty($q['payment_terms'])): ?>
+                    <div class="field"><span class="k">Payment</span><span class="v"><?= e($q['payment_terms']) ?></span></div>
+                <?php endif; ?>
+                <?php if (!empty($q['delivery_terms'])): ?>
+                    <div class="field"><span class="k">Delivery</span><span class="v"><?= e($q['delivery_terms']) ?></span></div>
+                <?php endif; ?>
+                <?php if (!empty($q['reference_number'])): ?>
+                    <div class="field"><span class="k">Reference</span><span class="v"><?= e($q['reference_number']) ?></span></div>
+                <?php endif; ?>
             </div>
         </section>
 
@@ -628,14 +714,14 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
             <table class="items">
                 <thead>
                     <tr>
-                        <th style="width:34px" class="ctr">#</th>
-                        <th>Product / Description</th>
+                        <th style="width:36px" class="ctr">#</th>
+                        <th class="desc">Description</th>
                         <th style="width:52px" class="ctr">Qty</th>
-                        <th style="width:48px" class="ctr">Unit</th>
+                        <th style="width:52px" class="ctr">Unit</th>
                         <th style="width:78px" class="num">Unit Price</th>
-                        <th style="width:64px" class="num">Discount</th>
-                        <th style="width:56px" class="num">Tax</th>
-                        <th style="width:78px" class="num">Amount</th>
+                        <th style="width:68px" class="num">Discount</th>
+                        <th style="width:60px" class="num">Tax</th>
+                        <th style="width:80px" class="num">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -644,17 +730,16 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
                 <?php else: $n = 1; foreach ($items as $ln): ?>
                     <tr>
                         <td class="ctr"><?= $n++ ?></td>
-                        <td>
+                        <td class="desc">
                             <?= e($ln['product_name']) ?>
-                            <?php if (!empty($ln['product_code'])): ?><span class="item-sub"><?= e($ln['product_code']) ?></span><?php endif; ?>
                             <?php if (!empty($ln['description'])): ?><span class="item-sub"><?= e($ln['description']) ?></span><?php endif; ?>
                         </td>
                         <td class="ctr"><?= e(rtrim(rtrim(number_format((float) $ln['quantity'], 3), '0'), '.')) ?></td>
                         <td class="ctr"><?= e((string) ($ln['unit'] ?: 'pcs')) ?></td>
-                        <td class="num"><?= e(number_format((float) $ln['unit_price'], 2)) ?></td>
-                        <td class="num"><?= (float) $ln['discount_amount'] > 0 ? e(number_format((float) $ln['discount_amount'], 2)) : '—' ?></td>
-                        <td class="num"><?= (float) $ln['tax_amount'] > 0 ? e(number_format((float) $ln['tax_amount'], 2)) : '—' ?></td>
-                        <td class="num"><?= e(number_format((float) $ln['line_total'], 2)) ?></td>
+                        <td class="num"><?= e($money((float) $ln['unit_price'])) ?></td>
+                        <td class="num"><?= (float) $ln['discount_amount'] > 0 ? e($money((float) $ln['discount_amount'])) : '—' ?></td>
+                        <td class="num"><?= (float) $ln['tax_amount'] > 0 ? e($money((float) $ln['tax_amount'])) : '—' ?></td>
+                        <td class="num"><?= e($money((float) $ln['line_total'])) ?></td>
                     </tr>
                 <?php endforeach; endif; ?>
                 </tbody>
@@ -668,29 +753,25 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
             </div>
             <aside class="summary">
                 <table>
-                    <tr><td>Subtotal</td><td><?= e(number_format((float) $q['subtotal'], 2)) ?></td></tr>
-                    <?php if ($totalDisc > 0): ?>
-                    <tr><td>Discount</td><td>-<?= e(number_format($totalDisc, 2)) ?></td></tr>
-                    <?php endif; ?>
-                    <?php if ((float) $q['tax_total'] > 0): ?>
-                    <tr><td>Tax</td><td><?= e(number_format((float) $q['tax_total'], 2)) ?></td></tr>
-                    <?php endif; ?>
+                    <tr><td>Subtotal</td><td><?= e($money((float) $q['subtotal'])) ?></td></tr>
+                    <tr><td>Discount</td><td><?= $totalDisc > 0 ? '-' . e($money($totalDisc)) : e($money(0)) ?></td></tr>
+                    <tr><td>Tax</td><td><?= e($money((float) $q['tax_total'])) ?></td></tr>
                     <?php if ((float) $q['shipping_amount'] > 0): ?>
-                    <tr><td>Shipping</td><td><?= e(number_format((float) $q['shipping_amount'], 2)) ?></td></tr>
+                    <tr><td>Shipping</td><td><?= e($money((float) $q['shipping_amount'])) ?></td></tr>
                     <?php endif; ?>
                     <?php if ((float) $q['additional_charges'] > 0): ?>
-                    <tr><td>Other Charges</td><td><?= e(number_format((float) $q['additional_charges'], 2)) ?></td></tr>
+                    <tr><td>Other Charges</td><td><?= e($money((float) $q['additional_charges'])) ?></td></tr>
                     <?php endif; ?>
                     <?php if ((float) $q['round_off'] != 0.0): ?>
-                    <tr><td>Round Off</td><td><?= e(number_format((float) $q['round_off'], 2)) ?></td></tr>
+                    <tr><td>Round Off</td><td><?= e($money((float) $q['round_off'])) ?></td></tr>
                     <?php endif; ?>
-                    <tr class="grand"><td>Grand Total</td><td><?= e($currency) ?> <?= e(number_format((float) $q['grand_total'], 2)) ?></td></tr>
+                    <tr class="grand"><td>Grand Total</td><td><?= e($currency) ?> <?= e($money((float) $q['grand_total'])) ?></td></tr>
                 </table>
             </aside>
         </section>
 
         <?php if (!empty($q['notes'])): ?>
-        <section class="notes-block" style="margin-top:20px">
+        <section class="notes-block">
             <h4>Customer Notes</h4>
             <p><?= nl2br(e($q['notes'])) ?></p>
         </section>
@@ -699,15 +780,13 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
         <?php if (!empty($q['terms_html'])): ?>
         <section class="terms-block">
             <h4>Terms &amp; Conditions</h4>
-            <pre><?= e($q['terms_html']) ?></pre>
+            <div class="terms-body"><pre><?= e($q['terms_html']) ?></pre></div>
         </section>
         <?php elseif (!empty($q['warranty_terms'])): ?>
         <section class="terms-block">
             <h4>Warranty</h4>
-            <p><?= e($q['warranty_terms']) ?></p>
+            <div class="terms-body"><p><?= e($q['warranty_terms']) ?></p></div>
         </section>
-        <?php else: ?>
-        <div style="margin-bottom:30px"></div>
         <?php endif; ?>
 
         <?php if (!empty($q['warranty_terms']) && !empty($q['terms_html'])): ?>
@@ -726,27 +805,32 @@ $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
                 <?php if (!empty($q['payment_terms'])): ?><br>Payment Terms : <?= e($q['payment_terms']) ?><?php endif; ?>
             </div>
             <div class="qr">
-                <img src="<?= e($qrUrl) ?>" alt="QR verification" width="80" height="80">
+                <img src="<?= e($qrUrl) ?>" alt="QR verification" width="72" height="72">
                 <small>Scan to Verify</small>
             </div>
         </section>
 
         <section class="signs">
-            <div class="sign<?= $hasSignature ? ' has-img' : '' ?>">
-                <?php if ($hasSignature): ?><img class="sig" src="<?= e($signatureUrl) ?>" alt="Digital signature"><?php endif; ?>
+            <div class="sign">
+                <div class="sign-slot">
+                    <?php if ($hasSignature): ?><img class="sig" src="<?= e($signatureUrl) ?>" alt="Digital signature"><?php endif; ?>
+                </div>
                 <div class="line">
                     <div class="label">Prepared By</div>
                     <div class="who"><?= e($preparedBy) ?></div>
                 </div>
             </div>
-            <div class="sign<?= $hasStamp ? ' has-img' : '' ?>">
-                <?php if ($hasStamp): ?><img class="stamp" src="<?= e($stampUrl) ?>" alt="Company seal"><?php endif; ?>
+            <div class="sign">
+                <div class="sign-slot">
+                    <?php if ($hasStamp): ?><img class="stamp" src="<?= e($stampUrl) ?>" alt="Company seal"><?php endif; ?>
+                </div>
                 <div class="line">
                     <div class="label">Authorized Signature</div>
                     <div class="who">VK NETWORK</div>
                 </div>
             </div>
             <div class="sign">
+                <div class="sign-slot" aria-hidden="true"></div>
                 <div class="line">
                     <div class="label">Customer Signature</div>
                     <div class="who">Accepted &amp; Confirmed</div>

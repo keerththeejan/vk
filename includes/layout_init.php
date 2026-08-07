@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 /**
- * Session, auth, and DB — no HTML output.
+ * Session, auth, and DB - no HTML output.
  * Use before any redirect(); then require layout_start.php for the chrome.
  */
 require_once __DIR__ . '/init.php';
@@ -17,7 +17,7 @@ if (session_status() === PHP_SESSION_ACTIVE) {
 }
 
 /**
- * Finance schema migrations — call only from invoice/payment/account modules.
+ * Finance schema migrations - call only from invoice/payment/account modules.
  */
 function vk_ensure_finance_schemas(PDO $pdo): void
 {
