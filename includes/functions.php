@@ -102,12 +102,7 @@ function redirect(string $path): void
 
 function flash_set(string $type, string $message): void
 {
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        if (defined('SESSION_NAME')) {
-            session_name(SESSION_NAME);
-        }
-        @session_start();
-    }
+    vk_session_resume();
     $_SESSION['_flash'] = ['type' => $type, 'message' => $message];
 }
 
@@ -119,6 +114,21 @@ function flash_get(): ?array
     $f = $_SESSION['_flash'];
     unset($_SESSION['_flash']);
     return $f;
+}
+
+/**
+ * Start or reopen the PHP session safely after session_write_close().
+ * Never calls session_name() once headers have been sent.
+ */
+function vk_session_resume(): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        return;
+    }
+    if (defined('SESSION_NAME') && !headers_sent()) {
+        session_name(SESSION_NAME);
+    }
+    @session_start();
 }
 
 function require_login(): void
@@ -213,25 +223,41 @@ function require_settings_admin(): void
 
 function csrf_token(): string
 {
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        if (defined('SESSION_NAME')) {
-            session_name(SESSION_NAME);
-        }
-        @session_start();
+    // Prefer token prepared in layout_init before session_write_close().
+    if (!empty($GLOBALS['vk_csrf_token']) && is_string($GLOBALS['vk_csrf_token'])) {
+        return $GLOBALS['vk_csrf_token'];
     }
+
+    // After session_write_close(), $_SESSION values remain readable without restarting.
+    if (!empty($_SESSION['_csrf_token']) && is_string($_SESSION['_csrf_token'])) {
+        $GLOBALS['vk_csrf_token'] = $_SESSION['_csrf_token'];
+
+        return $GLOBALS['vk_csrf_token'];
+    }
+
+    vk_session_resume();
+
     if (empty($_SESSION['_csrf_token']) || !is_string($_SESSION['_csrf_token'])) {
         $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
     }
+    $GLOBALS['vk_csrf_token'] = $_SESSION['_csrf_token'];
 
-    return $_SESSION['_csrf_token'];
+    return $GLOBALS['vk_csrf_token'];
 }
 
 function csrf_verify(?string $token): bool
 {
+    $expected = null;
+    if (!empty($GLOBALS['vk_csrf_token']) && is_string($GLOBALS['vk_csrf_token'])) {
+        $expected = $GLOBALS['vk_csrf_token'];
+    } elseif (!empty($_SESSION['_csrf_token']) && is_string($_SESSION['_csrf_token'])) {
+        $expected = $_SESSION['_csrf_token'];
+    }
+
     return is_string($token)
-        && isset($_SESSION['_csrf_token'])
-        && is_string($_SESSION['_csrf_token'])
-        && hash_equals($_SESSION['_csrf_token'], $token);
+        && is_string($expected)
+        && $expected !== ''
+        && hash_equals($expected, $token);
 }
 
 function require_csrf(?string $token): void

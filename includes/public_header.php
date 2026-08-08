@@ -38,7 +38,18 @@ try {
     $vkPubNavMenus = vk_site_menus_for_public_nav_fallback();
 }
 if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
-    header('Cache-Control: public, max-age=600');
+    // Never publicly cache HTML for authenticated sessions (admin browsing public site).
+    $vkPublicCachePrivate = function_exists('vk_wants_auth_bootstrap') && vk_wants_auth_bootstrap();
+    if ($vkPublicCachePrivate || (!empty($_SESSION['user_id']))) {
+        if (function_exists('vk_perf_send_private_headers')) {
+            vk_perf_send_private_headers();
+        } else {
+            header('Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0');
+        }
+    } else {
+        header('Cache-Control: public, max-age=600, stale-while-revalidate=86400');
+        header('Vary: Cookie, Accept-Encoding');
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -64,11 +75,11 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link rel="preconnect" href="https://unpkg.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap"></noscript>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <!-- Fewer font weights = faster FCP/LCP; display=swap already set -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@600;700&display=swap" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@600;700&display=swap"></noscript>
     <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
-    <link rel="preload" as="style" href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= e($vkPublicStyleVersion) ?>">
     <link rel="preload" as="style" href="<?= e(base_url('assets/css/public-premium.css')) ?>?v=<?= e($vkPublicPremiumVersion) ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous" media="print" onload="this.media='all'">
     <link rel="stylesheet" href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= e($vkPublicStyleVersion) ?>" media="print" onload="this.media='all'">
@@ -107,6 +118,9 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
     </style>
     <link rel="icon" href="<?= e($siteFaviconUrl) ?>">
     <link rel="shortcut icon" href="<?= e($siteFaviconUrl) ?>">
+    <?php if (is_string($siteLogoUrl) && $siteLogoUrl !== ''): ?>
+    <link rel="preload" as="image" href="<?= e($siteLogoUrl) ?>" fetchpriority="high">
+    <?php endif; ?>
 </head>
 <body class="vk-public-site vk-neo-site d-flex flex-column min-vh-100">
 <div class="vk-site-bg" aria-hidden="true">
@@ -125,7 +139,7 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         <a class="navbar-brand d-flex align-items-center gap-3 py-2 mb-0 text-decoration-none" href="<?= e(BASE_URL) ?>/index.php" title="<?= e($seoBrand) ?> - <?= e((string) $companyTagline) ?>">
             <picture>
                 <source media="(max-width: 575.98px)" srcset="<?= e($mobileLogoUrl) ?>">
-                <img src="<?= e($siteLogoUrl) ?>" alt="<?= e($seoBrand) ?>" class="vk-public-logo-img" loading="eager" decoding="async">
+                <img src="<?= e($siteLogoUrl) ?>" alt="<?= e($seoBrand) ?>" class="vk-public-logo-img" width="140" height="40" fetchpriority="high" loading="eager" decoding="async">
             </picture>
             <span class="d-flex flex-column align-items-start text-start lh-sm">
                 <span class="vk-public-brand-title"><?= e($seoBrand) ?></span>

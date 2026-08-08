@@ -21,7 +21,7 @@ $socials = [
         <div class="row gy-4">
             <div class="col-lg-4">
                 <a class="vk-footer-logo d-inline-flex align-items-center gap-3 mb-3" href="<?= e(BASE_URL) ?>/index.php">
-                    <img class="vk-footer-logo-img" src="<?= e($footerLogo) ?>" alt="<?= e((string) $footerCompany) ?> logo" loading="lazy" decoding="async">
+                    <img class="vk-footer-logo-img" src="<?= e($footerLogo) ?>" alt="<?= e((string) $footerCompany) ?> logo" width="120" height="36" loading="lazy" decoding="async">
                     <div>
                         <div class="vk-footer-brand"><?= e((string) $footerCompany) ?></div>
                         <div class="small text-muted"><?= e((string) $footerTagline) ?></div>
@@ -96,7 +96,6 @@ if (function_exists('vk_json_ld_local_business')) {
     <small>Online now</small>
 </a>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous" defer></script>
-<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" crossorigin="anonymous" defer></script>
 <script src="<?= e(base_url('assets/js/public-site.js')) ?>?v=<?= e($vkPublicScriptVersion) ?>" defer></script>
 <?= $extraScripts ?? '' ?>
 </body>

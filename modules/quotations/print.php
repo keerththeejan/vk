@@ -48,15 +48,7 @@ $hasStamp = is_file($stampAbs);
 $signatureUrl = $hasSignature ? base_url($signatureRel . '?v=' . filemtime($signatureAbs)) : '';
 $stampUrl = $hasStamp ? base_url($stampRel . '?v=' . filemtime($stampAbs)) : '';
 
-$verifyUrl = 'https://vkitnet.info/quote/' . rawurlencode((string) $q['quotation_number']) . '?id=' . $id;
-$qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=' . rawurlencode($verifyUrl);
-$footerQrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=' . rawurlencode('https://www.vkitnet.info');
-
-$bankName = vk_quotation_setting($pdo, 'bank_name', 'Commercial Bank');
-$bankAccountName = vk_quotation_setting($pdo, 'bank_account_name', 'VK Network');
-$bankAccountNumber = vk_quotation_setting($pdo, 'bank_account_number', '');
-$bankBranch = vk_quotation_setting($pdo, 'bank_branch', 'Kilinochchi');
-$bankSwift = vk_quotation_setting($pdo, 'bank_swift', '');
+$footerQrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=0&data=' . rawurlencode('https://www.vkitnet.info');
 
 $businessName = 'VK NETWORK';
 $businessPhone = '+94 70 588 6782';
@@ -107,21 +99,23 @@ $money = static function (float $n): string {
     <title>Quotation <?= e($q['quotation_number']) ?> — VK NETWORK</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --vk-brand: #0B4DBA;
             --vk-navy: #0A2F7A;
+            --vk-brand-deep: #0B3D91;
+            --vk-brand-accent: #1E5CC6;
             --vk-text: #222222;
             --vk-muted: #555555;
             --vk-border: #D9E3F0;
             --vk-alt: #F5F8FC;
             --page-x: 12mm;
+            --page-y: 12mm;
             --radius: 6px;
-            --header-pad-y: 20px;
-            --header-height: 128px;
-            --footer-height: 78px;
-            --lh-gap: 16px;
+            --header-height: 102px;
+            --footer-height: 24mm;
+            --lh-gap: 14px;
             --lh-divider: #D0DAE8;
         }
 
@@ -136,8 +130,8 @@ $money = static function (float $n): string {
             background: #e8edf3;
             color: var(--vk-text);
             font-family: Poppins, Arial, Helvetica, sans-serif;
-            font-size: 11px;
-            line-height: 1.3;
+            font-size: 10.5px;
+            line-height: 1.35;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -170,29 +164,28 @@ $money = static function (float $n): string {
             border: 1px solid var(--vk-border);
         }
 
-        /* ── Page shell — exact A4 canvas ── */
+        /* ── A4 canvas — grows with content, min one page ── */
         .quote-page {
             position: relative;
             display: flex;
             flex-direction: column;
             width: 210mm;
-            height: 297mm;
             min-height: 297mm;
-            max-height: 297mm;
+            height: auto;
             margin: 0 auto 12px;
             padding: 0;
             background: #fff;
             box-shadow: 0 10px 40px rgba(15, 23, 42, .12);
-            overflow: hidden;
+            overflow: visible;
         }
 
         .page-watermark {
             position: absolute;
-            top: 50%;
+            top: 48%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 360px;
-            opacity: 0.04;
+            width: 300px;
+            opacity: 0.035;
             z-index: 0;
             pointer-events: none;
             user-select: none;
@@ -205,37 +198,40 @@ $money = static function (float $n): string {
 
         .draft-mark {
             position: absolute;
-            top: 48%;
+            top: 46%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-28deg);
-            font-size: 56px;
+            font-size: 52px;
             font-weight: 700;
-            color: rgba(11, 77, 186, .06);
+            color: rgba(11, 77, 186, .055);
             letter-spacing: .12em;
             z-index: 0;
             pointer-events: none;
             white-space: nowrap;
         }
 
-        /* ── HEADER — Bootstrap 3/6/3, fixed height ── */
+        /* ── HEADER — international corporate letterhead ── */
         .letterhead-header {
             position: relative;
             z-index: 2;
             flex: 0 0 var(--header-height);
             height: var(--header-height);
             max-height: var(--header-height);
+            margin-top: 0;
             background: #fff;
-            border-bottom: 3px solid var(--vk-brand);
+            border-bottom: 2.5px solid var(--vk-brand);
             box-sizing: border-box;
         }
         .lh-row {
             display: flex;
             flex-wrap: nowrap;
             align-items: center;
+            justify-content: space-between;
             width: 100%;
             height: 100%;
-            padding: var(--header-pad-y) var(--page-x);
+            padding: 10px var(--page-x);
             box-sizing: border-box;
+            gap: 0;
         }
         .lh-col {
             display: flex;
@@ -245,12 +241,14 @@ $money = static function (float $n): string {
             box-sizing: border-box;
         }
         .lh-col-3 {
-            flex: 0 0 25%;
-            max-width: 25%;
+            flex: 1 1 0;
+            max-width: none;
+            width: 0;
         }
         .lh-col-6 {
-            flex: 0 0 50%;
-            max-width: 50%;
+            flex: 1.35 1 0;
+            max-width: none;
+            width: 0;
             justify-content: center;
             border-left: 1px solid var(--lh-divider);
             border-right: 1px solid var(--lh-divider);
@@ -274,14 +272,12 @@ $money = static function (float $n): string {
         }
         .company-logo img {
             display: block;
-            width: auto;
-            height: 88px;
-            max-width: 100%;
-            max-height: 88px;
+            width: 100px;
+            max-width: 110px;
+            height: auto;
+            max-height: 82px;
             object-fit: contain;
             object-position: left center;
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
         }
 
         .letterhead-col--center {
@@ -291,22 +287,20 @@ $money = static function (float $n): string {
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 2px;
+            gap: 1px;
         }
         .letterhead-company {
-            font-family: Poppins, Arial, Helvetica, sans-serif;
-            font-size: 28px;
+            font-size: 20px;
             font-weight: 700;
             color: var(--vk-brand);
-            letter-spacing: 1px;
+            letter-spacing: 0.8px;
             line-height: 1.1;
             text-transform: uppercase;
             margin: 0;
             white-space: nowrap;
         }
         .letterhead-services {
-            font-family: Poppins, Arial, Helvetica, sans-serif;
-            font-size: 16px;
+            font-size: 10.5px;
             font-weight: 500;
             color: #222;
             margin: 0;
@@ -314,13 +308,12 @@ $money = static function (float $n): string {
             white-space: nowrap;
         }
         .letterhead-tagline {
-            font-family: Poppins, Arial, Helvetica, sans-serif;
-            font-size: 12px;
+            font-size: 9px;
             font-style: italic;
             font-weight: 400;
             color: var(--vk-brand);
             margin: 2px 0 0;
-            line-height: 1.25;
+            line-height: 1.2;
             text-align: center;
             white-space: nowrap;
         }
@@ -330,7 +323,7 @@ $money = static function (float $n): string {
             flex-direction: column;
             justify-content: center;
             align-items: flex-end;
-            gap: 8px;
+            gap: 5px;
             width: 100%;
         }
         .letterhead-contact-item {
@@ -338,16 +331,16 @@ $money = static function (float $n): string {
             flex-direction: row;
             align-items: center;
             justify-content: flex-start;
-            gap: 8px;
+            gap: 6px;
             white-space: nowrap;
-            font-size: 12px;
+            font-size: 10px;
             color: #222;
             line-height: 1;
             margin: 0;
         }
         .icon-circle {
-            width: 22px;
-            height: 22px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             background: var(--vk-brand);
             display: inline-flex;
@@ -356,30 +349,30 @@ $money = static function (float $n): string {
             flex-shrink: 0;
         }
         .icon-circle svg {
-            width: 11px;
-            height: 11px;
+            width: 9px;
+            height: 9px;
             fill: #fff;
             display: block;
         }
 
-        /* ── Body — fills space between fixed header & footer ── */
+        /* ── Body — grows with items; footer stays at bottom via flex ── */
         .quote-body {
             position: relative;
             z-index: 1;
             flex: 1 1 auto;
             display: flex;
             flex-direction: column;
-            padding: 8px var(--page-x) 6px;
+            padding: 5mm var(--page-x) 4mm;
             min-height: 0;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .doc-title {
             text-align: center;
-            margin: 4px 0 10px;
-            font-size: 26px;
+            margin: 0 0 5mm;
+            font-size: 18px;
             font-weight: 700;
-            letter-spacing: 3px;
+            letter-spacing: 2.5px;
             color: var(--vk-navy);
             text-transform: uppercase;
             line-height: 1;
@@ -390,8 +383,8 @@ $money = static function (float $n): string {
         /* Info cards */
         .cards {
             display: grid;
-            gap: 8px;
-            margin-bottom: 8px;
+            gap: 3mm;
+            margin-bottom: 3.5mm;
             page-break-inside: avoid;
             break-inside: avoid;
         }
@@ -400,24 +393,24 @@ $money = static function (float $n): string {
         .info-card {
             border: 1px solid var(--vk-border);
             border-radius: var(--radius);
-            padding: 8px 12px;
-            min-height: 48px;
-            height: 100%;
+            padding: 2.5mm 3mm;
+            min-height: 0;
+            height: auto;
             display: flex;
             flex-direction: column;
             justify-content: center;
             background: #fff;
         }
         .info-card__lbl {
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 600;
             color: #6B7A90;
             text-transform: uppercase;
             letter-spacing: .04em;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
         .info-card__val {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             color: var(--vk-navy);
             line-height: 1.25;
@@ -429,43 +422,44 @@ $money = static function (float $n): string {
             border: 1px solid var(--vk-border);
             border-radius: var(--radius);
             overflow: hidden;
-            margin-bottom: 8px;
-            page-break-inside: avoid;
-            break-inside: avoid;
+            margin-bottom: 3.5mm;
+            page-break-inside: auto;
+            break-inside: auto;
         }
         .items {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
         }
-        .items col.c-no { width: 30px; }
-        .items col.c-qty { width: 46px; }
-        .items col.c-unit { width: 46px; }
-        .items col.c-price { width: 74px; }
-        .items col.c-disc { width: 62px; }
-        .items col.c-tax { width: 56px; }
-        .items col.c-amt { width: 74px; }
+        .items col.c-no { width: 28px; }
+        .items col.c-qty { width: 42px; }
+        .items col.c-unit { width: 42px; }
+        .items col.c-price { width: 70px; }
+        .items col.c-disc { width: 58px; }
+        .items col.c-tax { width: 52px; }
+        .items col.c-amt { width: 70px; }
         .items thead th {
-            height: 32px;
+            height: 28px;
             background: var(--vk-navy);
             color: #fff;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
-            padding: 0 6px;
+            padding: 0 5px;
             border: 1px solid #06204f;
             vertical-align: middle;
             text-align: center;
         }
-        .items thead th.desc { text-align: left; padding-left: 8px; }
+        .items thead th.desc { text-align: left; padding-left: 7px; }
+        .items thead { display: table-header-group; }
         .items tbody td {
-            height: 26px;
-            padding: 2px 6px;
+            height: 24px;
+            padding: 2px 5px;
             border: 1px solid var(--vk-border);
             vertical-align: middle;
-            font-size: 10px;
+            font-size: 9.5px;
             color: #333;
         }
-        .items tbody td.desc { text-align: left; padding-left: 8px; }
+        .items tbody td.desc { text-align: left; padding-left: 7px; }
         .items .ctr { text-align: center; }
         .items .num {
             text-align: right;
@@ -475,7 +469,7 @@ $money = static function (float $n): string {
         .items tbody tr:nth-child(even) td { background: var(--vk-alt); }
         .item-sub {
             display: block;
-            font-size: 8px;
+            font-size: 7.5px;
             color: #6B7A90;
             margin-top: 1px;
         }
@@ -483,23 +477,23 @@ $money = static function (float $n): string {
         /* Words + totals */
         .totals-row {
             display: grid;
-            grid-template-columns: 1fr 220px;
-            gap: 12px;
+            grid-template-columns: 1fr 210px;
+            gap: 4mm;
             align-items: start;
-            margin-bottom: 8px;
+            margin-bottom: 3.5mm;
             page-break-inside: avoid;
             break-inside: avoid;
         }
         .words__lbl {
             display: block;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 700;
             color: var(--vk-navy);
             text-transform: uppercase;
             margin-bottom: 2px;
         }
         .words__val {
-            font-size: 10px;
+            font-size: 9.5px;
             color: #445;
             font-style: italic;
             line-height: 1.35;
@@ -511,9 +505,9 @@ $money = static function (float $n): string {
         }
         .summary table { width: 100%; border-collapse: collapse; }
         .summary td {
-            height: 24px;
-            padding: 0 10px;
-            font-size: 10px;
+            height: 22px;
+            padding: 0 8px;
+            font-size: 9.5px;
             border-bottom: 1px solid #eef2f7;
             vertical-align: middle;
         }
@@ -526,21 +520,19 @@ $money = static function (float $n): string {
             white-space: nowrap;
         }
         .summary .grand td {
-            height: 30px;
+            height: 28px;
             background: var(--vk-navy);
             color: #fff;
             border: 0;
         }
-        .summary .grand td:first-child { color: #fff; font-size: 11px; }
-        .summary .grand td:last-child { color: #fff; font-size: 13px; }
+        .summary .grand td:first-child { color: #fff; font-size: 10px; }
+        .summary .grand td:last-child { color: #fff; font-size: 12px; }
 
-        /* Terms + Bank — equal height */
+        /* Terms & Conditions — full width, natural height */
         .bottom {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            align-items: stretch;
-            margin-bottom: 8px;
+            display: block;
+            width: 100%;
+            margin-bottom: 4mm;
             page-break-inside: avoid;
             break-inside: avoid;
         }
@@ -551,68 +543,42 @@ $money = static function (float $n): string {
             background: #fff;
             display: flex;
             flex-direction: column;
-            min-height: 98px;
-            height: 100%;
+            min-height: 0;
+            width: 100%;
         }
         .panel__head {
-            padding: 5px 10px;
-            font-size: 9.5px;
+            padding: 4px 10px;
+            font-size: 9px;
             font-weight: 700;
             color: #fff;
             background: var(--vk-navy);
             text-transform: uppercase;
-            letter-spacing: .03em;
+            letter-spacing: .04em;
         }
         .panel__body {
-            padding: 8px 10px;
-            flex: 1;
+            padding: 3mm 3.5mm;
+            flex: 0 0 auto;
         }
         .terms-text {
             font-family: inherit;
             font-size: 9px;
             color: #445;
-            line-height: 1.35;
+            line-height: 1.45;
             white-space: pre-wrap;
             word-break: break-word;
             margin: 0;
-            max-height: 72px;
-            overflow: hidden;
-        }
-        .bank {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            justify-content: space-between;
-            height: 100%;
-        }
-        .bank__lines {
-            flex: 1;
-            min-width: 0;
-            font-size: 9.5px;
-            color: #445;
-            line-height: 1.4;
-        }
-        .bank__lines b { color: #222; font-weight: 600; }
-        .bank__qr {
-            flex-shrink: 0;
-            width: 62px;
-        }
-        .bank__qr img {
-            width: 62px;
-            height: 62px;
-            display: block;
-            border: 1px solid var(--vk-border);
-            border-radius: 3px;
-            background: #fff;
+            max-height: none;
+            overflow: visible;
         }
 
-        /* Signatures */
+        /* Signatures — three equal columns under terms */
         .signs {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            column-gap: 16px;
+            column-gap: 8mm;
             align-items: end;
-            margin: 4px 0 8px;
+            margin: 0 0 2mm;
+            padding-top: 1mm;
             page-break-inside: avoid;
             break-inside: avoid;
         }
@@ -623,44 +589,44 @@ $money = static function (float $n): string {
             align-items: center;
         }
         .sign__slot {
-            height: 30px;
+            height: 12mm;
             width: 100%;
             display: flex;
             align-items: flex-end;
             justify-content: center;
         }
         .sign img.sig {
-            max-height: 26px;
-            max-width: 110px;
+            max-height: 11mm;
+            max-width: 36mm;
             object-fit: contain;
             display: block;
         }
         .sign img.stamp {
-            max-height: 28px;
-            max-width: 80px;
+            max-height: 11mm;
+            max-width: 24mm;
             object-fit: contain;
             opacity: .4;
             display: block;
         }
         .sign__line {
-            width: 140px;
-            max-width: 90%;
+            width: 42mm;
+            max-width: 92%;
             border-top: 1px solid #444;
             margin-top: 2px;
-            padding-top: 4px;
+            padding-top: 3px;
         }
         .sign__label {
-            font-size: 9.5px;
+            font-size: 9px;
             font-weight: 700;
             color: var(--vk-navy);
         }
         .sign__who {
             margin-top: 1px;
-            font-size: 8.5px;
+            font-size: 8px;
             color: #6B7A90;
         }
 
-        /* ── FOOTER — fixed height at bottom of A4 ── */
+        /* ── FOOTER — pinned to bottom of A4 page ── */
         .footer.letterhead-footer {
             position: relative;
             z-index: 2;
@@ -669,7 +635,7 @@ $money = static function (float $n): string {
             max-height: var(--footer-height);
             margin-top: auto;
             margin-bottom: 0;
-            padding: 8px var(--page-x) 6px;
+            padding: 2.5mm var(--page-x) 2mm;
             border-top: 2px solid var(--vk-brand);
             background: #fff;
             width: 100%;
@@ -677,43 +643,55 @@ $money = static function (float $n): string {
             display: flex;
             flex-direction: column;
             justify-content: center;
+            align-items: stretch;
+            overflow: hidden;
         }
         .footer-content {
+            position: relative;
             display: flex;
             flex-wrap: nowrap;
-            justify-content: space-between;
             align-items: center;
-            gap: 12px;
+            justify-content: center;
             width: 100%;
-            min-height: 44px;
+            min-height: 14mm;
+            height: 14mm;
+            padding-right: 16mm;
         }
-        .footer-left {
+        .footer-contacts {
             display: flex;
             flex-wrap: nowrap;
+            flex-direction: row;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             gap: 0;
-            flex: 1 1 auto;
-            min-width: 0;
-            overflow: hidden;
+            width: 100%;
+            height: 100%;
         }
         .footer-item {
             display: inline-flex;
+            flex-direction: row;
             align-items: center;
-            gap: 6px;
-            font-size: 10px;
+            justify-content: flex-start;
+            gap: 5px;
+            font-size: 8.5px;
+            font-weight: 500;
             white-space: nowrap;
             line-height: 1;
-            color: #333;
-            padding: 0 12px;
+            color: #333333;
+            padding: 0 10px;
+            height: 100%;
         }
-        .footer-item:first-child { padding-left: 0; }
-        .footer-item + .footer-item {
-            border-left: 1px solid #d0d0d0;
+        .footer-sep {
+            display: block;
+            flex: 0 0 1px;
+            width: 1px;
+            height: 4.5mm;
+            background: #D0D0D0;
+            align-self: center;
         }
         .footer-icon {
-            width: 18px;
-            height: 18px;
+            width: 15px;
+            height: 15px;
             border-radius: 50%;
             display: inline-flex;
             justify-content: center;
@@ -722,36 +700,45 @@ $money = static function (float $n): string {
             flex-shrink: 0;
         }
         .footer-icon svg {
-            width: 9px;
-            height: 9px;
+            width: 8px;
+            height: 8px;
             fill: #fff;
             display: block;
         }
+        .footer-item-text {
+            display: inline-block;
+            line-height: 1.15;
+            vertical-align: middle;
+        }
         .footer-qr {
-            flex: 0 0 44px;
-            width: 44px;
-            height: 44px;
-            margin-left: auto;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 13mm;
+            height: 13mm;
             display: flex;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: center;
         }
         .footer-qr img {
-            width: 44px;
-            height: 44px;
+            width: 13mm;
+            height: 13mm;
             display: block;
+            object-fit: contain;
         }
         .footer-bottom {
-            margin: 6px 0 0;
-            padding-top: 5px;
-            border-top: 1px solid #d9d9d9;
+            margin: 2mm 0 0;
+            padding: 0 16mm 0 0;
             text-align: center;
-            font-size: 9px;
-            color: #555;
+            font-size: 9pt;
+            font-weight: 500;
+            color: #666666;
             line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            letter-spacing: 0.01em;
         }
 
         @media print {
@@ -759,12 +746,11 @@ $money = static function (float $n): string {
             .toolbar { display: none !important; }
             .quote-page {
                 width: 210mm;
-                height: 297mm;
                 min-height: 297mm;
-                max-height: 297mm;
+                height: auto;
                 margin: 0 !important;
                 box-shadow: none !important;
-                overflow: hidden;
+                overflow: visible;
             }
             .letterhead-header {
                 flex: 0 0 var(--header-height);
@@ -777,12 +763,12 @@ $money = static function (float $n): string {
                 margin-bottom: 0;
             }
             .quote-body {
-                padding: 6px var(--page-x) 4px;
-                overflow: hidden;
+                padding: 5mm var(--page-x) 4mm;
+                overflow: visible;
             }
             .page-watermark {
-                position: fixed;
-                opacity: 0.04;
+                position: absolute;
+                opacity: 0.035;
             }
             .letterhead-company,
             .icon-circle,
@@ -798,11 +784,14 @@ $money = static function (float $n): string {
             .letterhead-header,
             .doc-title,
             .cards,
-            .table-wrap,
             .totals-row,
             .bottom,
             .signs,
             .footer.letterhead-footer {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .items tr {
                 page-break-inside: avoid;
                 break-inside: avoid;
             }
@@ -813,7 +802,6 @@ $money = static function (float $n): string {
                 width: 100%;
                 height: auto;
                 min-height: auto;
-                max-height: none;
             }
             .letterhead-header {
                 height: auto;
@@ -823,6 +811,7 @@ $money = static function (float $n): string {
             .lh-row {
                 flex-wrap: wrap;
                 height: auto;
+                padding: 12px var(--page-x);
             }
             .lh-col-3,
             .lh-col-6 {
@@ -842,15 +831,38 @@ $money = static function (float $n): string {
                 height: auto;
                 max-height: none;
                 flex: 0 0 auto;
+                padding: 12px var(--page-x);
             }
-            .footer-left { flex-wrap: wrap; }
-            .footer-item + .footer-item { border-left: 0; }
-            .footer-bottom { white-space: normal; }
+            .footer-content {
+                height: auto;
+                min-height: 0;
+                padding-right: 0;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .footer-contacts {
+                flex-wrap: wrap;
+                row-gap: 8px;
+                height: auto;
+                justify-content: center;
+            }
+            .footer-item { height: auto; padding: 4px 8px; }
+            .footer-sep { display: none; }
+            .footer-qr {
+                position: static;
+                transform: none;
+                margin: 0 auto;
+            }
+            .footer-bottom {
+                white-space: normal;
+                margin-top: 8px;
+                padding-right: 0;
+                font-size: 8.5pt;
+            }
             .cards--3,
             .cards--2,
-            .totals-row,
-            .bottom,
-            .signs { grid-template-columns: 1fr; }
+            .totals-row { grid-template-columns: 1fr; }
+            .signs { grid-template-columns: 1fr; row-gap: 12px; }
         }
     </style>
 </head>
@@ -875,15 +887,17 @@ $money = static function (float $n): string {
             <div class="lh-col lh-col-3 lh-col--logo">
                 <div class="company-logo">
                     <?php if ($showLogo): ?>
-                    <img src="<?= e($logoUrl) ?>" alt="VK Network Logo" width="150" height="88">
+                    <img src="<?= e($logoUrl) ?>" alt="VK Network Logo" width="100" height="80">
                     <?php endif; ?>
                 </div>
             </div>
             <div class="lh-col lh-col-6">
                 <div class="letterhead-col--center">
                     <h2 class="letterhead-company"><?= e($businessName) ?></h2>
-                    <p class="letterhead-services">Software Development | Hardware Solutions</p>
-                    <p class="letterhead-services">CCTV Surveillance | Network Infrastructure</p>
+                    <div class="letterhead-services-wrap">
+                        <p class="letterhead-services">Software Development | Hardware Solutions</p>
+                        <p class="letterhead-services">CCTV Surveillance | Network Infrastructure</p>
+                    </div>
                     <p class="letterhead-tagline"><?= e($businessTagline) ?></p>
                 </div>
             </div>
@@ -1003,23 +1017,6 @@ $money = static function (float $n): string {
                 <div class="panel__head">Terms &amp; Conditions</div>
                 <div class="panel__body"><pre class="terms-text"><?= e($termsText) ?></pre></div>
             </section>
-            <section class="panel">
-                <div class="panel__head">Bank Details</div>
-                <div class="panel__body">
-                    <div class="bank">
-                        <div class="bank__lines">
-                            <div><b>Bank Name:</b> <?= e($bankName) ?></div>
-                            <div><b>Account Name:</b> <?= e($bankAccountName) ?></div>
-                            <?php if ($bankBranch !== ''): ?><div><b>Branch:</b> <?= e($bankBranch) ?></div><?php endif; ?>
-                            <?php if ($bankAccountNumber !== ''): ?><div><b>Account No:</b> <?= e($bankAccountNumber) ?></div><?php endif; ?>
-                            <?php if ($bankSwift !== ''): ?><div><b>Swift:</b> <?= e($bankSwift) ?></div><?php endif; ?>
-                        </div>
-                        <div class="bank__qr">
-                            <img src="<?= e($qrUrl) ?>" alt="Quotation QR">
-                        </div>
-                    </div>
-                </div>
-            </section>
         </div>
 
         <section class="signs">
@@ -1053,26 +1050,29 @@ $money = static function (float $n): string {
 
     <footer class="footer letterhead-footer">
         <div class="footer-content">
-            <div class="footer-left">
+            <div class="footer-contacts">
                 <div class="footer-item">
-                    <span class="footer-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5s2.5 1.1 2.5 2.5S13.4 11.5 12 11.5z"/></svg></span>
-                    <span><?= e($businessAddress) ?></span>
+                    <span class="footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5s2.5 1.1 2.5 2.5S13.4 11.5 12 11.5z"/></svg></span>
+                    <span class="footer-item-text"><?= e($businessAddress) ?></span>
                 </div>
+                <span class="footer-sep" aria-hidden="true"></span>
                 <div class="footer-item">
-                    <span class="footer-icon"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.7 5.1 6.5 6.5l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.5.6.6 0 1 .4 1 1V21c0 .6-.4 1-1 1C10.3 22 2 13.7 2 3c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.5.1.3 0 .7-.2 1L6.6 10.8z"/></svg></span>
-                    <span><?= e($businessPhone) ?></span>
+                    <span class="footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.7 5.1 6.5 6.5l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.5.6.6 0 1 .4 1 1V21c0 .6-.4 1-1 1C10.3 22 2 13.7 2 3c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.5.1.3 0 .7-.2 1L6.6 10.8z"/></svg></span>
+                    <span class="footer-item-text"><?= e($businessPhone) ?></span>
                 </div>
+                <span class="footer-sep" aria-hidden="true"></span>
                 <div class="footer-item">
-                    <span class="footer-icon"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5L4 8V6l8 5 8-5v2z"/></svg></span>
-                    <span><?= e($businessEmail) ?></span>
+                    <span class="footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5L4 8V6l8 5 8-5v2z"/></svg></span>
+                    <span class="footer-item-text"><?= e($businessEmail) ?></span>
                 </div>
+                <span class="footer-sep" aria-hidden="true"></span>
                 <div class="footer-item">
-                    <span class="footer-icon"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm7.9 9H15.8a15.7 15.7 0 0 0-1.2-5.1A8 8 0 0 1 19.9 11zM12 4c.9 1.2 1.6 2.6 2 4.1H10c.4-1.5 1.1-2.9 2-4.1zM8.4 5.9A15.7 15.7 0 0 0 7.2 11H4.1a8 8 0 0 1 4.3-5.1zM4.1 13h3.1c.3 1.8.8 3.5 1.2 5.1A8 8 0 0 1 4.1 13zm7.9 7c-.9-1.2-1.6-2.6-2-4.1h4c-.4 1.5-1.1 2.9-2 4.1zm3.5-1.9c.5-1.6.9-3.3 1.2-5.1h3.9a8 8 0 0 1-5.1 5.1z"/></svg></span>
-                    <span><?= e($businessWebsite) ?></span>
+                    <span class="footer-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm7.9 9H15.8a15.7 15.7 0 0 0-1.2-5.1A8 8 0 0 1 19.9 11zM12 4c.9 1.2 1.6 2.6 2 4.1H10c.4-1.5 1.1-2.9 2-4.1zM8.4 5.9A15.7 15.7 0 0 0 7.2 11H4.1a8 8 0 0 1 4.3-5.1zM4.1 13h3.1c.3 1.8.8 3.5 1.2 5.1A8 8 0 0 1 4.1 13zm7.9 7c-.9-1.2-1.6-2.6-2-4.1h4c-.4 1.5-1.1 2.9-2 4.1zm3.5-1.9c.5-1.6.9-3.3 1.2-5.1h3.9a8 8 0 0 1-5.1 5.1z"/></svg></span>
+                    <span class="footer-item-text"><?= e($businessWebsite) ?></span>
                 </div>
             </div>
             <div class="footer-qr">
-                <img src="<?= e($footerQrUrl) ?>" alt="QR Code — www.vkitnet.info" width="48" height="48">
+                <img src="<?= e($footerQrUrl) ?>" alt="QR Code — www.vkitnet.info" width="49" height="49">
             </div>
         </div>
         <p class="footer-bottom"><?= e($businessServices) ?></p>

@@ -44,4 +44,5 @@ if (!$chk->fetchColumn()) {
 
 $pdo->prepare('DELETE FROM menus WHERE id = ?')->execute([$id]);
 
+vk_cache_invalidate_after_write('menus');
 echo json_encode(['ok' => true], JSON_THROW_ON_ERROR);

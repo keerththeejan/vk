@@ -70,6 +70,7 @@ if ($id <= 0) {
     $pdo->prepare(
         'INSERT INTO menus (name, slug, url, icon, sort_order, status) VALUES (?,?,?,?,?,?)'
     )->execute([$name, $slug, $url, $iconVal, $max + 10, $status]);
+    vk_cache_invalidate_after_write('menus');
     echo json_encode(['ok' => true, 'id' => (int) $pdo->lastInsertId()], JSON_THROW_ON_ERROR);
     exit;
 }
@@ -94,4 +95,5 @@ $pdo->prepare(
     'UPDATE menus SET name = ?, slug = ?, url = ?, icon = ?, status = ? WHERE id = ?'
 )->execute([$name, $slug, $url, $iconVal, $status, $id]);
 
+vk_cache_invalidate_after_write('menus');
 echo json_encode(['ok' => true, 'id' => $id], JSON_THROW_ON_ERROR);

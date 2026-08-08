@@ -139,6 +139,7 @@ function vk_cache_flush_prefix(string $prefix): void
 function vk_cache_flush_dashboard(): void
 {
     vk_cache_delete('dashboard_stats_v2');
+    vk_cache_delete('dashboard_stats_v3');
     vk_cache_delete('customers_list_kpis_v1');
     vk_cache_delete('smtp_warning_v1');
     vk_cache_delete('pending_auth_regs_v1');
@@ -172,6 +173,18 @@ function vk_cache_invalidate_after_write(string $domain = 'all'): void
     if ($domain === 'all' || $domain === 'marketing') {
         vk_cache_delete('marketing_seeded_v1');
         vk_cache_flush_dashboard();
+    }
+    if ($domain === 'all' || $domain === 'public' || $domain === 'menus') {
+        vk_cache_delete('public_nav_menus_v1');
+    }
+    if ($domain === 'all' || $domain === 'public' || $domain === 'services') {
+        vk_cache_delete('public_home_services_v1');
+    }
+    if ($domain === 'all' || $domain === 'public' || $domain === 'staff') {
+        // Known public list limits used by homepage / staff pages.
+        foreach ([8, 12, 24, 50, 100, 500] as $limit) {
+            vk_cache_delete('public_staff_list_v1_' . $limit);
+        }
     }
 }
 

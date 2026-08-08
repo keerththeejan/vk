@@ -93,14 +93,15 @@
         }
         var s = data.stats;
         setMetric("system-pulse", s.system_pulse || "All channels stable");
-        setMetric("sales-month", formatNumber(s.sales_month, true));
-        setMetric("sales-month-kpi", formatNumber(s.sales_month, true));
-        setMetric("sales-today", formatNumber(s.sales_today, true));
+        setMetric("sales-month", formatMoney(s.sales_month));
+        setMetric("sales-month-kpi", formatMoney(s.sales_month));
+        setMetric("sales-today", formatMoney(s.sales_today));
         setMetric("workload-completion", String(s.workload_completion || 0) + "%");
+        setMetric("repair-completion-label", String(s.repair_completion || 0) + "%");
         setMetric("pending-jobs", String(s.pending_jobs || 0) + " active jobs");
         setMetric("pending-jobs-kpi", String(s.pending_jobs || 0));
         setMetric("repair-finished", String((s.repair_completed || 0) + (s.repair_delivered || 0)) + " finished");
-        setMetric("critical-count", String(s.critical_count || 0) + " alerts");
+        setMetric("critical-count", String(s.critical_count || 0));
         setMetric("total-bookings", String(s.total_bookings || 0));
         setMetric("total-services", String(s.total_services || 0));
         setMetric("completed-jobs", String(s.completed_jobs || 0));
@@ -116,6 +117,20 @@
         setMetric("warranty-expiring", String(s.warranty_expiring || 0));
         setMetric("total-customers", String(s.total_customers || 0));
         setMetric("seo-average", String(s.seo_average || 0) + "%");
+        setMetric("quotations-total", String(s.quotations_total || 0));
+        setMetric("quotations-pending", String(s.quotations_pending || 0));
+        setMetric("quotations-approved", String(s.quotations_approved || 0));
+        setMetric("quotations-today", String(s.quotations_today || 0));
+        setMetric("invoices-total", String(s.invoices_total || 0));
+        setMetric("invoices-today", String(s.invoices_today || 0));
+        setMetric("outstanding", formatMoney(s.outstanding));
+        setMetric("products-total", String(s.products_total || 0));
+        setMetric("stock-items", formatNumber(s.stock_items));
+        setMetric("low-stock", String(s.low_stock || 0));
+        setMetric("suppliers-total", String(s.suppliers_total || 0));
+        setMetric("payments-today-count", String(s.payments_today_count || 0));
+        setMetric("collections-today", formatMoney(s.collections_today));
+        setMetric("today-activities", String(s.today_activities || 0));
 
         var bar = document.querySelector('[data-vk-metric-bar="repair-completion"]');
         if (bar) {
@@ -144,6 +159,20 @@
         renderEmergency(data.emergency_bookings || [], data.emergency_repairs || []);
         renderSmtpAlerts(data.smtp_warning);
         renderSchemaAlert(data.schema_needs_v3);
+
+        try {
+            window.dispatchEvent(new CustomEvent("vk-dashboard-stats", { detail: data }));
+        } catch (e) {
+            /* ignore */
+        }
+    }
+
+    function formatMoney(value) {
+        var n = Number(value);
+        if (!Number.isFinite(n)) {
+            return "₹0";
+        }
+        return "₹" + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
     }
 
     function renderMaintReminders(rows) {

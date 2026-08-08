@@ -572,8 +572,14 @@ function vk_auth_enforce_session_timeout(int $seconds = 7200): void
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_destroy();
         }
-        session_name(SESSION_NAME);
-        session_start();
+        if (function_exists('vk_session_resume')) {
+            vk_session_resume();
+        } else {
+            if (!headers_sent()) {
+                session_name(SESSION_NAME);
+            }
+            @session_start();
+        }
         flash_set('warning', 'Your session timed out. Please sign in again.');
         redirect('/login.php?timeout=1');
     }

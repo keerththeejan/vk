@@ -63,6 +63,20 @@ function vk_staff_ensure_table(PDO $pdo): void
 function vk_staff_get_public_list(PDO $pdo, int $limit = 8): array
 {
     $limit = max(1, min(50, $limit));
+    $cacheKey = 'public_staff_list_v1_' . $limit;
+    if (function_exists('vk_cache_remember')) {
+        return vk_cache_remember($cacheKey, 120, static function () use ($pdo, $limit) {
+            return vk_staff_get_public_list_uncached($pdo, $limit);
+        });
+    }
+
+    return vk_staff_get_public_list_uncached($pdo, $limit);
+}
+
+/** @return list<array<string,mixed>> */
+function vk_staff_get_public_list_uncached(PDO $pdo, int $limit = 8): array
+{
+    $limit = max(1, min(50, $limit));
     if (!db_table_exists($pdo, 'staff')) {
         return [];
     }
@@ -124,6 +138,10 @@ function vk_staff_insert(PDO $pdo, array $data): int
     );
     $st->execute(vk_staff_db_payload($data));
 
+    if (function_exists('vk_cache_invalidate_after_write')) {
+        vk_cache_invalidate_after_write('staff');
+    }
+
     return (int) $pdo->lastInsertId();
 }
 
@@ -155,6 +173,9 @@ function vk_staff_update(PDO $pdo, int $id, array $data): void
          WHERE id = :id'
     );
     $st->execute($payload);
+    if (function_exists('vk_cache_invalidate_after_write')) {
+        vk_cache_invalidate_after_write('staff');
+    }
 }
 
 function vk_staff_delete(PDO $pdo, int $id): void
@@ -166,6 +187,9 @@ function vk_staff_delete(PDO $pdo, int $id): void
     if ($row) {
         vk_staff_delete_upload_file((string) ($row['image'] ?? ''));
         vk_staff_delete_upload_file((string) ($row['image_thumb'] ?? ''));
+    }
+    if (function_exists('vk_cache_invalidate_after_write')) {
+        vk_cache_invalidate_after_write('staff');
     }
 }
 

@@ -115,16 +115,35 @@
 
 .qtn-autocomplete {
   position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px);
-  background: #fff; border: 1px solid var(--qtn-border);
+  background: #ffffff;
+  border: 1px solid var(--qtn-border);
   border-radius: 10px; max-height: 260px; overflow: auto;
   box-shadow: 0 12px 32px rgba(10,47,122,.12);
+  color: #0f172a;
 }
 .qtn-autocomplete button {
-  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  display: block; width: 100%; text-align: left; border: 0;
+  background: transparent;
   padding: .65rem .85rem; font-size: .875rem;
+  color: #0f172a;
+  line-height: 1.35;
+}
+.qtn-autocomplete button strong { color: #0f172a; font-weight: 700; }
+.qtn-autocomplete button .text-muted,
+.qtn-autocomplete .text-muted {
+  color: #64748b !important;
 }
 .qtn-autocomplete button:hover,
-.qtn-autocomplete button.active { background: var(--qtn-soft); }
+.qtn-autocomplete button.active,
+.qtn-autocomplete button:focus-visible {
+  background: rgba(30, 94, 255, 0.1);
+  color: #0f172a;
+  outline: none;
+}
+.qtn-autocomplete button:hover strong,
+.qtn-autocomplete button.active strong {
+  color: #0A2F7A;
+}
 
 .qtn-items-table .qtn-line.dragging { opacity: .45; }
 .qtn-drag { cursor: grab; }
@@ -314,6 +333,34 @@
 [data-bs-theme="dark"] .qtn-card,
 [data-bs-theme="dark"] .qtn-kpi,
 [data-bs-theme="dark"] .qtn-doc-preview { background: var(--bs-body-bg); }
+
+/* Autocomplete: keep readable contrast in dark mode (was white bg + light text). */
+[data-bs-theme="dark"] .qtn-autocomplete {
+  background: #1e293b;
+  border-color: rgba(148, 163, 184, 0.28);
+  color: #f1f5f9;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+[data-bs-theme="dark"] .qtn-autocomplete button {
+  color: #f1f5f9;
+}
+[data-bs-theme="dark"] .qtn-autocomplete button strong {
+  color: #f8fafc;
+}
+[data-bs-theme="dark"] .qtn-autocomplete button .text-muted,
+[data-bs-theme="dark"] .qtn-autocomplete .text-muted {
+  color: #94a3b8 !important;
+}
+[data-bs-theme="dark"] .qtn-autocomplete button:hover,
+[data-bs-theme="dark"] .qtn-autocomplete button.active,
+[data-bs-theme="dark"] .qtn-autocomplete button:focus-visible {
+  background: rgba(59, 130, 246, 0.22);
+  color: #f8fafc;
+}
+[data-bs-theme="dark"] .qtn-autocomplete button:hover strong,
+[data-bs-theme="dark"] .qtn-autocomplete button.active strong {
+  color: #93c5fd;
+}
 
 /* Premium dashboard */
 .qtn-dash-hero {

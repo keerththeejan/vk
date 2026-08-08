@@ -8,6 +8,9 @@
 
     var cacheKey = 'vk-dash-stats-v1';
     var widgetStoreKey = 'vk-dash-widgets-v1';
+    var chartInstances = {};
+    var latestStats = null;
+    var activeRecentTab = 'quotations';
     var searchRoutes = {
         customers: '/modules/customers/list.php?q=',
         invoices: '/modules/invoices/list.php?q=',
@@ -92,12 +95,225 @@
             revenue: [s.sales_today, s.sales_month * 0.4, s.sales_month * 0.7, s.sales_month],
             repairs: [s.repair_pipeline, s.repair_completed, s.repair_delivered],
             bookings: [s.total_bookings * 0.6, s.total_bookings * 0.8, s.total_bookings],
+            quotes: [s.quotations_pending, s.quotations_approved, s.quotations_total],
+            activity: [s.quotations_today, s.invoices_today, s.payments_today_count, s.today_activities],
         };
         document.querySelectorAll('[data-vk-spark]').forEach(function (svg) {
             var key = svg.getAttribute('data-vk-spark');
             if (map[key]) {
                 drawSparkline(svg, map[key].map(function (n) { return Math.max(0, Number(n) || 0); }));
             }
+        });
+    }
+
+    function chartColors() {
+        var dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        return {
+            text: dark ? '#CBD5E1' : '#334155',
+            grid: dark ? 'rgba(148,163,184,0.15)' : 'rgba(15,23,42,0.08)',
+            primary: '#3B82F6',
+            success: '#22C55E',
+            warning: '#F59E0B',
+            danger: '#EF4444',
+            purple: '#8B5CF6',
+            cyan: '#06B6D4',
+        };
+    }
+
+    function upsertChart(id, config) {
+        var canvas = document.getElementById(id);
+        if (!canvas || typeof window.Chart === 'undefined') {
+            return;
+        }
+        if (chartInstances[id]) {
+            chartInstances[id].data = config.data;
+            chartInstances[id].options = config.options || chartInstances[id].options;
+            chartInstances[id].update('none');
+            return;
+        }
+        chartInstances[id] = new window.Chart(canvas.getContext('2d'), config);
+    }
+
+    function renderCharts(data) {
+        var charts = (data && data.charts) || {};
+        var c = chartColors();
+        var monthly = charts.monthly_sales || { labels: [], values: [] };
+        var quoteStatus = charts.quotation_status || { labels: [], values: [] };
+        var growth = charts.customer_growth || { labels: [], values: [] };
+
+        upsertChart('vkChartMonthlySales', {
+            type: 'bar',
+            data: {
+                labels: monthly.labels || [],
+                datasets: [{
+                    label: 'Sales',
+                    data: monthly.values || [],
+                    backgroundColor: c.primary,
+                    borderRadius: 6,
+                    maxBarThickness: 28,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: c.text, font: { size: 10 } }, grid: { display: false } },
+                    y: { ticks: { color: c.text, font: { size: 10 } }, grid: { color: c.grid } },
+                },
+            },
+        });
+
+        upsertChart('vkChartQuoteStatus', {
+            type: 'doughnut',
+            data: {
+                labels: quoteStatus.labels || [],
+                datasets: [{
+                    data: quoteStatus.values || [],
+                    backgroundColor: [c.grid, c.warning, c.success, c.danger, '#64748B', c.purple],
+                    borderWidth: 0,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: c.text, boxWidth: 10, font: { size: 10 } } },
+                },
+            },
+        });
+
+        upsertChart('vkChartRevenue', {
+            type: 'line',
+            data: {
+                labels: monthly.labels || [],
+                datasets: [{
+                    label: 'Revenue',
+                    data: monthly.values || [],
+                    borderColor: c.success,
+                    backgroundColor: 'rgba(34,197,94,0.15)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 3,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: c.text, font: { size: 10 } }, grid: { display: false } },
+                    y: { ticks: { color: c.text, font: { size: 10 } }, grid: { color: c.grid } },
+                },
+            },
+        });
+
+        upsertChart('vkChartCustomers', {
+            type: 'bar',
+            data: {
+                labels: growth.labels || [],
+                datasets: [{
+                    label: 'New customers',
+                    data: growth.values || [],
+                    backgroundColor: c.cyan,
+                    borderRadius: 6,
+                    maxBarThickness: 28,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: c.text, font: { size: 10 } }, grid: { display: false } },
+                    y: { ticks: { color: c.text, font: { size: 10 } }, grid: { color: c.grid }, beginAtZero: true },
+                },
+            },
+        });
+    }
+
+    function statusBadge(status) {
+        var s = String(status || '').toLowerCase();
+        var map = {
+            draft: 'secondary', pending: 'warning', pending_approval: 'warning', approved: 'success',
+            rejected: 'danger', expired: 'dark', accepted: 'info', converted_invoice: 'primary',
+            unpaid: 'danger', partial: 'warning', paid: 'success',
+            completed: 'success', delivered: 'primary', in_progress: 'info',
+        };
+        var tone = map[s] || 'secondary';
+        return '<span class="badge text-bg-' + tone + '">' + esc(s.replace(/_/g, ' ')) + '</span>';
+    }
+
+    function renderRecentTab(tab, data) {
+        var head = document.getElementById('vkDashRecentHead');
+        var body = document.getElementById('vkDashRecentBody');
+        if (!head || !body) {
+            return;
+        }
+        var rows = [];
+        if (tab === 'quotations') {
+            head.innerHTML = '<th>Quotation</th><th>Customer</th><th>Status</th><th>Date</th><th></th>';
+            rows = (data.recent_quotations || []).map(function (r) {
+                return '<tr><td><code>' + esc(r.quotation_number) + '</code></td><td>' + esc(r.customer_name) + '</td><td>' +
+                    statusBadge(r.status) + '</td><td>' + esc(String(r.quotation_date || r.created_at || '').slice(0, 16)) +
+                    '</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="' + esc(baseUrl() + '/modules/quotations/view.php?id=' + r.id) + '">View</a></td></tr>';
+            });
+        } else if (tab === 'customers') {
+            head.innerHTML = '<th>Customer</th><th>Phone</th><th>Email</th><th>Joined</th><th></th>';
+            rows = (data.recent_customers || []).map(function (r) {
+                return '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.phone || '—') + '</td><td>' + esc(r.email || '—') +
+                    '</td><td>' + esc(String(r.created_at || '').slice(0, 16)) +
+                    '</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="' + esc(baseUrl() + '/modules/customers/profile.php?id=' + r.id) + '">View</a></td></tr>';
+            });
+        } else if (tab === 'payments') {
+            head.innerHTML = '<th>Amount</th><th>Customer</th><th>Method</th><th>When</th><th></th>';
+            rows = (data.recent_payments || []).map(function (r) {
+                var href = r.invoice_id
+                    ? baseUrl() + '/modules/invoices/view.php?id=' + r.invoice_id
+                    : baseUrl() + '/modules/payments/list.php';
+                return '<tr><td><strong>₹' + esc(Number(r.amount || 0).toLocaleString()) + '</strong></td><td>' +
+                    esc(r.customer_name || r.invoice_number || '—') + '</td><td>' + statusBadge(r.method) +
+                    '</td><td>' + esc(String(r.paid_at || '').slice(0, 16)) +
+                    '</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="' + esc(href) + '">Open</a></td></tr>';
+            });
+        } else if (tab === 'invoices') {
+            head.innerHTML = '<th>Invoice</th><th>Customer</th><th>Status</th><th>Date</th><th></th>';
+            rows = (data.recent_invoices || []).map(function (r) {
+                return '<tr><td><code>' + esc(r.invoice_number) + '</code></td><td>' + esc(r.customer_name || '—') + '</td><td>' +
+                    statusBadge(r.status) + '</td><td>' + esc(String(r.invoice_date || r.created_at || '').slice(0, 16)) +
+                    '</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="' + esc(baseUrl() + '/modules/invoices/view.php?id=' + r.id) + '">View</a></td></tr>';
+            });
+        } else {
+            head.innerHTML = '<th>Type</th><th>Job</th><th>Customer</th><th>Status</th><th></th>';
+            rows = (data.recent_jobs || []).map(function (r) {
+                var isCctv = r.job_type === 'cctv';
+                var href = isCctv
+                    ? baseUrl() + '/modules/cctv/view.php?id=' + r.id
+                    : baseUrl() + '/modules/repairs/view.php?id=' + r.id;
+                return '<tr><td><span class="badge text-bg-' + (isCctv ? 'info' : 'secondary') + '">' +
+                    esc(String(r.job_type || '').toUpperCase()) + '</span></td><td><code>' + esc(r.ref) + '</code></td><td>' +
+                    esc(r.customer_name) + '</td><td>' + statusBadge(r.status) +
+                    '</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="' + esc(href) + '">View</a></td></tr>';
+            });
+        }
+        body.innerHTML = rows.length
+            ? rows.join('')
+            : '<tr><td colspan="5" class="text-center text-muted py-4">No records yet.</td></tr>';
+    }
+
+    function initRecentTabs() {
+        document.querySelectorAll('.vk-dash-tab[data-vk-tab]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                activeRecentTab = btn.getAttribute('data-vk-tab') || 'quotations';
+                document.querySelectorAll('.vk-dash-tab[data-vk-tab]').forEach(function (el) {
+                    var on = el === btn;
+                    el.classList.toggle('is-active', on);
+                    el.setAttribute('aria-selected', on ? 'true' : 'false');
+                });
+                if (latestStats) {
+                    renderRecentTab(activeRecentTab, latestStats);
+                }
+            });
         });
     }
 
@@ -120,20 +336,21 @@
         if (!data || !data.ok) {
             return;
         }
+        latestStats = data;
         var s = data.stats || {};
-        var m = data.marketing || {};
 
-        setDashKpi('vkDashNotifyCount', String((s.critical_count || 0) + (data.maint_reminders || []).length));
-        setDashKpi('vkDashModBookings', String(s.total_bookings || 0));
-        setDashKpi('vkDashModRepairs', String(s.pending_jobs || 0));
-        setDashKpi('vkDashModMaint', String(s.active_contracts || 0));
+        var notifyCount = (s.critical_count || 0) + (data.maint_reminders || []).length + (s.low_stock || 0) + (s.quotations_pending || 0);
+        setDashKpi('vkDashNotifyCount', String(notifyCount));
+        var dot = document.getElementById('vkDashNotifyDot');
+        if (dot) {
+            dot.classList.toggle('d-none', notifyCount <= 0);
+        }
 
         setDashKpi('vkDashFinRevenue', '₹' + Number(s.sales_month || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }));
-        setDashKpi('vkDashFinReceivable', String(s.warranty_expiring || 0) + ' alerts');
-        setDashKpi('vkDashFinCash', '₹' + Number(s.sales_today || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }));
-
-        setDashKpi('vkDashInvLow', String(s.critical_count || 0));
-        setDashKpi('vkDashInvValue', '₹' + Number(s.sales_month || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }));
+        setDashKpi('vkDashFinReceivable', '₹' + Number(s.outstanding || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }));
+        setDashKpi('vkDashFinCash', '₹' + Number(s.collections_today || s.sales_today || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }));
+        setDashKpi('vkDashInvLow', String(s.low_stock || 0));
+        setDashKpi('vkDashInvValue', String(s.stock_items || 0));
 
         var barRepair = document.querySelector('[data-vk-dash-bar="repairs"]');
         if (barRepair) {
@@ -150,10 +367,13 @@
         renderNotifications(data);
         renderSystemStatus(data);
         initSparklines(data);
+        renderCharts(data);
+        renderRecentTab(activeRecentTab, data);
 
-        var seoEl = document.querySelector('[data-vk-metric="seo-average"]');
-        if (seoEl && m.reach !== undefined) {
-            setDashKpi('vkDashKpiMarketingSub', (m.active_campaigns || 0) + ' campaigns');
+        var mini = document.getElementById('vkDashNotifyMini');
+        var list = document.getElementById('vkDashNotifyList');
+        if (mini && list) {
+            mini.innerHTML = list.innerHTML;
         }
     }
 
@@ -163,25 +383,31 @@
             return;
         }
         var items = [];
-        (data.recent_web_bookings || []).slice(0, 4).forEach(function (b) {
+        (data.recent_quotations || []).slice(0, 3).forEach(function (q) {
+            items.push({
+                type: 'Quote',
+                label: q.quotation_number,
+                sub: q.customer_name,
+                time: String(q.created_at || q.quotation_date || '').slice(0, 16),
+                href: baseUrl() + '/modules/quotations/view.php?id=' + q.id,
+            });
+        });
+        (data.recent_invoices || []).slice(0, 3).forEach(function (inv) {
+            items.push({
+                type: 'Invoice',
+                label: inv.invoice_number,
+                sub: inv.customer_name || '',
+                time: String(inv.created_at || inv.invoice_date || '').slice(0, 16),
+                href: baseUrl() + '/modules/invoices/view.php?id=' + inv.id,
+            });
+        });
+        (data.recent_web_bookings || []).slice(0, 2).forEach(function (b) {
             items.push({
                 type: 'Booking',
                 label: b.booking_number,
                 sub: b.customer_name,
                 time: String(b.created_at || '').slice(0, 16),
                 href: baseUrl() + '/modules/bookings/view.php?id=' + b.id,
-            });
-        });
-        (data.recent_jobs || []).slice(0, 4).forEach(function (j) {
-            var href = j.job_type === 'cctv'
-                ? baseUrl() + '/modules/cctv/view.php?id=' + j.id
-                : baseUrl() + '/modules/repairs/view.php?id=' + j.id;
-            items.push({
-                type: j.job_type === 'cctv' ? 'CCTV' : 'Repair',
-                label: j.ref,
-                sub: j.customer_name,
-                time: String(j.created_at || '').slice(0, 16),
-                href: href,
             });
         });
         if (!items.length) {
@@ -218,6 +444,15 @@
         }
         var s = data.stats;
         var notes = [];
+        if ((s.quotations_pending || 0) > 0) {
+            notes.push({ t: 'Pending quotations', d: s.quotations_pending + ' awaiting approval', href: baseUrl() + '/modules/quotations/approval.php' });
+        }
+        if ((s.low_stock || 0) > 0) {
+            notes.push({ t: 'Low stock alerts', d: s.low_stock + ' products below threshold', href: baseUrl() + '/modules/products/list.php' });
+        }
+        if ((s.outstanding || 0) > 0) {
+            notes.push({ t: 'Outstanding payments', d: '₹' + Number(s.outstanding).toLocaleString() + ' receivable', href: baseUrl() + '/modules/accounts/list.php' });
+        }
         if ((s.critical_count || 0) > 0) {
             notes.push({ t: 'Critical alerts', d: s.critical_count + ' items need review', href: baseUrl() + '/modules/bookings/list.php?emergency=1' });
         }
@@ -225,10 +460,7 @@
             notes.push({ t: 'Warranties expiring', d: s.warranty_expiring + ' expiring soon', href: baseUrl() + '/modules/warranties/list.php?filter=expiring' });
         }
         if ((s.pending_jobs || 0) > 0) {
-            notes.push({ t: 'Pending repairs', d: s.pending_jobs + ' jobs in pipeline', href: baseUrl() + '/modules/repairs/list.php' });
-        }
-        if ((s.repair_pipeline || 0) > 0) {
-            notes.push({ t: 'Repair pipeline', d: s.repair_pipeline + ' active repairs', href: baseUrl() + '/modules/repairs/list.php' });
+            notes.push({ t: 'Pending jobs', d: s.pending_jobs + ' jobs in pipeline', href: baseUrl() + '/modules/repairs/list.php' });
         }
         if (data.smtp_warning) {
             notes.push({ t: 'Email system', d: 'SMTP configuration needs attention', href: baseUrl() + '/modules/settings/index.php#pane-mail' });
@@ -429,8 +661,16 @@
         initNotifications();
         initWidgets();
         initKeyboardShortcuts();
+        initRecentTabs();
         animateBars();
         pollEnhance();
+
+        window.addEventListener('vk-dashboard-stats', function (ev) {
+            if (ev && ev.detail) {
+                enhanceFromData(ev.detail);
+                root.classList.remove('vk-dash-skeleton');
+            }
+        });
 
         if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
             document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {

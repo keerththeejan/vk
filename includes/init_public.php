@@ -16,6 +16,9 @@ try {
         vk_auth_try_remember($vkAuthPdo);
         vk_auth_enforce_session_timeout();
         unset($vkAuthPdo);
+    } elseif (session_status() === PHP_SESSION_ACTIVE) {
+        // Anonymous public pages: release session lock immediately for parallel assets/API.
+        session_write_close();
     }
 } catch (Throwable $e) {
     if (defined('APP_DEBUG') && APP_DEBUG) {

@@ -14,9 +14,15 @@ $teamMembers = [];
 try {
     $pdo = db();
     if (db_table_exists($pdo, 'web_services')) {
-        $services = $pdo->query(
-            'SELECT id, slug, name, short_description, lucide_icon FROM web_services WHERE active = 1 ORDER BY sort_order ASC, id ASC'
-        )->fetchAll();
+        $services = function_exists('vk_cache_remember')
+            ? vk_cache_remember('public_home_services_v1', 120, static function () use ($pdo) {
+                return $pdo->query(
+                    'SELECT id, slug, name, short_description, lucide_icon FROM web_services WHERE active = 1 ORDER BY sort_order ASC, id ASC'
+                )->fetchAll();
+            })
+            : $pdo->query(
+                'SELECT id, slug, name, short_description, lucide_icon FROM web_services WHERE active = 1 ORDER BY sort_order ASC, id ASC'
+            )->fetchAll();
     }
     if (db_table_exists($pdo, 'staff')) {
         $teamMembers = vk_staff_get_public_list($pdo, 8);
@@ -123,8 +129,7 @@ $seoAuto = vk_app_setting('seo_auto_enabled', '1') !== '0';
 $localKeywords = $seoAuto ? vk_local_keyword_pack('Computer repair') : [];
 $seoDescription = $seoAuto ? vk_local_meta_description('Computer repair and laptop service') : vk_seo_default_description();
 $seoKeywords = vk_seo_default_keywords() . ($localKeywords ? ', ' . implode(', ', $localKeywords) : '');
-$extraHead = ($extraHead ?? '') . "\n" . '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">';
-$extraScripts = ($extraScripts ?? '') . "\n" . '<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>';
+// Swiper CSS/JS are lazy-loaded by public-site.js when testimonials enter the viewport.
 $homeHeroTitle = vk_app_setting('hero_title', 'Smart Service Solutions for modern Homes & Businesses');
 $homeHeroSubtitle = vk_app_setting('hero_subtitle', 'Book repairs, installations, maintenance, and technical support with real-time tracking and intelligent workflow management.');
 $homePrimaryCtaText = vk_app_setting('hero_primary_cta_text', 'Book a Service');
@@ -615,7 +620,7 @@ require __DIR__ . '/includes/public_header.php';
                                 </div>
                                 <p class="vk-testimonial-copy">"<?= e($review['text']) ?>"</p>
                                 <div class="vk-testimonial-person">
-                                    <img src="<?= e(base_url($review['avatar'])) ?>" alt="<?= e($review['name']) ?>" class="vk-testimonial-avatar-img" loading="lazy">
+                                    <img src="<?= e(base_url($review['avatar'])) ?>" alt="<?= e($review['name']) ?>" class="vk-testimonial-avatar-img" width="44" height="44" loading="lazy" decoding="async">
                                     <div>
                                         <strong><?= e($review['name']) ?> <span class="vk-verified-badge" aria-label="Verified customer"><i data-lucide="badge-check"></i></span></strong>
                                         <span><?= e($review['role']) ?></span>

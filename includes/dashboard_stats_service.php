@@ -16,7 +16,7 @@ function vk_dashboard_stats_ttl(): int
 function vk_dashboard_stats_fetch(PDO $pdo, bool $useCache = true): array
 {
     if ($useCache) {
-        return vk_cache_remember('dashboard_stats_v2', vk_dashboard_stats_ttl(), static function () use ($pdo) {
+        return vk_cache_remember('dashboard_stats_v3', vk_dashboard_stats_ttl(), static function () use ($pdo) {
             return vk_dashboard_stats_compute($pdo);
         });
     }
@@ -256,6 +256,200 @@ function vk_dashboard_stats_compute(PDO $pdo): array
     } catch (Throwable) {
     }
 
+    // Additive ERP KPIs — read-only counts; safe if tables/columns are missing.
+    $erp = [
+        'quotations_total' => 0,
+        'quotations_pending' => 0,
+        'quotations_approved' => 0,
+        'quotations_today' => 0,
+        'invoices_total' => 0,
+        'invoices_today' => 0,
+        'outstanding' => 0.0,
+        'products_total' => 0,
+        'stock_items' => 0,
+        'low_stock' => 0,
+        'suppliers_total' => 0,
+        'payments_today_count' => 0,
+        'collections_today' => 0.0,
+        'today_activities' => 0,
+    ];
+    $recentQuotations = [];
+    $recentCustomers = [];
+    $recentPayments = [];
+    $recentInvoices = [];
+    $charts = [
+        'monthly_sales' => ['labels' => [], 'values' => []],
+        'quotation_status' => ['labels' => [], 'values' => []],
+        'customer_growth' => ['labels' => [], 'values' => []],
+    ];
+
+    if (db_table_exists($pdo, 'quotations')) {
+        try {
+            $qRow = $pdo->query(
+                "SELECT
+                    COUNT(*) AS total,
+                    SUM(status = 'pending_approval') AS pending,
+                    SUM(status = 'approved') AS approved,
+                    SUM(quotation_date = CURDATE()) AS today,
+                    SUM(status = 'draft') AS draft,
+                    SUM(status = 'rejected') AS rejected,
+                    SUM(status = 'expired') AS expired,
+                    SUM(status IN ('converted_invoice','converted_so','accepted')) AS converted
+                 FROM quotations"
+            )->fetch(PDO::FETCH_ASSOC) ?: [];
+            vk_perf_mark_query();
+            $erp['quotations_total'] = (int) ($qRow['total'] ?? 0);
+            $erp['quotations_pending'] = (int) ($qRow['pending'] ?? 0);
+            $erp['quotations_approved'] = (int) ($qRow['approved'] ?? 0);
+            $erp['quotations_today'] = (int) ($qRow['today'] ?? 0);
+            $charts['quotation_status'] = [
+                'labels' => ['Draft', 'Pending', 'Approved', 'Rejected', 'Expired', 'Converted'],
+                'values' => [
+                    (int) ($qRow['draft'] ?? 0),
+                    (int) ($qRow['pending'] ?? 0),
+                    (int) ($qRow['approved'] ?? 0),
+                    (int) ($qRow['rejected'] ?? 0),
+                    (int) ($qRow['expired'] ?? 0),
+                    (int) ($qRow['converted'] ?? 0),
+                ],
+            ];
+            $recentQuotations = $pdo->query(
+                'SELECT q.id, q.quotation_number, q.status, q.grand_total, q.quotation_date, q.created_at, c.name AS customer_name
+                 FROM quotations q
+                 INNER JOIN customers c ON c.id = q.customer_id
+                 ORDER BY q.id DESC LIMIT 8'
+            )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            vk_perf_mark_query();
+        } catch (Throwable) {
+        }
+    }
+
+    try {
+        $invRow = $pdo->query(
+            "SELECT
+                COUNT(*) AS total,
+                SUM(invoice_date = CURDATE()) AS today,
+                COALESCE(SUM(CASE WHEN status IN ('unpaid','partial')
+                    THEN GREATEST(grand_total - paid_amount, 0) ELSE 0 END), 0) AS outstanding
+             FROM invoices"
+        )->fetch(PDO::FETCH_ASSOC) ?: [];
+        vk_perf_mark_query();
+        $erp['invoices_total'] = (int) ($invRow['total'] ?? 0);
+        $erp['invoices_today'] = (int) ($invRow['today'] ?? 0);
+        $erp['outstanding'] = (float) ($invRow['outstanding'] ?? 0);
+        $recentInvoices = $pdo->query(
+            'SELECT i.id, i.invoice_number, i.status, i.grand_total, i.paid_amount, i.invoice_date, i.created_at, c.name AS customer_name
+             FROM invoices i
+             LEFT JOIN customers c ON c.id = i.customer_id
+             ORDER BY i.id DESC LIMIT 8'
+        )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        vk_perf_mark_query();
+    } catch (Throwable) {
+    }
+
+    if (db_table_exists($pdo, 'products')) {
+        try {
+            $pRow = $pdo->query(
+                'SELECT
+                    COUNT(*) AS total,
+                    COALESCE(SUM(GREATEST(stock, 0)), 0) AS stock_units,
+                    SUM(stock <= COALESCE(low_stock_threshold, 5)) AS low_stock
+                 FROM products'
+            )->fetch(PDO::FETCH_ASSOC) ?: [];
+            vk_perf_mark_query();
+            $erp['products_total'] = (int) ($pRow['total'] ?? 0);
+            $erp['stock_items'] = (int) ($pRow['stock_units'] ?? 0);
+            $erp['low_stock'] = (int) ($pRow['low_stock'] ?? 0);
+        } catch (Throwable) {
+            try {
+                $erp['products_total'] = (int) $pdo->query('SELECT COUNT(*) FROM products')->fetchColumn();
+                vk_perf_mark_query();
+            } catch (Throwable) {
+            }
+        }
+    }
+
+    if (db_table_exists($pdo, 'suppliers')) {
+        try {
+            $erp['suppliers_total'] = (int) $pdo->query('SELECT COUNT(*) FROM suppliers')->fetchColumn();
+            vk_perf_mark_query();
+        } catch (Throwable) {
+        }
+    }
+
+    if (db_table_exists($pdo, 'payments')) {
+        try {
+            $payRow = $pdo->query(
+                "SELECT COUNT(*) AS cnt, COALESCE(SUM(amount), 0) AS total
+                 FROM payments WHERE DATE(paid_at) = CURDATE()"
+            )->fetch(PDO::FETCH_ASSOC) ?: [];
+            vk_perf_mark_query();
+            $erp['payments_today_count'] = (int) ($payRow['cnt'] ?? 0);
+            $erp['collections_today'] = (float) ($payRow['total'] ?? 0);
+            $recentPayments = $pdo->query(
+                'SELECT p.id, p.amount, p.method, p.paid_at, p.invoice_id, i.invoice_number, c.name AS customer_name
+                 FROM payments p
+                 LEFT JOIN invoices i ON i.id = p.invoice_id
+                 LEFT JOIN customers c ON c.id = i.customer_id
+                 ORDER BY p.id DESC LIMIT 8'
+            )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            vk_perf_mark_query();
+        } catch (Throwable) {
+        }
+    }
+
+    try {
+        $recentCustomers = $pdo->query(
+            'SELECT id, name, phone, email, created_at FROM customers ORDER BY id DESC LIMIT 8'
+        )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        vk_perf_mark_query();
+    } catch (Throwable) {
+    }
+
+    // Last 6 calendar months of invoice totals (for Chart.js).
+    try {
+        $labels = [];
+        $values = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $ts = strtotime('-' . $i . ' months');
+            $ym = date('Y-m', $ts !== false ? $ts : time());
+            $labels[] = date('M Y', $ts !== false ? $ts : time());
+            $st = $pdo->prepare(
+                'SELECT COALESCE(SUM(grand_total), 0) FROM invoices
+                 WHERE DATE_FORMAT(invoice_date, \'%Y-%m\') = ?'
+            );
+            $st->execute([$ym]);
+            vk_perf_mark_query();
+            $values[] = (float) $st->fetchColumn();
+        }
+        $charts['monthly_sales'] = ['labels' => $labels, 'values' => $values];
+    } catch (Throwable) {
+    }
+
+    // Customer growth last 6 months.
+    try {
+        $labels = [];
+        $values = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $ts = strtotime('-' . $i . ' months');
+            $ym = date('Y-m', $ts !== false ? $ts : time());
+            $labels[] = date('M Y', $ts !== false ? $ts : time());
+            $st = $pdo->prepare(
+                'SELECT COUNT(*) FROM customers WHERE DATE_FORMAT(created_at, \'%Y-%m\') = ?'
+            );
+            $st->execute([$ym]);
+            vk_perf_mark_query();
+            $values[] = (int) $st->fetchColumn();
+        }
+        $charts['customer_growth'] = ['labels' => $labels, 'values' => $values];
+    } catch (Throwable) {
+    }
+
+    $erp['today_activities'] = (int) $erp['quotations_today']
+        + (int) $erp['invoices_today']
+        + (int) $erp['payments_today_count']
+        + (int) $pendingJobs;
+
     return [
         'stats' => [
             'sales_today' => $salesToday,
@@ -278,11 +472,32 @@ function vk_dashboard_stats_compute(PDO $pdo): array
             'critical_count' => $criticalCount,
             'system_pulse' => $systemPulse,
             'seo_average' => $seoAverage,
+            // Flattened ERP fields for metric binders
+            'quotations_total' => $erp['quotations_total'],
+            'quotations_pending' => $erp['quotations_pending'],
+            'quotations_approved' => $erp['quotations_approved'],
+            'quotations_today' => $erp['quotations_today'],
+            'invoices_total' => $erp['invoices_total'],
+            'invoices_today' => $erp['invoices_today'],
+            'outstanding' => $erp['outstanding'],
+            'products_total' => $erp['products_total'],
+            'stock_items' => $erp['stock_items'],
+            'low_stock' => $erp['low_stock'],
+            'suppliers_total' => $erp['suppliers_total'],
+            'payments_today_count' => $erp['payments_today_count'],
+            'collections_today' => $erp['collections_today'],
+            'today_activities' => $erp['today_activities'],
         ],
+        'erp' => $erp,
+        'charts' => $charts,
         'marketing' => $marketing,
         'smtp_warning' => $smtpWarning,
         'recent_web_bookings' => $recentWebBookings,
         'recent_jobs' => $recentJobs,
+        'recent_quotations' => $recentQuotations,
+        'recent_customers' => $recentCustomers,
+        'recent_payments' => $recentPayments,
+        'recent_invoices' => $recentInvoices,
         'maint_reminders' => $maintReminders,
         'emergency_bookings' => $emergencyBookings,
         'emergency_repairs' => $emergencyRepairs,

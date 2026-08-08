@@ -48,4 +48,5 @@ try {
     exit;
 }
 
+vk_cache_invalidate_after_write('menus');
 echo json_encode(['ok' => true], JSON_THROW_ON_ERROR);

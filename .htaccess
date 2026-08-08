@@ -79,15 +79,13 @@ FileETag MTime Size
     <FilesMatch "\.(html)$">
         Header set Cache-Control "private, no-store, max-age=0"
     </FilesMatch>
-    <FilesMatch "\.(php)$">
-        Header set Cache-Control "private, no-store, no-cache, must-revalidate, max-age=0"
-        Header set Pragma "no-cache"
-    </FilesMatch>
+    # Let PHP set Cache-Control (public pages vs admin). Do not blanket no-store all .php.
     <FilesMatch "\.(txt|xml)$">
         Header set Cache-Control "public, max-age=86400, stale-while-revalidate=86400"
     </FilesMatch>
     Header set X-Content-Type-Options nosniff
     Header set X-Frame-Options DENY
     Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
     Header set Connection keep-alive
 </IfModule>

@@ -18,5 +18,16 @@ vk_perf_bootstrap();
 
 if (session_status() === PHP_SESSION_NONE) {
     session_name(SESSION_NAME);
-    session_start();
+    // Prevent PHP from injecting Cache-Control: no-store (breaks public HTML caching).
+    session_cache_limiter('');
+    $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    $shouldStartSession = true;
+    if (defined('VK_PUBLIC_BOOTSTRAP') && VK_PUBLIC_BOOTSTRAP) {
+        // Anonymous public GET/HEAD: skip session entirely (faster TTFB, no lock, no cookie).
+        $shouldStartSession = ($method !== 'GET' && $method !== 'HEAD')
+            || vk_wants_auth_bootstrap();
+    }
+    if ($shouldStartSession) {
+        session_start();
+    }
 }

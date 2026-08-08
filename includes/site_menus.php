@@ -134,6 +134,15 @@ function vk_site_menus_for_public_nav(PDO $pdo): array
         return $cached;
     }
 
+    if (function_exists('vk_cache_get')) {
+        $fromDisk = vk_cache_get('public_nav_menus_v1');
+        if (is_array($fromDisk)) {
+            $cached = $fromDisk;
+
+            return $cached;
+        }
+    }
+
     if (!vk_site_menus_table_exists($pdo)) {
         $out = [];
         foreach (vk_site_menus_default_rows() as $i => $r) {
@@ -148,6 +157,9 @@ function vk_site_menus_for_public_nav(PDO $pdo): array
         }
 
         $cached = $out;
+        if (function_exists('vk_cache_set')) {
+            vk_cache_set('public_nav_menus_v1', $cached, 300);
+        }
 
         return $cached;
     }
@@ -166,6 +178,9 @@ function vk_site_menus_for_public_nav(PDO $pdo): array
                     'sort_order' => (int) ($row['sort_order'] ?? 0),
                 ];
             }, $rows);
+            if (function_exists('vk_cache_set')) {
+                vk_cache_set('public_nav_menus_v1', $cached, 300);
+            }
 
             return $cached;
         }
@@ -174,6 +189,9 @@ function vk_site_menus_for_public_nav(PDO $pdo): array
     }
 
     $cached = vk_site_menus_for_public_nav_fallback();
+    if (function_exists('vk_cache_set')) {
+        vk_cache_set('public_nav_menus_v1', $cached, 300);
+    }
 
     return $cached;
 }

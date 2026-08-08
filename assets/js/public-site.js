@@ -43,15 +43,136 @@
         }
     }
 
+    function loadScript(src, attrs) {
+        return new Promise(function (resolve, reject) {
+            var s = document.createElement("script");
+            s.src = src;
+            s.async = true;
+            s.crossOrigin = "anonymous";
+            if (attrs) {
+                Object.keys(attrs).forEach(function (k) {
+                    s.setAttribute(k, attrs[k]);
+                });
+            }
+            s.onload = function () { resolve(); };
+            s.onerror = function () { reject(new Error("Failed to load " + src)); };
+            document.head.appendChild(s);
+        });
+    }
+
     function getLucide() {
-        return typeof lucide !== "undefined" ? lucide : typeof window.lucide !== "undefined" ? window.lucide : null;
+        if (typeof window.lucide !== "undefined" && window.lucide) {
+            return window.lucide;
+        }
+        return null;
+    }
+
+    var lucideLoadPromise = null;
+    function ensureLucide() {
+        if (getLucide()) {
+            return Promise.resolve(getLucide());
+        }
+        if (lucideLoadPromise) {
+            return lucideLoadPromise;
+        }
+        lucideLoadPromise = loadScript("https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js")
+            .then(function () { return getLucide(); })
+            .catch(function () { return null; });
+        return lucideLoadPromise;
     }
 
     function initLucide() {
-        var L = getLucide();
-        if (L && typeof L.createIcons === "function") {
-            L.createIcons({ attrs: { "stroke-width": 1.75 } });
+        ensureLucide().then(function (L) {
+            if (L && typeof L.createIcons === "function") {
+                L.createIcons({ attrs: { "stroke-width": 1.75 } });
+            }
+        });
+    }
+
+    var swiperLoadPromise = null;
+    function ensureSwiperCss() {
+        if (document.getElementById("vk-swiper-css")) {
+            return Promise.resolve();
         }
+        return new Promise(function (resolve) {
+            var link = document.createElement("link");
+            link.id = "vk-swiper-css";
+            link.rel = "stylesheet";
+            link.href = "https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css";
+            link.crossOrigin = "anonymous";
+            link.onload = function () { resolve(); };
+            link.onerror = function () { resolve(); };
+            document.head.appendChild(link);
+        });
+    }
+    function ensureSwiper() {
+        if (typeof window.Swiper !== "undefined") {
+            return Promise.resolve(window.Swiper);
+        }
+        if (swiperLoadPromise) {
+            return swiperLoadPromise;
+        }
+        swiperLoadPromise = ensureSwiperCss()
+            .then(function () {
+                return loadScript("https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js");
+            })
+            .then(function () { return window.Swiper; })
+            .catch(function () { return null; });
+        return swiperLoadPromise;
+    }
+
+    function initTestimonialsCarousel() {
+        var root = document.querySelector(".vk-testimonials-swiper");
+        if (!root) return;
+        if (root.dataset.vkSwiperReady === "1") return;
+
+        function boot(SwiperCtor) {
+            if (!SwiperCtor || root.dataset.vkSwiperReady === "1") return;
+            root.dataset.vkSwiperReady = "1";
+            new SwiperCtor(root, {
+                slidesPerView: 1,
+                spaceBetween: 16,
+                loop: true,
+                speed: 650,
+                grabCursor: true,
+                watchOverflow: true,
+                autoplay: {
+                    delay: 4200,
+                    disableOnInteraction: false,
+                    pauseOnMouseEnter: true,
+                },
+                navigation: {
+                    nextEl: ".vk-testimonial-next",
+                    prevEl: ".vk-testimonial-prev",
+                },
+                pagination: {
+                    el: ".vk-testimonial-pagination",
+                    clickable: true,
+                },
+                breakpoints: {
+                    768: { slidesPerView: 2, spaceBetween: 20 },
+                    992: { slidesPerView: 3, spaceBetween: 20 },
+                    1200: { slidesPerView: 4, spaceBetween: 20 },
+                },
+            });
+        }
+
+        function loadWhenVisible() {
+            ensureSwiper().then(boot);
+        }
+
+        if (!("IntersectionObserver" in window)) {
+            loadWhenVisible();
+            return;
+        }
+        var io = new IntersectionObserver(function (entries, obs) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                obs.disconnect();
+                loadWhenVisible();
+            });
+        }, { rootMargin: "200px 0px" });
+        io.observe(root);
     }
 
     function prefersReducedMotion() {
@@ -178,47 +299,6 @@
         }, { threshold: 0.35 });
 
         counters.forEach(function (el) { observer.observe(el); });
-    }
-
-    function initTestimonialsCarousel() {
-        var root = document.querySelector(".vk-testimonials-swiper");
-        if (!root || typeof window.Swiper === "undefined") return;
-        if (root.dataset.vkSwiperReady === "1") return;
-        root.dataset.vkSwiperReady = "1";
-        new window.Swiper(root, {
-            slidesPerView: 1,
-            spaceBetween: 16,
-            loop: true,
-            speed: 650,
-            grabCursor: true,
-            watchOverflow: true,
-            autoplay: {
-                delay: 4200,
-                disableOnInteraction: false,
-                pauseOnMouseEnter: true,
-            },
-            navigation: {
-                nextEl: ".vk-testimonial-next",
-                prevEl: ".vk-testimonial-prev",
-            },
-            pagination: {
-                el: ".vk-testimonial-pagination",
-                clickable: true,
-            },
-            breakpoints: {
-                768: { slidesPerView: 2, spaceBetween: 20 },
-                992: { slidesPerView: 3, spaceBetween: 20 },
-                1200: { slidesPerView: 4, spaceBetween: 20 },
-            },
-        });
-    }
-
-    function prefersReducedMotion() {
-        try {
-            return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        } catch (e) {
-            return false;
-        }
     }
 
     function createMotionTracker(element, callback) {
