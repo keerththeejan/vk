@@ -33,8 +33,8 @@ try {
           <p><strong>Barcode:</strong> <?php echo htmlspecialchars($p['barcode']); ?></p>
           <p><strong>Category:</strong> <?php echo htmlspecialchars($p['category_name']); ?></p>
           <p><strong>Brand:</strong> <?php echo htmlspecialchars($p['brand_name']); ?></p>
-          <p><strong>Cost:</strong> $<?php echo number_format($p['cost_price'],2); ?></p>
-          <p><strong>Price:</strong> $<?php echo number_format($p['selling_price'],2); ?></p>
+          <p><strong>Cost:</strong> <?php echo e(formatCurrency($p['cost_price'])); ?></p>
+          <p><strong>Price:</strong> <?php echo e(formatCurrency($p['selling_price'])); ?></p>
           <p><strong>Opening Stock:</strong> <?php echo (int)$p['opening_stock']; ?></p>
           <hr>
           <h5>Description</h5>

@@ -61,7 +61,7 @@ if (!$job) {
         <tr><th>Cameras</th><td><?= (int) $job['num_cameras'] ?></td></tr>
         <tr><th>Cable length</th><td><?= e(number_format((float) $job['cable_length_m'], 2)) ?> m</td></tr>
         <tr><th>DVR / NVR</th><td><?= nl2br(e($job['dvr_nvr_details'] ?? '—')) ?></td></tr>
-        <tr><th>Installation charge</th><td><?= e(number_format((float) $job['installation_charge'], 2)) ?></td></tr>
+        <tr><th>Installation charge</th><td><?= e(formatCurrency($job['installation_charge'])) ?></td></tr>
         <tr><th>Equipment</th><td><?= nl2br(e($job['equipment_used'] ?? '—')) ?></td></tr>
         <tr><th>Status</th><td><?= e(str_replace('_', ' ', $job['status'])) ?></td></tr>
         <tr><th>Warranty</th><td><?= !empty($job['warranty_expiry']) ? e($job['warranty_expiry']) : '—' ?></td></tr>

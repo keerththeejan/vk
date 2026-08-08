@@ -66,7 +66,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
     <div class="mb-3">
         <a href="<?= e(BASE_URL) ?>/modules/quotations/view.php?id=<?= $id ?>" class="text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Back to quotation</a>
         <h1 class="h3 mt-2 mb-1">Approve / Reject</h1>
-        <p class="text-muted mb-0"><?= e($q['quotation_number']) ?> · <?= e($q['customer_name']) ?> · <?= e($q['currency']) ?> <?= e(number_format((float) $q['grand_total'], 2)) ?></p>
+        <p class="text-muted mb-0"><?= e($q['quotation_number']) ?> · <?= e($q['customer_name']) ?> · <?= e(formatCurrency($q['grand_total'])) ?></p>
     </div>
 
     <div class="row g-3">

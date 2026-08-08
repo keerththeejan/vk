@@ -255,7 +255,7 @@ $qs = static function (array $extra = []) use ($q, $customerQ, $numberQ, $phoneQ
                         <td><?= e((string) ($r['executive_name'] ?: '—')) ?></td>
                         <td><?= e($r['quotation_date']) ?></td>
                         <td><?= e((string) ($r['expiry_date'] ?: '—')) ?></td>
-                        <td class="text-end fw-semibold"><?= e($r['currency']) ?> <?= e(number_format((float) $r['grand_total'], 2)) ?></td>
+                        <td class="text-end fw-semibold"><?= e(formatCurrency($r['grand_total'])) ?></td>
                         <td><span class="badge text-bg-<?= e(vk_quotation_status_badge($r['status'])) ?>"><?= e(vk_quotation_status_label($r['status'])) ?></span></td>
                         <td class="text-end">
                             <div class="qtn-action-btns">

@@ -818,7 +818,7 @@ function vk_invoice_update(PDO $pdo, int $invoiceId, array $header, array $lines
     $paid = (float) $old['paid_amount'];
     if ($paid > $grand + 0.01 && !$isDraft) {
         throw new InvalidArgumentException(
-            'Grand total (' . number_format($grand, 2) . ') cannot be less than paid amount (' . number_format($paid, 2) . ').'
+            'Grand total (' . formatCurrency($grand) . ') cannot be less than paid amount (' . formatCurrency($paid) . ').'
         );
     }
 

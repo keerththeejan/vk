@@ -15,11 +15,19 @@
     const loading = document.getElementById('tvLoading');
     const msgEl = document.getElementById('tvValidationMsg');
 
-    function money(n) {
-        return (Math.round((Number(n) || 0) * 100) / 100).toLocaleString(undefined, {
+    function moneyPlain(n) {
+        return (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-LK', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
+            useGrouping: true,
         });
+    }
+
+    function money(n) {
+        if (typeof formatCurrency === 'function') {
+            return formatCurrency(n);
+        }
+        return 'Rs. ' + moneyPlain(n);
     }
 
     function fillSide(prefix, accountId) {
@@ -29,7 +37,7 @@
         const bal = document.getElementById(prefix + '_balance');
         if (group) group.value = a ? a.group || a.type || '' : '';
         if (code) code.value = a ? a.code || '' : '';
-        if (bal) bal.value = a ? money(a.balance) : '';
+        if (bal) bal.value = a ? moneyPlain(a.balance) : '';
     }
 
     function validateLive() {

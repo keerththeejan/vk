@@ -136,7 +136,7 @@ $templates = vk_st_templates_for_select($pdo);
                     <option value="">— None —</option>
                     <?php foreach ($templates as $tpl): ?>
                         <option value="<?= (int) $tpl['id'] ?>" data-amount="<?= e((string) $tpl['default_amount']) ?>" <?= (int) ($_POST['service_template_id'] ?? 0) === (int) $tpl['id'] ? 'selected' : '' ?>>
-                            [<?= e($tpl['category']) ?>] <?= e($tpl['name']) ?> — <?= e(number_format((float) $tpl['default_amount'], 2)) ?>
+                            [<?= e($tpl['category']) ?>] <?= e($tpl['name']) ?> — <?= e(formatCurrency($tpl['default_amount'])) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>

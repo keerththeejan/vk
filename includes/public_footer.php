@@ -96,6 +96,7 @@ if (function_exists('vk_json_ld_local_business')) {
     <small>Online now</small>
 </a>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous" defer></script>
+<script src="<?= e(base_url('assets/js/vk-currency.js')) ?>?v=<?= e(vk_asset_mtime_version('assets/js/vk-currency.js')) ?>"></script>
 <script src="<?= e(base_url('assets/js/public-site.js')) ?>?v=<?= e($vkPublicScriptVersion) ?>" defer></script>
 <?= $extraScripts ?? '' ?>
 </body>

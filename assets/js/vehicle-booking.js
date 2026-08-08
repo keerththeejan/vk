@@ -99,7 +99,16 @@
         var total = 0;
         if ((bookingTypeEl.value || "rental") === "hire") total = (distance * perKm) + driverCharge;
         else total = perDay * days;
-        totalEl.textContent = "LKR " + total.toLocaleString(undefined, { maximumFractionDigits: 0 });
+        if (typeof formatCurrency === "function") {
+            totalEl.textContent = formatCurrency(total);
+        } else {
+            var n = Number(total);
+            if (!Number.isFinite(n)) n = 0;
+            var fixed = n.toFixed(2);
+            var parts = fixed.split(".");
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            totalEl.textContent = "Rs. " + parts.join(".");
+        }
     }
 
     function updateRoute() {

@@ -122,14 +122,14 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
         ['green', 'bi-check-circle', 'Active Products', 'stat-active', (int) $kpiActive, '+2.1%', [30,42,38,50,55,60]],
         ['orange', 'bi-exclamation-triangle', 'Low Stock', 'stat-low', (int) $kpiLow, '-1.3%', [20,18,22,16,14,12]],
         ['red', 'bi-x-circle', 'Out of Stock', 'stat-out', (int) $kpiOut, '+0.8%', [8,10,9,11,10,12]],
-        ['purple', 'bi-currency-dollar', 'Inventory Value', 'stat-value', number_format((int) $kpiValue), '+6.5%', [50,58,54,66,72,78]],
+        ['purple', 'bi-currency-dollar', 'Inventory Value', 'stat-value', formatCurrency($kpiValue), '+6.5%', [50,58,54,66,72,78]],
         ['teal', 'bi-graph-up-arrow', "Today's Sales", 'stat-today-sales', (int) $kpiTodaySales, '+12%', [20,28,32,40,38,45]],
         ['blue', 'bi-cart-check', 'Products Sold', 'stat-sold', (int) $kpiSold, '+8.4%', [35,40,38,48,52,58]],
         ['green', 'bi-plus-square', 'New Products', 'stat-new', (int) $kpiNew, '+3.0%', [10,12,14,16,18,20]],
         ['purple', 'bi-tags', 'Categories', 'stat-categories', (int) $kpiCategories, '', [25,30,28,32,35,38]],
         ['orange', 'bi-building', 'Suppliers', 'stat-suppliers', (int) $kpiSuppliers, '', [15,18,17,20,22,24]],
         ['teal', 'bi-star', 'Top Selling', 'stat-top', (int) $kpiTop, '+5.2%', [45,50,48,55,60,65]],
-        ['green', 'bi-piggy-bank', 'Monthly Profit', 'stat-profit', number_format((int) $kpiProfit), '+9.1%', [30,35,40,44,48,52]],
+        ['green', 'bi-piggy-bank', 'Monthly Profit', 'stat-profit', formatCurrency($kpiProfit), '+9.1%', [30,35,40,44,48,52]],
     ];
     foreach ($kpis as $k):
         [$tone, $icon, $label, $id, $val, $trend, $spark] = $k;
@@ -164,7 +164,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
     </div>
     <div class="vk-prod-chart-card">
         <h3 class="vk-prod-chart-title">Profit &amp; Value</h3>
-        <div class="vk-prod-bar-row"><span class="vk-prod-bar-label">Inventory</span><div class="vk-prod-bar-track"><div class="vk-prod-bar-fill" data-width="85" style="width:0"></div></div><span class="vk-prod-bar-val"><?= e(number_format((int) $kpiValue)) ?></span></div>
+        <div class="vk-prod-bar-row"><span class="vk-prod-bar-label">Inventory</span><div class="vk-prod-bar-track"><div class="vk-prod-bar-fill" data-width="85" style="width:0"></div></div><span class="vk-prod-bar-val"><?= e(formatCurrency($kpiValue)) ?></span></div>
         <div class="vk-prod-bar-row"><span class="vk-prod-bar-label">Margin</span><div class="vk-prod-bar-track"><div class="vk-prod-bar-fill" data-width="62" style="width:0"></div></div><span class="vk-prod-bar-val">22%</span></div>
         <div class="vk-prod-bar-row"><span class="vk-prod-bar-label">Turnover</span><div class="vk-prod-bar-track"><div class="vk-prod-bar-fill" data-width="48" style="width:0"></div></div><span class="vk-prod-bar-val">4.2×</span></div>
     </div>

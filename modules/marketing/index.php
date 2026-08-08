@@ -55,7 +55,7 @@ $vkMktCampaignType = static function (array $c): string {
 };
 
 $vkMktFormatMoney = static function ($n): string {
-    return '₹' . number_format((float) $n, 0, '.', ',');
+    return formatCurrency((float) $n);
 };
 
 $vkMktFormatDate = static function (?string $iso): string {

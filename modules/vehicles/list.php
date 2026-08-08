@@ -206,8 +206,8 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
     <div class="vk-veh-kpi vk-veh-kpi-green"><div class="vk-veh-kpi-icon"><i class="bi bi-broadcast"></i></div><div class="vk-veh-kpi-body"><span class="vk-veh-kpi-label">GPS online</span><span class="vk-veh-kpi-value" data-count-to="<?= (float) $kpiGpsOnline ?>" data-count-decimal="1" data-count-suffix="%">0</span></div></div>
     <div class="vk-veh-kpi vk-veh-kpi-red"><div class="vk-veh-kpi-icon"><i class="bi bi-shield-exclamation"></i></div><div class="vk-veh-kpi-body"><span class="vk-veh-kpi-label">Insurance</span><span class="vk-veh-kpi-value" data-count-to="<?= (int) $kpiInsuranceAlert ?>">0</span><span class="vk-veh-kpi-trend">Expiring</span></div></div>
     <div class="vk-veh-kpi vk-veh-kpi-orange"><div class="vk-veh-kpi-icon"><i class="bi bi-card-text"></i></div><div class="vk-veh-kpi-body"><span class="vk-veh-kpi-label">License</span><span class="vk-veh-kpi-value" data-count-to="<?= (int) $kpiLicenseAlert ?>">0</span><span class="vk-veh-kpi-trend">Expiring</span></div></div>
-    <div class="vk-veh-kpi vk-veh-kpi-green"><div class="vk-veh-kpi-icon"><i class="bi bi-currency-dollar"></i></div><div class="vk-veh-kpi-body"><span class="vk-veh-kpi-label">Fleet value</span><span class="vk-veh-kpi-value" data-count-to="<?= (int) $kpiFleetValue ?>" data-count-money="1" data-count-prefix="LKR ">0</span></div></div>
-    <div class="vk-veh-kpi vk-veh-kpi-purple"><div class="vk-veh-kpi-icon"><i class="bi bi-graph-up"></i></div><div class="vk-veh-kpi-body"><span class="vk-veh-kpi-label">Monthly cost</span><span class="vk-veh-kpi-value" data-count-to="<?= (int) $kpiMonthlyCost ?>" data-count-money="1" data-count-prefix="LKR ">0</span></div></div>
+    <div class="vk-veh-kpi vk-veh-kpi-green"><div class="vk-veh-kpi-icon"><i class="bi bi-currency-dollar"></i></div><div class="vk-veh-kpi-body"><span class="vk-veh-kpi-label">Fleet value</span><span class="vk-veh-kpi-value" data-count-to="<?= (int) $kpiFleetValue ?>" data-count-money="1" data-count-prefix="Rs. ">0</span></div></div>
+    <div class="vk-veh-kpi vk-veh-kpi-purple"><div class="vk-veh-kpi-icon"><i class="bi bi-graph-up"></i></div><div class="vk-veh-kpi-body"><span class="vk-veh-kpi-label">Monthly cost</span><span class="vk-veh-kpi-value" data-count-to="<?= (int) $kpiMonthlyCost ?>" data-count-money="1" data-count-prefix="Rs. ">0</span></div></div>
     <div class="vk-veh-kpi vk-veh-kpi-purple"><div class="vk-veh-kpi-icon"><i class="bi bi-person-vcard"></i></div><div class="vk-veh-kpi-body"><span class="vk-veh-kpi-label">Drivers</span><span class="vk-veh-kpi-value" data-count-to="<?= (int) $kpiDrivers ?>">0</span><span class="vk-veh-kpi-trend">Assigned</span></div></div>
 </div>
 
@@ -230,7 +230,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
     </div>
     <div class="vk-veh-chart-card">
         <h3 class="vk-veh-chart-title">Running cost</h3>
-        <div class="vk-veh-kpi-value mb-2" data-count-to="<?= (int) $kpiMonthlyCost ?>" data-count-money="1" data-count-prefix="LKR ">0</div>
+        <div class="vk-veh-kpi-value mb-2" data-count-to="<?= (int) $kpiMonthlyCost ?>" data-count-money="1" data-count-prefix="Rs. ">0</div>
     </div>
 </div>
 
@@ -368,7 +368,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
             $imgUrl = $vkVehImgUrl($r['image_path'] ?? null);
             $vtype = (string) ($r['vehicle_type'] ?? 'car');
             $drvId = (int) ($r['assigned_driver_id'] ?? 0);
-            $rates = 'LKR ' . number_format((float) $r['price_per_day'], 0) . '/day · LKR ' . number_format((float) $r['price_per_km'], 0) . '/km';
+            $rates = formatCurrency((float) $r['price_per_day']) . '/day · ' . formatCurrency((float) $r['price_per_km']) . '/km';
             $searchBlob = implode(' ', [$r['vehicle_name'], $r['registration_number'], $r['driver_name'] ?? '', $der['brand'], $der['model'], $vtype]);
             $drawerData = [
                 'name' => (string) $r['vehicle_name'],
@@ -484,7 +484,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
         <dl class="vk-veh-mobile-grid">
             <dt>Driver</dt><dd><?= e((string) ($r['driver_name'] ?? '—')) ?></dd>
             <dt>Type</dt><dd><?= e(ucfirst($vtype)) ?></dd>
-            <dt>Rates</dt><dd>LKR <?= e(number_format((float) $r['price_per_day'], 0)) ?>/d</dd>
+            <dt>Rates</dt><dd><?= e(formatCurrency($r['price_per_day'])) ?>/d</dd>
             <dt>Mileage</dt><dd><?= e($der['mileage']) ?></dd>
         </dl>
         <div class="vk-veh-actions">

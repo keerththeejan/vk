@@ -62,7 +62,7 @@ require __DIR__ . '/includes/public_header.php';
                         <dt class="col-sm-4">Technician notes</dt>
                         <dd class="col-sm-8"><?= $booking['technician_notes'] ? nl2br(e($booking['technician_notes'])) : '<span class="text-muted">—</span>' ?></dd>
                         <dt class="col-sm-4">Estimated cost</dt>
-                        <dd class="col-sm-8 fw-semibold"><?= e(number_format((float) $booking['estimated_cost'], 2)) ?></dd>
+                        <dd class="col-sm-8 fw-semibold"><?= e(formatCurrency($booking['estimated_cost'])) ?></dd>
                     </dl>
                 </div>
             </div>

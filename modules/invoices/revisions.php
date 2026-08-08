@@ -90,11 +90,11 @@ if ($viewRev !== null) {
                     <dl class="row small mb-3">
                         <dt class="col-sm-3">Customer</dt><dd class="col-sm-9"><?= e((string) ($h['customer_name'] ?? $h['customer_id'] ?? '')) ?></dd>
                         <dt class="col-sm-3">Date</dt><dd class="col-sm-9"><?= e((string) ($h['invoice_date'] ?? '')) ?></dd>
-                        <dt class="col-sm-3">Subtotal</dt><dd class="col-sm-9"><?= e(number_format((float) ($h['subtotal'] ?? 0), 2)) ?></dd>
-                        <dt class="col-sm-3">Discount</dt><dd class="col-sm-9"><?= e(number_format((float) ($h['discount'] ?? $h['invoice_discount_amount'] ?? 0), 2)) ?></dd>
-                        <dt class="col-sm-3">Tax</dt><dd class="col-sm-9"><?= e(number_format((float) ($h['tax'] ?? 0), 2)) ?></dd>
-                        <dt class="col-sm-3">Shipping</dt><dd class="col-sm-9"><?= e(number_format((float) ($h['shipping_amount'] ?? 0), 2)) ?></dd>
-                        <dt class="col-sm-3">Grand total</dt><dd class="col-sm-9 fw-semibold"><?= e(number_format((float) ($h['grand_total'] ?? 0), 2)) ?></dd>
+                        <dt class="col-sm-3">Subtotal</dt><dd class="col-sm-9"><?= e(formatCurrency(($h['subtotal'] ?? 0))) ?></dd>
+                        <dt class="col-sm-3">Discount</dt><dd class="col-sm-9"><?= e(formatCurrency(($h['discount'] ?? $h['invoice_discount_amount'] ?? 0))) ?></dd>
+                        <dt class="col-sm-3">Tax</dt><dd class="col-sm-9"><?= e(formatCurrency(($h['tax'] ?? 0))) ?></dd>
+                        <dt class="col-sm-3">Shipping</dt><dd class="col-sm-9"><?= e(formatCurrency(($h['shipping_amount'] ?? 0))) ?></dd>
+                        <dt class="col-sm-3">Grand total</dt><dd class="col-sm-9 fw-semibold"><?= e(formatCurrency(($h['grand_total'] ?? 0))) ?></dd>
                     </dl>
                     <div class="table-responsive">
                         <table class="table table-sm">
@@ -113,10 +113,10 @@ if ($viewRev !== null) {
                                 <tr>
                                     <td><?= e((string) ($ln['line_description'] ?? $ln['product_name'] ?? '—')) ?></td>
                                     <td class="text-end"><?= e((string) ($ln['quantity'] ?? '')) ?></td>
-                                    <td class="text-end"><?= e(number_format((float) ($ln['unit_price'] ?? 0), 2)) ?></td>
-                                    <td class="text-end"><?= e(number_format((float) ($ln['discount_amount'] ?? 0), 2)) ?></td>
-                                    <td class="text-end"><?= e(number_format((float) ($ln['tax_amount'] ?? 0), 2)) ?></td>
-                                    <td class="text-end"><?= e(number_format((float) ($ln['net_amount'] ?? $ln['line_total'] ?? 0), 2)) ?></td>
+                                    <td class="text-end"><?= e(formatCurrency(($ln['unit_price'] ?? 0))) ?></td>
+                                    <td class="text-end"><?= e(formatCurrency(($ln['discount_amount'] ?? 0))) ?></td>
+                                    <td class="text-end"><?= e(formatCurrency(($ln['tax_amount'] ?? 0))) ?></td>
+                                    <td class="text-end"><?= e(formatCurrency(($ln['net_amount'] ?? $ln['line_total'] ?? 0))) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                             </tbody>

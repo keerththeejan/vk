@@ -373,7 +373,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     data-export-priority="<?= e($pri['label']) ?>"
                     data-export-status="<?= e($disp['label']) ?>"
                     data-export-payment="<?= e($pay['label']) ?>"
-                    data-export-estimate="<?= e(number_format((float) $r['estimated_cost'], 2)) ?>"
+                    data-export-estimate="<?= e(formatCurrency($r['estimated_cost'])) ?>"
                     data-export-paid="—"
                     data-export-balance="—"
                     data-export-created="<?= e($vkRepFormatDate($r['created_at'] ?? null)) ?>"
@@ -421,7 +421,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     <td><span class="vk-repair-pri vk-repair-pri-<?= e($pri['key']) ?>"><?= e($pri['label']) ?></span></td>
                     <td><span class="vk-repair-pill vk-repair-st-<?= e($disp['key']) ?>"><?= e($disp['label']) ?></span></td>
                     <td class="d-none d-md-table-cell"><span class="vk-repair-pill vk-repair-pay-<?= e($pay['key']) ?>"><?= e($pay['label']) ?></span></td>
-                    <td class="text-end"><span class="vk-repair-amt"><?= e(number_format((float) $r['estimated_cost'], 2)) ?></span></td>
+                    <td class="text-end"><span class="vk-repair-amt"><?= e(formatCurrency($r['estimated_cost'])) ?></span></td>
                     <td class="d-none d-xl-table-cell text-end"><span class="vk-repair-muted-cell">—</span></td>
                     <td class="d-none d-xl-table-cell text-end"><span class="vk-repair-muted-cell">—</span></td>
                     <td class="d-none d-lg-table-cell"><span class="vk-repair-date"><?= e($vkRepFormatDate($r['created_at'] ?? null)) ?></span></td>
@@ -479,7 +479,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 <div class="vk-repair-mcard-meta">
                     <span class="vk-repair-pri vk-repair-pri-<?= e($pri['key']) ?>"><?= e($pri['label']) ?></span>
                     <span><?= e($deviceLabel) ?></span>
-                    <span class="vk-repair-amt"><?= e(number_format((float) $r['estimated_cost'], 2)) ?></span>
+                    <span class="vk-repair-amt"><?= e(formatCurrency($r['estimated_cost'])) ?></span>
                 </div>
                 <div class="vk-repair-cell-sub"><?= e($techName !== '' ? $techName : 'Unassigned') ?> · <?= e($vkRepProblemShort($r['problem_description'] ?? null)) ?></div>
                 <div class="vk-repair-mcard-actions">

@@ -47,6 +47,18 @@
         return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
+    function formatMoney(amount) {
+        if (typeof formatCurrency === 'function') {
+            return formatCurrency(amount);
+        }
+        var n = Number(amount);
+        if (!Number.isFinite(n)) n = 0;
+        var fixed = n.toFixed(2);
+        var parts = fixed.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return 'Rs. ' + parts.join('.');
+    }
+
     function initTooltips() {
         if (typeof bootstrap === 'undefined' || !bootstrap.Tooltip) {
             return;
@@ -397,7 +409,7 @@
                 var p = Math.min(1, (now - start) / duration);
                 var val = target * p;
                 if (isMoney) {
-                    el.textContent = (el.dataset.countPrefix || 'LKR ') + Math.round(val).toLocaleString('en-LK') + suffix;
+                    el.textContent = formatMoney(val) + suffix;
                 } else if (isDecimal) {
                     el.textContent = val.toFixed(1) + suffix;
                 } else {

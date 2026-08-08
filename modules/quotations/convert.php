@@ -77,7 +77,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-4">Grand total</dt>
-                        <dd class="col-sm-8"><?= e($q['currency']) ?> <?= e(number_format((float) $q['grand_total'], 2)) ?></dd>
+                        <dd class="col-sm-8"><?= e(formatCurrency($q['grand_total'])) ?></dd>
                         <dt class="col-sm-4">Line items</dt>
                         <dd class="col-sm-8"><?= count($items) ?></dd>
                         <dt class="col-sm-4">Status</dt>

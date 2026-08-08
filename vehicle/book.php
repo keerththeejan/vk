@@ -182,7 +182,7 @@ require dirname(__DIR__) . '/includes/public_header.php';
 
                     <div class="vk-price-box mb-3">
                         <div class="small text-muted">Estimated fare</div>
-                        <div class="h4 mb-0" data-vk-total>LKR 0</div>
+                        <div class="h4 mb-0" data-vk-total>Rs. 0.00</div>
                     </div>
                     <button class="btn btn-primary w-100 btn-lg" type="submit">Confirm booking</button>
                 </form>

@@ -1057,10 +1057,10 @@ $showFooterQr = !empty($ipsSettings['footer_qr_enabled']);
                     <td class="col-no center"><?= $i++ ?></td>
                     <td class="col-desc left"><?= e($desc) ?></td>
                     <td class="col-qty center"><?= (int) $ln['quantity'] ?></td>
-                    <td class="col-price num"><?= e(number_format((float) $ln['unit_price'], 2)) ?></td>
-                    <td class="col-disc num"><?= $lineDisc > 0 ? e(number_format($lineDisc, 2)) : '<span class="dash">—</span>' ?></td>
-                    <td class="col-tax num"><?= $lineTax > 0 ? e(number_format($lineTax, 2)) : '<span class="dash">—</span>' ?></td>
-                    <td class="col-amt num"><?= e(number_format($lineNet, 2)) ?></td>
+                    <td class="col-price num"><?= e(formatCurrency($ln['unit_price'])) ?></td>
+                    <td class="col-disc num"><?= $lineDisc > 0 ? e(formatCurrency($lineDisc)) : '<span class="dash">—</span>' ?></td>
+                    <td class="col-tax num"><?= $lineTax > 0 ? e(formatCurrency($lineTax)) : '<span class="dash">—</span>' ?></td>
+                    <td class="col-amt num"><?= e(formatCurrency($lineNet)) ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
@@ -1081,53 +1081,53 @@ $showFooterQr = !empty($ipsSettings['footer_qr_enabled']);
                 <table class="totals-table">
                     <tr>
                         <td>Subtotal</td>
-                        <td><?= e(number_format((float) $inv['subtotal'], 2)) ?></td>
+                        <td><?= e(formatCurrency($inv['subtotal'])) ?></td>
                     </tr>
                     <tr>
                         <td>Item Discount</td>
-                        <td><?= $itemDiscTotal > 0.0001 ? '-' . e(number_format($itemDiscTotal, 2)) : e(number_format(0, 2)) ?></td>
+                        <td><?= $itemDiscTotal > 0.0001 ? '-' . e(formatCurrency($itemDiscTotal)) : e(formatCurrency(0)) ?></td>
                     </tr>
                     <?php if ($invDiscAmt > 0.0001): ?>
                     <tr>
                         <td>Invoice Discount</td>
-                        <td>-<?= e(number_format($invDiscAmt, 2)) ?></td>
+                        <td>-<?= e(formatCurrency($invDiscAmt)) ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php if (abs($shippingAmt) > 0.0001): ?>
                     <tr>
                         <td>Shipping</td>
-                        <td><?= e(number_format($shippingAmt, 2)) ?></td>
+                        <td><?= e(formatCurrency($shippingAmt)) ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php if (abs($adjustAmt) > 0.0001): ?>
                     <tr>
                         <td>Adjustment</td>
-                        <td><?= e(number_format($adjustAmt, 2)) ?></td>
+                        <td><?= e(formatCurrency($adjustAmt)) ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php if ((float) $inv['tax'] > 0.0001): ?>
                     <tr>
                         <td>Tax</td>
-                        <td><?= e(number_format((float) $inv['tax'], 2)) ?></td>
+                        <td><?= e(formatCurrency($inv['tax'])) ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php if (abs($roundOffAmt) > 0.0001): ?>
                     <tr>
                         <td>Round Off</td>
-                        <td><?= e(number_format($roundOffAmt, 2)) ?></td>
+                        <td><?= e(formatCurrency($roundOffAmt)) ?></td>
                     </tr>
                     <?php endif; ?>
                     <tr class="total-row">
                         <td>Grand Total</td>
-                        <td><?= e(number_format((float) $inv['grand_total'], 2)) ?></td>
+                        <td><?= e(formatCurrency($inv['grand_total'])) ?></td>
                     </tr>
                     <tr>
                         <td>Paid</td>
-                        <td><?= e(number_format((float) $inv['paid_amount'], 2)) ?></td>
+                        <td><?= e(formatCurrency($inv['paid_amount'])) ?></td>
                     </tr>
                     <tr class="balance-row">
                         <td>Balance</td>
-                        <td><?= e(number_format($due, 2)) ?></td>
+                        <td><?= e(formatCurrency($due)) ?></td>
                     </tr>
                 </table>
             </div>

@@ -37,7 +37,7 @@ $rows = $pdo->query(
                         <td><?= e($r['name']) ?></td>
                         <td><span class="badge text-bg-<?= $r['account_type'] === 'system' ? 'primary' : 'secondary' ?>"><?= e($r['account_type']) ?></span></td>
                         <td><?= e($r['customer_name'] ?? '—') ?></td>
-                        <td><?= e(number_format((float) $r['current_balance'], 2)) ?></td>
+                        <td class="text-end"><?= e(formatCurrency($r['current_balance'])) ?></td>
                         <td class="text-end">
                             <a class="btn btn-sm btn-outline-primary" href="<?= e(BASE_URL) ?>/modules/accounts/ledger.php?id=<?= (int) $r['id'] ?>">Ledger</a>
                         </td>

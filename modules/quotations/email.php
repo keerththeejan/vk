@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         [
             (string) ($q['contact_person'] ?: $q['customer_name']),
             (string) $q['quotation_number'],
-            number_format((float) $q['grand_total'], 2),
+            formatCurrency($q['grand_total']),
             (string) ($q['expiry_date'] ?? '—'),
             $printUrl,
         ],
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $token = bin2hex(random_bytes(24));
     $bodyText = "Dear " . ($q['contact_person'] ?: $q['customer_name']) . ",\n\n"
-        . "Please find quotation " . $q['quotation_number'] . " for " . $q['currency'] . ' ' . number_format((float) $q['grand_total'], 2) . ".\n"
+        . "Please find quotation " . $q['quotation_number'] . " for " . formatCurrency($q['grand_total']) . ".\n"
         . "Valid until: " . ($q['expiry_date'] ?? '—') . "\n\n"
         . ($customMessage !== '' ? $customMessage . "\n\n" : '')
         . "View / Print: " . $printUrl . "\n\n— VK Network";
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         . '<p>Dear ' . e((string) ($q['contact_person'] ?: $q['customer_name'])) . ',</p>'
         . '<p>Please find your quotation summary below:</p>'
         . '<table style="width:100%;border-collapse:collapse;margin:16px 0">'
-        . '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Amount</strong></td><td style="padding:8px;border:1px solid #ddd">' . e($q['currency']) . ' ' . e(number_format((float) $q['grand_total'], 2)) . '</td></tr>'
+        . '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Amount</strong></td><td style="padding:8px;border:1px solid #ddd">' . e(formatCurrency($q['grand_total'])) . '</td></tr>'
         . '<tr><td style="padding:8px;border:1px solid #ddd"><strong>Valid until</strong></td><td style="padding:8px;border:1px solid #ddd">' . e((string) ($q['expiry_date'] ?? '—')) . '</td></tr>'
         . '</table>'
         . ($customMessage !== '' ? '<p>' . nl2br(e($customMessage)) . '</p>' : '')
@@ -99,7 +99,7 @@ $subjectPreview = str_replace(
     [
         (string) ($q['contact_person'] ?: $q['customer_name']),
         (string) $q['quotation_number'],
-        number_format((float) $q['grand_total'], 2),
+        formatCurrency($q['grand_total']),
         (string) ($q['expiry_date'] ?? '—'),
         $printUrl,
     ],

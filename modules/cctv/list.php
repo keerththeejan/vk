@@ -253,7 +253,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     data-export-location="<?= e($vkCctvLocShort((string) $r['location'])) ?>"
                     data-export-status="<?= e(str_replace('_', ' ', $stKey)) ?>"
                     data-export-priority="<?= e($pri['label']) ?>"
-                    data-export-amount="<?= e(number_format((float) $r['installation_charge'], 2)) ?>"
+                    data-export-amount="<?= e(formatCurrency($r['installation_charge'])) ?>"
                     data-export-created="<?= e($vkCctvFormatDate($r['created_at'] ?? null)) ?>">
                     <td><input type="checkbox" class="form-check-input vk-cctv-row-cb" value="<?= $id ?>" aria-label="Select job <?= e($r['job_number']) ?>"></td>
                     <td><span class="vk-cctv-job"><?= e($r['job_number']) ?></span></td>
@@ -281,7 +281,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                         <span class="vk-cctv-pri vk-cctv-pri-<?= e($pri['key']) ?>"><?= e($pri['label']) ?></span>
                     </td>
                     <td><span class="vk-cctv-pill vk-cctv-pill-<?= e($stKey) ?>"><?= e(str_replace('_', ' ', $stKey)) ?></span></td>
-                    <td class="text-end"><span class="vk-cctv-amt"><?= e(number_format((float) $r['installation_charge'], 2)) ?></span></td>
+                    <td class="text-end"><span class="vk-cctv-amt"><?= e(formatCurrency($r['installation_charge'])) ?></span></td>
                     <td class="d-none d-lg-table-cell"><span class="vk-cctv-date"><?= e($vkCctvFormatDate($r['created_at'] ?? null)) ?></span></td>
                     <td class="text-end">
                         <div class="vk-cctv-actions">
@@ -329,7 +329,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 </div>
                 <div class="vk-cctv-mcard-meta">
                     <span class="vk-cctv-pri vk-cctv-pri-<?= e($pri['key']) ?>"><?= e($pri['label']) ?></span>
-                    <span class="vk-cctv-amt"><?= e(number_format((float) $r['installation_charge'], 2)) ?></span>
+                    <span class="vk-cctv-amt"><?= e(formatCurrency($r['installation_charge'])) ?></span>
                     <span class="vk-cctv-date"><?= e($vkCctvFormatDate($r['created_at'] ?? null)) ?></span>
                 </div>
                 <div class="vk-cctv-loc"><?= e($vkCctvLocShort((string) $r['location'])) ?></div>

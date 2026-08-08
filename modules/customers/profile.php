@@ -94,7 +94,7 @@ $warrRows = $warrRows->fetchAll();
         <div class="card vk-card h-100">
             <div class="card-body">
                 <div class="small text-muted">Running balance</div>
-                <div class="fs-5 fw-bold"><?= e(number_format((float) $c['current_balance'], 2)) ?></div>
+                <div class="fs-5 fw-bold"><?= e(formatCurrency($c['current_balance'])) ?></div>
                 <div class="small text-muted">+ = amount due on account</div>
             </div>
         </div>
@@ -103,7 +103,7 @@ $warrRows = $warrRows->fetchAll();
         <div class="card vk-card h-100">
             <div class="card-body">
                 <div class="small text-muted">Open invoice due</div>
-                <div class="fs-5 fw-bold text-danger"><?= e(number_format($totalInvoiceDue, 2)) ?></div>
+                <div class="fs-5 fw-bold text-danger"><?= e(formatCurrency($totalInvoiceDue)) ?></div>
             </div>
         </div>
     </div>
@@ -136,7 +136,7 @@ $warrRows = $warrRows->fetchAll();
                             <td><code><?= e($r['job_number']) ?></code></td>
                             <td><?= e(repair_device_type_label((string) $r['device_type'])) ?></td>
                             <td><span class="badge text-bg-<?= e(repair_status_badge_class((string) $r['status'])) ?>"><?= e(str_replace('_', ' ', $r['status'])) ?></span></td>
-                            <td><?= e(number_format((float) $r['estimated_cost'], 2)) ?></td>
+                            <td><?= e(formatCurrency($r['estimated_cost'])) ?></td>
                             <td><?= !empty($r['invoice_id']) ? 'Yes' : '—' ?></td>
                             <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="<?= e(BASE_URL) ?>/modules/repairs/view.php?id=<?= (int) $r['id'] ?>">Open</a></td>
                         </tr>
@@ -160,7 +160,7 @@ $warrRows = $warrRows->fetchAll();
                             <td><code><?= e($r['job_number']) ?></code></td>
                             <td class="small"><?= e(strlen((string) $r['location']) > 50 ? substr((string) $r['location'], 0, 47) . '…' : (string) $r['location']) ?></td>
                             <td><?= e(str_replace('_', ' ', $r['status'])) ?></td>
-                            <td><?= e(number_format((float) $r['installation_charge'], 2)) ?></td>
+                            <td><?= e(formatCurrency($r['installation_charge'])) ?></td>
                             <td><?= !empty($r['invoice_id']) ? 'Yes' : '—' ?></td>
                             <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="<?= e(BASE_URL) ?>/modules/cctv/view.php?id=<?= (int) $r['id'] ?>">Open</a></td>
                         </tr>
@@ -241,9 +241,9 @@ $warrRows = $warrRows->fetchAll();
                         <tr>
                             <td><?= e($r['invoice_number']) ?></td>
                             <td><?= e($r['invoice_date']) ?></td>
-                            <td><?= e(number_format((float) $r['grand_total'], 2)) ?></td>
-                            <td><?= e(number_format((float) $r['paid_amount'], 2)) ?></td>
-                            <td class="<?= $d > 0.001 ? 'text-danger fw-semibold' : '' ?>"><?= e(number_format($d, 2)) ?></td>
+                            <td><?= e(formatCurrency($r['grand_total'])) ?></td>
+                            <td><?= e(formatCurrency($r['paid_amount'])) ?></td>
+                            <td class="<?= $d > 0.001 ? 'text-danger fw-semibold' : '' ?>"><?= e(formatCurrency($d)) ?></td>
                             <td><?= e($r['status']) ?></td>
                             <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="<?= e(BASE_URL) ?>/modules/invoices/view.php?id=<?= (int) $r['id'] ?>">View</a></td>
                         </tr>

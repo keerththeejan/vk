@@ -53,7 +53,7 @@ require dirname(__DIR__) . '/includes/public_header.php';
                             <td><code><?= e((string) $r['booking_ref']) ?></code></td>
                             <td class="small"><?= e((string) $r['pickup_location']) ?><br><span class="text-muted"><?= e((string) ($r['drop_location'] ?? '-')) ?></span></td>
                             <td class="small"><?= e((string) $r['pickup_at']) ?><br><span class="text-muted"><?= e((string) ($r['return_at'] ?? '-')) ?></span></td>
-                            <td>LKR <?= e(number_format((float) $r['total_amount'], 0)) ?></td>
+                            <td><?= e(formatCurrency($r['total_amount'])) ?></td>
                             <td><span class="badge text-bg-<?= $r['status'] === 'completed' ? 'success' : ($r['status'] === 'cancelled' ? 'danger' : ($r['status'] === 'ongoing' ? 'warning' : 'secondary')) ?>"><?= e((string) ucfirst((string) $r['status'])) ?></span></td>
                             <td>
                                 <?php if (in_array((string) $r['status'], ['pending', 'confirmed'], true)): ?>

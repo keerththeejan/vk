@@ -956,14 +956,14 @@ function vk_quotation_header_from_post(array $post): array
 function vk_quotation_whatsapp_url(PDO $pdo, array $q): string
 {
     $tpl = vk_quotation_setting($pdo, 'whatsapp_template',
-        "Hello {customer_name},\n\nQuotation *{quotation_number}* — LKR {grand_total}\nValid until: {expiry_date}\n\n{print_url}\n\n— VK Network");
+        "Hello {customer_name},\n\nQuotation *{quotation_number}* — {grand_total}\nValid until: {expiry_date}\n\n{print_url}\n\n— VK Network");
     $printUrl = rtrim(BASE_URL, '/') . '/modules/quotations/print.php?id=' . (int) $q['id'];
     $msg = str_replace(
         ['{customer_name}', '{quotation_number}', '{grand_total}', '{expiry_date}', '{print_url}'],
         [
             (string) ($q['contact_person'] ?: $q['customer_name'] ?? 'Customer'),
             (string) $q['quotation_number'],
-            number_format((float) $q['grand_total'], 2),
+            formatCurrency($q['grand_total']),
             (string) ($q['expiry_date'] ?? '—'),
             $printUrl,
         ],

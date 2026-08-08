@@ -119,7 +119,7 @@ $extraScripts = '<script>window.VK_INVOICE_CFG=' . json_encode([
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 
 $notesPrefill = $prefillRepair
-    ? 'Repair job: ' . $prefillRepair['job_number'] . ' — Est. ' . number_format((float) $prefillRepair['estimated_cost'], 2)
+    ? 'Repair job: ' . $prefillRepair['job_number'] . ' — Est. ' . formatCurrency($prefillRepair['estimated_cost'])
     : ($prefillCctv
         ? 'CCTV job: ' . $prefillCctv['job_number'] . ' @ ' . $prefillCctv['location']
         : '');

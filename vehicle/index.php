@@ -50,7 +50,7 @@ require dirname(__DIR__) . '/includes/public_header.php';
                             <span class="badge text-bg-light border text-uppercase"><?= e((string) $v['vehicle_type']) ?></span>
                         </div>
                         <div class="small text-muted mb-3"><code><?= e((string) $v['registration_number']) ?></code> • Seats <?= (int) $v['seats'] ?></div>
-                        <p class="mb-3 small">Rental: <strong>LKR <?= e(number_format((float) $v['price_per_day'], 0)) ?>/day</strong><br>Hire: <strong>LKR <?= e(number_format((float) $v['price_per_km'], 0)) ?>/km</strong></p>
+                        <p class="mb-3 small">Rental: <strong><?= e(formatCurrency($v['price_per_day'])) ?>/day</strong><br>Hire: <strong><?= e(formatCurrency($v['price_per_km'])) ?>/km</strong></p>
                         <a class="btn btn-outline-primary btn-sm" href="<?= e(BASE_URL) ?>/vehicle/book.php?vehicle_id=<?= (int) $v['id'] ?>">Book this vehicle</a>
                     </div>
                 </div>

@@ -542,7 +542,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     'tech' => $techName !== '' ? $techName : 'Unassigned',
                     'date' => $prefDate,
                     'time' => $prefTime,
-                    'cost' => $cost > 0 ? '₹' . number_format($cost, 0) : '—',
+                    'cost' => $cost > 0 ? formatCurrency($cost) : '—',
                     'payment' => $pay['label'],
                     'problem' => (string) ($r['problem_description'] ?? ''),
                     'created' => $vkBookFormatDate($r['created_at'] ?? null),
@@ -572,7 +572,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     data-export-priority="<?= e($pri['label']) ?>"
                     data-export-status="<?= e($uiSt['label']) ?>"
                     data-export-location="<?= e($vkBookShortAddress($r['address'] ?? null)) ?>"
-                    data-export-cost="<?= $cost > 0 ? e(number_format($cost, 2)) : '—' ?>"
+                    data-export-cost="<?= $cost > 0 ? e(formatCurrency($cost)) : '—' ?>"
                     data-export-payment="<?= e($pay['label']) ?>"
                     data-export-created-by="Web Portal">
                     <td class="vk-book-sticky-col vk-book-sticky-check" onclick="event.stopPropagation()">
@@ -626,7 +626,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                             <?php endif; ?>
                         </div>
                     </td>
-                    <td class="vk-book-col-hide-lg"><span class="vk-book-amt"><?= $cost > 0 ? '₹' . e(number_format($cost, 0)) : '—' ?></span></td>
+                    <td class="vk-book-col-hide-lg"><span class="vk-book-amt"><?= $cost > 0 ? e(formatCurrency($cost)) : '—' ?></span></td>
                     <td class="vk-book-col-hide-md">
                         <?php if ($pay['class'] !== ''): ?>
                         <span class="vk-book-badge <?= e($pay['class']) ?>"><?= e($pay['label']) ?></span>
@@ -692,7 +692,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 'tech' => $techName !== '' ? $techName : 'Unassigned',
                 'date' => $prefDate,
                 'time' => $vkBookFormatTime($r['created_at'] ?? null),
-                'cost' => $cost > 0 ? '₹' . number_format($cost, 0) : '—',
+                'cost' => $cost > 0 ? formatCurrency($cost) : '—',
                 'payment' => $pay['label'],
                 'problem' => (string) ($r['problem_description'] ?? ''),
                 'created' => $vkBookFormatDate($r['created_at'] ?? null),
@@ -721,7 +721,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
             data-export-priority="<?= e($pri['label']) ?>"
             data-export-status="<?= e($uiSt['label']) ?>"
             data-export-location="<?= e($vkBookShortAddress($r['address'] ?? null)) ?>"
-            data-export-cost="<?= $cost > 0 ? e(number_format($cost, 2)) : '—' ?>"
+            data-export-cost="<?= $cost > 0 ? e(formatCurrency($cost)) : '—' ?>"
             data-export-payment="<?= e($pay['label']) ?>"
             data-export-created-by="Web Portal">
             <div class="d-flex align-items-center gap-2 mb-2">
@@ -736,7 +736,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 <dt>Service</dt><dd><?= e(ucfirst(str_replace('_', ' ', $svc))) ?></dd>
                 <dt>Date</dt><dd><?= e($prefDate) ?></dd>
                 <dt>Technician</dt><dd><?= e($techName !== '' ? $techName : 'Unassigned') ?></dd>
-                <dt>Cost</dt><dd class="vk-book-amt"><?= $cost > 0 ? '₹' . e(number_format($cost, 0)) : '—' ?></dd>
+                <dt>Cost</dt><dd class="vk-book-amt"><?= $cost > 0 ? e(formatCurrency($cost)) : '—' ?></dd>
             </dl>
             <div class="vk-book-actions">
                 <a class="vk-book-act" href="<?= e($viewUrl) ?>" title="Manage"><i class="bi bi-eye"></i></a>

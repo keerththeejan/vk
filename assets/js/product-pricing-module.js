@@ -31,16 +31,22 @@
       return Number.isFinite(v) ? v : 0;
     };
 
-    const formatter = () => {
-      const currency = currencySelect?.value || "USD";
-      try {
-        return new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 2 });
-      } catch (_) {
-        return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+    const formatMoney = (value) => {
+      if (typeof formatCurrency === "function") {
+        return formatCurrency(value);
       }
+      let n = Number(value);
+      if (!Number.isFinite(n)) n = 0;
+      const fixed = n.toFixed(2);
+      const parts = fixed.split(".");
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      return `Rs. ${parts.join(".")}`;
     };
 
-    const formatMoney = (value) => formatter().format(value || 0);
+    const currencySymbol = () => {
+      if (window.VK_CURRENCY?.symbol) return window.VK_CURRENCY.symbol;
+      return currencySelect?.selectedOptions[0]?.dataset.symbol || "Rs.";
+    };
 
     const setText = (id, text) => {
       const node = document.getElementById(id);
@@ -142,7 +148,6 @@
     const calculatePricing = () => {
       module.classList.add("is-calculating");
 
-      const fmt = formatter();
       const cost = num("cost_price");
       const price = num("selling_price");
       const taxRate = num("tax_rate") + num("vat_gst");
@@ -160,13 +165,13 @@
       if (profitMarginField) profitMarginField.value = margin.toFixed(2);
 
       setText("profitMarginValue", `${margin.toFixed(1)}%`);
-      setText("liveProfitValue", fmt.format(profit));
-      setText("taxInclusiveValue", fmt.format(taxInclusive));
-      setText("inlineRevenueEstimate", fmt.format(revenue));
-      setText("recommendedSellingPrice", fmt.format(recommended));
-      setText("pricingEffectivePrice", fmt.format(effective));
-      setText("taxCalcBase", fmt.format(effective));
-      setText("taxCalcAmount", fmt.format(taxAmount));
+      setText("liveProfitValue", formatMoney(profit));
+      setText("taxInclusiveValue", formatMoney(taxInclusive));
+      setText("inlineRevenueEstimate", formatMoney(revenue));
+      setText("recommendedSellingPrice", formatMoney(recommended));
+      setText("pricingEffectivePrice", formatMoney(effective));
+      setText("taxCalcBase", formatMoney(effective));
+      setText("taxCalcAmount", formatMoney(taxAmount));
       setText("taxCalcRate", `${taxRate.toFixed(2)}%`);
 
       const marginHealth = margin >= 35 ? "High" : margin >= 20 ? "Healthy" : margin > 0 ? "Thin" : "Neutral";
@@ -176,12 +181,12 @@
       const promoRec = document.getElementById("promoRecommendation");
       if (promoRec) {
         promoRec.textContent =
-          promo > 0 && promo < price ? `Launch at ${fmt.format(promo)}` : recommended > price && cost > 0 ? `Try ${fmt.format(recommended)}` : "—";
+          promo > 0 && promo < price ? `Launch at ${formatMoney(promo)}` : recommended > price && cost > 0 ? `Try ${formatMoney(recommended)}` : "—";
       }
 
       MONEY_FIELDS.forEach((id) => {
         const hint = document.querySelector(`[data-formatted-for="${id}"]`);
-        if (hint) hint.textContent = fmt.format(num(id));
+        if (hint) hint.textContent = formatMoney(num(id));
       });
 
       if (window.VKProductStudio?.syncAll) {
@@ -192,7 +197,7 @@
         const sideRevenue = document.getElementById("sideRevenueMetric");
         if (marginSummary) marginSummary.textContent = `${margin.toFixed(1)}%`;
         if (sideProfit) sideProfit.textContent = `${margin.toFixed(1)}%`;
-        if (sideRevenue) sideRevenue.textContent = fmt.format(revenue);
+        if (sideRevenue) sideRevenue.textContent = formatMoney(revenue);
       }
 
       module.classList.remove("is-calculating");
@@ -207,9 +212,8 @@
     };
 
     const updateCurrencyUI = () => {
-      const option = currencySelect?.selectedOptions[0];
-      const symbol = option?.dataset.symbol || "$";
-      const code = currencySelect?.value || "USD";
+      const symbol = currencySymbol();
+      const code = currencySelect?.value || window.VK_CURRENCY?.code || "LKR";
       document.querySelectorAll("[data-currency-prefix]").forEach((el) => {
         el.textContent = symbol;
       });
@@ -223,8 +227,7 @@
       if (type === "percentage") {
         discountPrefix.textContent = "%";
       } else if (type === "fixed") {
-        const sym = currencySelect?.selectedOptions[0]?.dataset.symbol || "$";
-        discountPrefix.textContent = sym;
+        discountPrefix.textContent = currencySymbol();
       } else {
         discountPrefix.textContent = "—";
       }

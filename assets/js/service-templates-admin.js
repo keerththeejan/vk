@@ -106,8 +106,15 @@
     }
 
     function formatRs(amount) {
-        const n = Number(amount) || 0;
-        return 'Rs. ' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (typeof formatCurrency === 'function') {
+            return formatCurrency(amount);
+        }
+        const n = Number(amount);
+        const num = Number.isFinite(n) ? n : 0;
+        const fixed = num.toFixed(2);
+        const parts = fixed.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return 'Rs. ' + parts.join('.');
     }
 
     function formatDateShort(iso) {

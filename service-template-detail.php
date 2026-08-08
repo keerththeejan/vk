@@ -100,7 +100,7 @@ require __DIR__ . '/includes/public_header.php';
             <?php $amt = (float) ($tpl['default_amount'] ?? 0); ?>
             <?php if ($amt > 0): ?>
                 <div class="mt-4">
-                    <span class="vk-svc-price-pill">Default from LKR <?= e(number_format($amt, 0, '.', ',')) ?></span>
+                    <span class="vk-svc-price-pill">Default from <?= e(formatCurrency($amt)) ?></span>
                 </div>
             <?php endif; ?>
         </div>

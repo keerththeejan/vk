@@ -99,7 +99,7 @@ require __DIR__ . '/includes/public_header.php';
             $pn = trim((string) ($service['price_note'] ?? ''));
             if ($pf !== null && (float) $pf > 0): ?>
                 <div class="mt-4 d-flex flex-wrap align-items-center gap-2">
-                    <span class="vk-svc-price-pill">From LKR <?= e(number_format((float) $pf, 0, '.', ',')) ?></span>
+                    <span class="vk-svc-price-pill">From <?= e(formatCurrency($pf)) ?></span>
                     <?php if ($pn !== ''): ?>
                         <span class="small vk-svc-hero-note"><?= e($pn) ?></span>
                     <?php endif; ?>

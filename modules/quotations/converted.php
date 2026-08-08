@@ -70,7 +70,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                                 <span class="text-muted">—</span>
                             <?php endif; ?>
                         </td>
-                        <td class="text-end"><?= e($r['currency']) ?> <?= e(number_format((float) $r['grand_total'], 2)) ?></td>
+                        <td class="text-end"><?= e(formatCurrency($r['grand_total'])) ?></td>
                     </tr>
                 <?php endforeach; endif; ?>
                 </tbody>

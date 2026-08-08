@@ -236,7 +236,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
     </div>
     <div class="vk-vb-kpi vk-vb-kpi-orange">
         <div class="vk-vb-kpi-icon"><i class="bi bi-fuel-pump"></i></div>
-        <div class="vk-vb-kpi-body"><span class="vk-vb-kpi-label">Fuel est.</span><span class="vk-vb-kpi-value" data-count-to="<?= (int) $kpiFuelEst ?>" data-count-money="1" data-count-prefix="LKR ">0</span></div>
+        <div class="vk-vb-kpi-body"><span class="vk-vb-kpi-label">Fuel est.</span><span class="vk-vb-kpi-value" data-count-to="<?= (int) $kpiFuelEst ?>" data-count-money="1" data-count-prefix="Rs. ">0</span></div>
     </div>
     <div class="vk-vb-kpi vk-vb-kpi-purple">
         <div class="vk-vb-kpi-icon"><i class="bi bi-person-vcard"></i></div>
@@ -248,7 +248,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
     </div>
     <div class="vk-vb-kpi vk-vb-kpi-green">
         <div class="vk-vb-kpi-icon"><i class="bi bi-currency-dollar"></i></div>
-        <div class="vk-vb-kpi-body"><span class="vk-vb-kpi-label">Monthly</span><span class="vk-vb-kpi-value" data-count-to="<?= (int) $kpiMonthlyCost ?>" data-count-money="1" data-count-prefix="LKR ">0</span></div>
+        <div class="vk-vb-kpi-body"><span class="vk-vb-kpi-label">Monthly</span><span class="vk-vb-kpi-value" data-count-to="<?= (int) $kpiMonthlyCost ?>" data-count-money="1" data-count-prefix="Rs. ">0</span></div>
     </div>
     <div class="vk-vb-kpi vk-vb-kpi-blue">
         <div class="vk-vb-kpi-icon"><i class="bi bi-speedometer2"></i></div>
@@ -296,7 +296,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
     </div>
     <div class="vk-vb-chart-card">
         <h3 class="vk-vb-chart-title">Monthly revenue</h3>
-        <div class="vk-vb-kpi-value mb-2" data-count-to="<?= (int) $kpiMonthlyCost ?>" data-count-money="1" data-count-prefix="LKR ">0</div>
+        <div class="vk-vb-kpi-value mb-2" data-count-to="<?= (int) $kpiMonthlyCost ?>" data-count-money="1" data-count-prefix="Rs. ">0</div>
         <div class="vk-vb-bar-row">
             <span class="vk-vb-bar-label">Bookings</span>
             <div class="vk-vb-bar-track"><div class="vk-vb-bar-fill" data-width="<?= min(100, $kpiTotalBookings * 5) ?>"></div></div>
@@ -454,7 +454,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 'pickupDate' => $vkVbFormatDt($r['pickup_at'] ?? null),
                 'returnDate' => $vkVbFormatDt($r['return_at'] ?? null),
                 'distance' => number_format((float) $r['distance_km'], 1) . ' km',
-                'cost' => 'LKR ' . number_format((float) $r['total_amount'], 0),
+                'cost' => formatCurrency((float) $r['total_amount']),
                 'status' => $uiSt['label'],
                 'notes' => (string) ($r['special_notes'] ?? '—'),
                 'vtype' => ucfirst($vtype),
@@ -487,7 +487,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 data-export-fuel="<?= e($fuel['label']) ?>"
                 data-export-status="<?= e($uiSt['label']) ?>"
                 data-export-approval="<?= e($approval['label']) ?>"
-                data-export-cost="<?= e(number_format((float) $r['total_amount'], 0)) ?>"
+                data-export-cost="<?= e(formatCurrency($r['total_amount'])) ?>"
                 data-export-created="<?= e($vkVbFormatDt($r['created_at'] ?? null)) ?>">
                 <td class="vk-vb-sticky-col vk-vb-sticky-check" onclick="event.stopPropagation()">
                     <input type="checkbox" class="form-check-input vk-vb-row-check">
@@ -530,7 +530,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 <td class="vk-vb-col-hide-lg"><span class="<?= e($fuel['class']) ?> fw-semibold"><?= e($fuel['label']) ?></span></td>
                 <td><span class="vk-vb-badge <?= e($uiSt['class']) ?>"><?= e($uiSt['label']) ?></span></td>
                 <td class="vk-vb-col-hide-md"><?php if ($approval['class'] !== ''): ?><span class="vk-vb-badge <?= e($approval['class']) ?>"><?= e($approval['label']) ?></span><?php else: ?>—<?php endif; ?></td>
-                <td class="vk-vb-col-hide-md"><span class="vk-vb-amt">LKR <?= e(number_format((float) $r['total_amount'], 0)) ?></span></td>
+                <td class="vk-vb-col-hide-md"><span class="vk-vb-amt"><?= e(formatCurrency($r['total_amount'])) ?></span></td>
                 <td class="vk-vb-col-hide-lg"><span class="vk-vb-date"><?= e(date('d M Y', strtotime((string) ($r['created_at'] ?? 'now')) ?: time())) ?></span></td>
                 <td onclick="event.stopPropagation()">
                     <div class="vk-vb-actions">
@@ -600,7 +600,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
             'pickupDate' => $vkVbFormatDt($r['pickup_at'] ?? null),
             'returnDate' => $vkVbFormatDt($r['return_at'] ?? null),
             'distance' => number_format((float) $r['distance_km'], 1) . ' km',
-            'cost' => 'LKR ' . number_format((float) $r['total_amount'], 0),
+            'cost' => formatCurrency((float) $r['total_amount']),
             'status' => $uiSt['label'],
             'notes' => (string) ($r['special_notes'] ?? '—'),
             'vtype' => ucfirst((string) ($r['vehicle_type'] ?? 'car')),
@@ -627,7 +627,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
         </div>
         <dl class="vk-vb-mobile-grid">
             <dt>Pickup</dt><dd><?= e($vkVbFormatDt($r['pickup_at'] ?? null)) ?></dd>
-            <dt>Cost</dt><dd class="vk-vb-amt">LKR <?= e(number_format((float) $r['total_amount'], 0)) ?></dd>
+            <dt>Cost</dt><dd class="vk-vb-amt"><?= e(formatCurrency($r['total_amount'])) ?></dd>
             <dt>Driver</dt><dd><?= e((string) ($r['driver_name'] ?? '—')) ?></dd>
             <dt>Distance</dt><dd><?= e(number_format((float) $r['distance_km'], 1)) ?> km</dd>
         </dl>

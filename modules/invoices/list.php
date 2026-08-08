@@ -99,9 +99,9 @@ $custs = $pdo->query('SELECT id, name FROM customers ORDER BY name')->fetchAll()
                         <td><?= e($r['invoice_number']) ?></td>
                         <td><?= e($r['invoice_date']) ?></td>
                         <td><?= e($r['customer_name']) ?></td>
-                        <td><?= e(number_format((float) $r['grand_total'], 2)) ?></td>
-                        <td><?= e(number_format((float) $r['paid_amount'], 2)) ?></td>
-                        <td><?= e(number_format($due, 2)) ?></td>
+                        <td><?= e(formatCurrency($r['grand_total'])) ?></td>
+                        <td><?= e(formatCurrency($r['paid_amount'])) ?></td>
+                        <td><?= e(formatCurrency($due)) ?></td>
                         <td>
                             <?php
                             $badge = match ($r['status']) {

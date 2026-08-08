@@ -316,7 +316,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
     </div>
     <div class="vk-cust-chart-card">
         <h3 class="vk-cust-chart-title">Outstanding</h3>
-        <div class="vk-cust-chart-metric">₹<?= e(number_format($kpiOutstanding, 0)) ?></div>
+        <div class="vk-cust-chart-metric"><?= e(formatCurrency($kpiOutstanding)) ?></div>
         <div class="vk-cust-bar-row"><span class="vk-cust-bar-label">Due</span><div class="vk-cust-bar-track"><div class="vk-cust-bar-fill" data-width="<?= min(100, (int) ($kpiOutstanding / max(1, $kpiRevenue) * 100)) ?>" style="background:linear-gradient(90deg,var(--danger),var(--warning))"></div></div><span class="vk-cust-bar-val"><?= (int) $kpiVip ?></span></div>
     </div>
     <div class="vk-cust-chart-card">
@@ -426,7 +426,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     'email' => $email,
                     'address' => (string) ($r['address'] ?? ''),
                     'account' => (string) ($r['account_code'] ?? ''),
-                    'balance' => number_format($bal, 2),
+                    'balance' => formatCurrency($bal),
                     'created' => $vkCustFormatDate((string) ($r['created_at'] ?? '')),
                     'repairs' => (string) $repCnt,
                     'cctv' => (string) $cctvCnt,
@@ -447,7 +447,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 data-export-city="<?= e($city) ?>"
                 data-export-type="<?= e($type['label']) ?>"
                 data-export-status="<?= e($status['label']) ?>"
-                data-export-balance="<?= e(number_format($bal, 2)) ?>"
+                data-export-balance="<?= e(formatCurrency($bal)) ?>"
                 data-export-last-service="<?= e($vkCustFormatDate($lastSvc)) ?>"
                 data-export-created="<?= e($vkCustFormatDate((string) ($r['created_at'] ?? ''))) ?>">
                 <td class="vk-cust-sticky-col vk-cust-sticky-check" onclick="event.stopPropagation()"><input type="checkbox" class="form-check-input vk-cust-row-check" aria-label="Select customer"></td>
@@ -473,7 +473,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 <td class="vk-cust-col-hide-lg vk-cust-date"><?= e($city) ?></td>
                 <td><span class="vk-cust-badge vk-cust-type-<?= e($type['key']) ?>"><?= e($type['label']) ?></span></td>
                 <td><span class="vk-cust-badge vk-cust-st-<?= e($status['key']) ?>"><?= e($status['label']) ?></span></td>
-                <td class="vk-cust-amt <?= e($balUi['class']) ?>"><?= e(number_format($bal, 2)) ?></td>
+                <td class="vk-cust-amt <?= e($balUi['class']) ?>"><?= e(formatCurrency($bal)) ?></td>
                 <td class="vk-cust-col-hide-md vk-cust-date"><?= e($vkCustFormatDate($lastSvc)) ?></td>
                 <td class="vk-cust-col-hide-lg vk-cust-date"><?= e($vkCustFormatDate((string) ($r['created_at'] ?? ''))) ?></td>
                 <td onclick="event.stopPropagation()">
@@ -533,7 +533,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
             $drawerJson = htmlspecialchars(json_encode([
                 'id' => $cid, 'name' => (string) $r['name'], 'phone' => $phone, 'email' => (string) ($r['email'] ?? ''),
                 'address' => (string) ($r['address'] ?? ''), 'account' => (string) ($r['account_code'] ?? ''),
-                'balance' => number_format($bal, 2), 'created' => $vkCustFormatDate((string) ($r['created_at'] ?? '')),
+                'balance' => formatCurrency($bal), 'created' => $vkCustFormatDate((string) ($r['created_at'] ?? '')),
                 'repairs' => (string) $repCnt, 'cctv' => (string) ($cctvCounts[$cid] ?? 0),
                 'maint' => (string) ($maintCounts[$cid] ?? 0), 'invoices' => (string) ($invoiceCounts[$cid] ?? 0),
                 'lastService' => $vkCustFormatDate($lastServices[$cid] ?? ''), 'initials' => $vkCustInitials((string) $r['name']),
@@ -546,7 +546,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     <button type="button" class="vk-cust-name vk-cust-name-btn" data-customer-drawer="<?= $drawerJson ?>"><?= e((string) $r['name']) ?></button>
                     <div class="vk-cust-id d-inline-block mt-1">VK-<?= $cid ?></div>
                 </div>
-                <span class="vk-cust-amt <?= e($balUi['class']) ?>"><?= e(number_format($bal, 2)) ?></span>
+                <span class="vk-cust-amt <?= e($balUi['class']) ?>"><?= e(formatCurrency($bal)) ?></span>
             </div>
             <div class="d-flex gap-2 mb-2">
                 <span class="vk-cust-badge vk-cust-type-<?= e($type['key']) ?>"><?= e($type['label']) ?></span>

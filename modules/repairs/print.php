@@ -78,7 +78,7 @@ if (db_table_exists($pdo, 'repair_job_parts') && db_table_exists($pdo, 'products
         <tr><th>Status</th><td><?= e(str_replace('_', ' ', $job['status'])) ?></td></tr>
         <tr><th>Problem</th><td><?= nl2br(e($job['problem_description'] ?? '')) ?></td></tr>
         <tr><th>Accessories</th><td><?= nl2br(e($job['accessories_received'] ?? '—')) ?></td></tr>
-        <tr><th>Estimated</th><td><?= e(number_format((float) $job['estimated_cost'], 2)) ?></td></tr>
+        <tr><th>Estimated</th><td><?= e(formatCurrency($job['estimated_cost'])) ?></td></tr>
         <tr><th>Warranty</th><td><?= !empty($job['warranty_expiry']) ? e($job['warranty_expiry']) : '—' ?></td></tr>
     </table>
     <?php if ($partRows): ?>
@@ -90,7 +90,7 @@ if (db_table_exists($pdo, 'repair_job_parts') && db_table_exists($pdo, 'products
                 <tr>
                     <td><?= e($p['product_name']) ?></td>
                     <td class="text-end"><?= (int) $p['quantity'] ?></td>
-                    <td class="text-end"><?= e(number_format((float) $p['line_total'], 2)) ?></td>
+                    <td class="text-end"><?= e(formatCurrency($p['line_total'])) ?></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

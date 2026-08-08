@@ -104,21 +104,21 @@ if (!empty($row['attachments_json'])) {
             <h3>Transfer From (Credit)</h3>
             <div><strong><?= e((string) $row['from_code']) ?></strong> — <?= e((string) $row['from_name']) ?></div>
             <div class="sub" style="color:var(--muted);font-size:12px;margin-top:4px;">Group: <?= e((string) ($row['from_type'] ?? '')) ?></div>
-            <div class="amt" style="margin-top:10px;"><?= e($currency) ?> <?= e(number_format($amount, 2)) ?></div>
+            <div class="amt" style="margin-top:10px;"><?= e(formatCurrency($amount)) ?></div>
             <div style="margin-top:8px;font-size:12px;"><?= e((string) ($row['from_narration'] ?? $row['note'] ?? '')) ?></div>
         </div>
         <div class="box">
             <h3>Transfer To (Debit)</h3>
             <div><strong><?= e((string) $row['to_code']) ?></strong> — <?= e((string) $row['to_name']) ?></div>
             <div class="sub" style="color:var(--muted);font-size:12px;margin-top:4px;">Group: <?= e((string) ($row['to_type'] ?? '')) ?></div>
-            <div class="amt" style="margin-top:10px;"><?= e($currency) ?> <?= e(number_format($amount, 2)) ?></div>
+            <div class="amt" style="margin-top:10px;"><?= e(formatCurrency($amount)) ?></div>
             <div style="margin-top:8px;font-size:12px;"><?= e((string) ($row['to_narration'] ?? $row['note'] ?? '')) ?></div>
         </div>
     </div>
 
     <h2>Accounting summary</h2>
     <table>
-        <tr><th>Debit Total</th><td><?= e(number_format($amount, 2)) ?></td><th>Credit Total</th><td><?= e(number_format($amount, 2)) ?></td></tr>
+        <tr><th>Debit Total</th><td><?= e(formatCurrency($amount)) ?></td><th>Credit Total</th><td><?= e(formatCurrency($amount)) ?></td></tr>
         <tr><th>Difference</th><td>0.00</td><th>Balance Status</th><td><strong>Balanced</strong></td></tr>
     </table>
 

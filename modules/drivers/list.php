@@ -189,7 +189,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
     <div class="vk-drv-kpi vk-drv-kpi-purple"><div class="vk-drv-kpi-icon"><i class="bi bi-star"></i></div><div><span class="vk-drv-kpi-label">Top Rated</span><span class="vk-drv-kpi-value" data-count-to="<?= (int) $kpiTopRated ?>">0</span></div></div>
     <div class="vk-drv-kpi vk-drv-kpi-blue"><div class="vk-drv-kpi-icon"><i class="bi bi-geo-alt"></i></div><div><span class="vk-drv-kpi-label">On Trip</span><span class="vk-drv-kpi-value" data-count-to="<?= (int) $kpiOnTrip ?>">0</span></div></div>
     <div class="vk-drv-kpi vk-drv-kpi-green"><div class="vk-drv-kpi-icon"><i class="bi bi-truck-front"></i></div><div><span class="vk-drv-kpi-label">Assigned Vehicles</span><span class="vk-drv-kpi-value" data-count-to="<?= (int) $kpiAssigned ?>">0</span></div></div>
-    <div class="vk-drv-kpi vk-drv-kpi-purple"><div class="vk-drv-kpi-icon"><i class="bi bi-currency-dollar"></i></div><div><span class="vk-drv-kpi-label">Monthly Trip Cost</span><span class="vk-drv-kpi-value" data-count-to="<?= (int) round($kpiMonthlyCost) ?>" data-count-suffix=" LKR">0</span></div></div>
+    <div class="vk-drv-kpi vk-drv-kpi-purple"><div class="vk-drv-kpi-icon"><i class="bi bi-currency-dollar"></i></div><div><span class="vk-drv-kpi-label">Monthly Trip Cost</span><span class="vk-drv-kpi-value"><?= e(formatCurrency($kpiMonthlyCost)) ?></span></div></div>
 </div>
 
 <div class="vk-drv-analytics" role="region" aria-label="Driver analytics">

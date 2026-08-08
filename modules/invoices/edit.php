@@ -327,7 +327,7 @@ $discValue = (float) ($inv['invoice_discount_value'] ?? $inv['discount'] ?? 0);
                         <dd><input type="number" step="0.01" class="form-control form-control-sm text-end" name="round_off" id="round_off" value="<?= e((string) ($inv['round_off'] ?? 0)) ?>"></dd>
                     </div>
                     <div class="vk-total-row vk-total-row-grand"><dt>Grand Total</dt><dd id="disp_grand">0.00</dd></div>
-                    <div class="vk-total-row"><dt>Paid</dt><dd><?= e(number_format((float) $inv['paid_amount'], 2)) ?></dd></div>
+                    <div class="vk-total-row"><dt>Paid</dt><dd><?= e(formatCurrency($inv['paid_amount'])) ?></dd></div>
                     <div class="vk-total-row vk-total-row-balance"><dt>Balance</dt><dd id="disp_balance">0.00</dd></div>
                 </dl>
                 <div class="d-grid gap-2 mt-3">
@@ -338,7 +338,7 @@ $discValue = (float) ($inv['invoice_discount_value'] ?? $inv['discount'] ?? 0);
                     <a class="btn btn-outline-secondary" target="_blank" href="<?= e(BASE_URL) ?>/modules/invoices/print.php?id=<?= $id ?>"><i class="bi bi-eye me-1"></i>Preview / Print</a>
                     <a class="btn btn-outline-secondary" target="_blank" href="<?= e(BASE_URL) ?>/modules/invoices/print.php?id=<?= $id ?>&download=1"><i class="bi bi-file-pdf me-1"></i>Download PDF</a>
                     <?php
-                    $waText = rawurlencode('Invoice ' . $inv['invoice_number'] . ' Total: ' . number_format((float) $inv['grand_total'], 2));
+                    $waText = rawurlencode('Invoice ' . $inv['invoice_number'] . ' Total: ' . formatCurrency($inv['grand_total']));
                     $waPhone = preg_replace('/\D+/', '', (string) ($inv['phone'] ?? ''));
                     ?>
                     <?php if (!empty($inv['email'])): ?>

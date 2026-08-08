@@ -129,3 +129,16 @@ if (APP_DEBUG) {
     error_reporting(0);
     ini_set('display_errors', '0');
 }
+
+// Localization defaults — Sri Lanka
+if (!defined('VK_APP_TIMEZONE')) {
+    $envTz = trim((string) (getenv('APP_TIMEZONE') ?: ''));
+    define('VK_APP_TIMEZONE', $envTz !== '' ? $envTz : 'Asia/Colombo');
+}
+@date_default_timezone_set(VK_APP_TIMEZONE);
+
+if (!defined('VK_APP_LOCALE')) {
+    define('VK_APP_LOCALE', 'en_LK');
+}
+@setlocale(LC_ALL, 'en_LK.UTF-8', 'en_LK', 'en_US.UTF-8', 'English_United Kingdom.1252');
+

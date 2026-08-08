@@ -178,7 +178,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                             <td><?= e($r['customer_name']) ?></td>
                             <td><?= e($r['quotation_date']) ?></td>
                             <td><span class="badge text-bg-<?= e(vk_quotation_status_badge($r['status'])) ?>"><?= e(vk_quotation_status_label($r['status'])) ?></span></td>
-                            <td class="text-end"><?= e($r['currency']) ?> <?= e(number_format((float) $r['grand_total'], 2)) ?></td>
+                            <td class="text-end"><?= e(formatCurrency($r['grand_total'])) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php elseif (in_array($reportType, ['executive', 'customer', 'monthly', 'yearly', 'status', 'conversion', 'product'], true)): ?>
@@ -186,7 +186,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                         <tr>
                             <td><?= e($reportType === 'status' || $reportType === 'conversion' ? vk_quotation_status_label($r['label']) : (string) $r['label']) ?></td>
                             <td class="text-end"><?= e((string) (is_numeric($r['cnt']) && str_contains((string) $r['cnt'], '.') ? number_format((float) $r['cnt'], 2) : $r['cnt'])) ?></td>
-                            <td class="text-end"><?= e(number_format((float) $r['total'], 2)) ?></td>
+                            <td class="text-end"><?= e(formatCurrency($r['total'])) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>

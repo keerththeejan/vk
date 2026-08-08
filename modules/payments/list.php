@@ -94,7 +94,7 @@ $rows = $st->fetchAll();
                         <td><?= e($r['paid_at']) ?></td>
                         <td><?= $link ? '<a href="' . e($link) . '">' . e($ref) . '</a>' : e($ref) ?></td>
                         <td><?= e($r['customer_name']) ?></td>
-                        <td><?= e(number_format((float) $r['amount'], 2)) ?></td>
+                        <td><?= e(formatCurrency($r['amount'])) ?></td>
                         <td><span class="badge text-bg-secondary"><?= e($r['method']) ?></span></td>
                         <td class="text-end">
                             <?php if (!empty($r['invoice_id'])): ?>

@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($amount <= 0) {
         flash_set('error', 'Enter a positive amount.');
     } elseif ($amount - $due > 0.01) {
-        flash_set('error', 'Amount cannot exceed amount due (' . number_format($due, 2) . ').');
+        flash_set('error', 'Amount cannot exceed amount due (' . formatCurrency($due) . ').');
     } else {
         try {
             $pdo->beginTransaction();
@@ -103,11 +103,11 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 <hr>
                 <dl class="row small mb-0">
                     <dt class="col-6">Grand total</dt>
-                    <dd class="col-6 text-end"><?= e(number_format((float) $inv['grand_total'], 2)) ?></dd>
+                    <dd class="col-6 text-end"><?= e(formatCurrency($inv['grand_total'])) ?></dd>
                     <dt class="col-6">Paid</dt>
-                    <dd class="col-6 text-end"><?= e(number_format((float) $inv['paid_amount'], 2)) ?></dd>
+                    <dd class="col-6 text-end"><?= e(formatCurrency($inv['paid_amount'])) ?></dd>
                     <dt class="col-6 text-danger">Due</dt>
-                    <dd class="col-6 text-end text-danger fw-bold"><?= e(number_format($due, 2)) ?></dd>
+                    <dd class="col-6 text-end text-danger fw-bold"><?= e(formatCurrency($due)) ?></dd>
                 </dl>
             </div>
         </div>

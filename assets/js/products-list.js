@@ -58,7 +58,17 @@
     }
 
     function formatLkr(n) {
-        return 'LKR ' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        if (typeof formatCurrency === 'function') {
+            return formatCurrency(n);
+        }
+        var num = Number(n);
+        if (!Number.isFinite(num)) {
+            num = 0;
+        }
+        var fixed = num.toFixed(2);
+        var parts = fixed.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return 'Rs. ' + parts.join('.');
     }
 
     function getStock(p) {

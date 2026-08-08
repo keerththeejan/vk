@@ -59,7 +59,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
         <div class="col-6 col-md-4 col-xl-2">
             <div class="card vk-card qtn-kpi qtn-kpi--primary h-100">
                 <div class="card-body">
-                    <div class="qtn-kpi-value">LKR <?= e(number_format($totalValue, 0)) ?></div>
+                    <div class="qtn-kpi-value"><?= e(formatCurrency($totalValue)) ?></div>
                     <div class="qtn-kpi-label">Total value</div>
                 </div>
             </div>
@@ -83,7 +83,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
         <div class="col-6 col-md-4 col-xl-2">
             <div class="card vk-card qtn-kpi qtn-kpi--indigo h-100">
                 <div class="card-body">
-                    <div class="qtn-kpi-value">LKR <?= e(number_format($avgQuotation, 0)) ?></div>
+                    <div class="qtn-kpi-value"><?= e(formatCurrency($avgQuotation)) ?></div>
                     <div class="qtn-kpi-label">Average quotation</div>
                 </div>
             </div>
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
         data: {
             labels: <?= json_encode(array_column($monthly, 'ym'), JSON_THROW_ON_ERROR) ?>,
             datasets: [{
-                label: 'Value (LKR)',
+                label: 'Value (Rs.)',
                 data: <?= json_encode(array_map('floatval', array_column($monthly, 'value')), JSON_THROW_ON_ERROR) ?>,
                 backgroundColor: 'rgba(11, 77, 186, 0.75)',
                 borderRadius: 4

@@ -284,7 +284,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                         <td><?= e($v['technician_name'] ?? '—') ?></td>
                         <td class="small"><?= nl2br(e($v['work_performed'] ?? '—')) ?></td>
                         <td class="small"><?= nl2br(e($v['checks_done'] ?? '—')) ?></td>
-                        <td class="text-end"><?= e(number_format((float) $v['charges'], 2)) ?></td>
+                        <td class="text-end"><?= e(formatCurrency($v['charges'])) ?></td>
                         <td><?= !empty($v['next_service_date']) ? e($v['next_service_date']) : '—' ?></td>
                     </tr>
                 <?php endforeach; ?>

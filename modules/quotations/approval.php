@@ -113,7 +113,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                         <td><?= e($r['customer_name']) ?></td>
                         <td><?= e((string) ($r['executive_name'] ?: '—')) ?></td>
                         <td><?= e($r['quotation_date']) ?></td>
-                        <td class="text-end"><?= e($r['currency']) ?> <?= e(number_format((float) $r['grand_total'], 2)) ?></td>
+                        <td class="text-end"><?= e(formatCurrency($r['grand_total'])) ?></td>
                         <td><span class="badge text-bg-warning">Level <?= (int) $r['approval_level'] ?></span></td>
                         <td class="text-end">
                             <a class="btn btn-sm btn-warning" href="<?= e(BASE_URL) ?>/modules/quotations/approve.php?id=<?= $rid ?>"><i class="bi bi-shield-check me-1"></i>Review</a>

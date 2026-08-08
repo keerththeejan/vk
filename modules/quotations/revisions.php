@@ -195,8 +195,8 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 <div class="col-md-6">
                     <h6>Revision R<?= (int) $compare['a']['revision_no'] ?></h6>
                     <ul class="list-unstyled small mb-0">
-                        <li>Grand total: <strong><?= e(number_format($compare['a']['grand_total'], 2)) ?></strong></li>
-                        <li>Subtotal: <?= e(number_format($compare['a']['subtotal'], 2)) ?></li>
+                        <li>Grand total: <strong><?= e(formatCurrency($compare['a']['grand_total'])) ?></strong></li>
+                        <li>Subtotal: <?= e(formatCurrency($compare['a']['subtotal'])) ?></li>
                         <li>Line items: <?= (int) $compare['a']['item_count'] ?></li>
                         <li>Status: <?= e($compare['a']['status']) ?></li>
                     </ul>
@@ -204,15 +204,15 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 <div class="col-md-6">
                     <h6>Revision R<?= (int) $compare['b']['revision_no'] ?></h6>
                     <ul class="list-unstyled small mb-0">
-                        <li>Grand total: <strong><?= e(number_format($compare['b']['grand_total'], 2)) ?></strong></li>
-                        <li>Subtotal: <?= e(number_format($compare['b']['subtotal'], 2)) ?></li>
+                        <li>Grand total: <strong><?= e(formatCurrency($compare['b']['grand_total'])) ?></strong></li>
+                        <li>Subtotal: <?= e(formatCurrency($compare['b']['subtotal'])) ?></li>
                         <li>Line items: <?= (int) $compare['b']['item_count'] ?></li>
                         <li>Status: <?= e($compare['b']['status']) ?></li>
                     </ul>
                 </div>
             </div>
             <p class="small text-muted mt-2 mb-0">
-                Δ Total: <?= e(number_format($compare['b']['grand_total'] - $compare['a']['grand_total'], 2)) ?>
+                Δ Total: <?= e(formatCurrency($compare['b']['grand_total'] - $compare['a']['grand_total'])) ?>
                 · Δ Items: <?= (int) ($compare['b']['item_count'] - $compare['a']['item_count']) ?>
             </p>
         </div>

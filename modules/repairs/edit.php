@@ -263,7 +263,7 @@ if (!in_array($devType, $deviceAllowed, true)) {
                             <li class="list-group-item d-flex justify-content-between align-items-start">
                                 <div>
                                     <div class="fw-semibold"><?= e($pr['product_name']) ?> × <?= (int) $pr['quantity'] ?></div>
-                                    <div class="text-muted"><?= e(number_format((float) $pr['line_total'], 2)) ?></div>
+                                    <div class="text-muted"><?= e(formatCurrency($pr['line_total'])) ?></div>
                                 </div>
                                 <?php if ($row['status'] !== 'delivered'): ?>
                                     <form method="post" class="ms-2" onsubmit="return confirm('Remove this part line and restore stock?');">
@@ -289,7 +289,7 @@ if (!in_array($devType, $deviceAllowed, true)) {
                                     $low = isset($p['low_stock_threshold']) ? (int) $p['low_stock_threshold'] : 5;
                                     $isLow = (int) $p['stock'] <= $low;
                                     ?>
-                                    <option value="<?= (int) $p['id'] ?>"><?= e($p['name']) ?> (<?= e(number_format((float) $p['price'], 2)) ?>) — stock <?= (int) $p['stock'] ?><?= $isLow ? ' ⚠ low' : '' ?></option>
+                                    <option value="<?= (int) $p['id'] ?>"><?= e($p['name']) ?> (<?= e(formatCurrency($p['price'])) ?>) — stock <?= (int) $p['stock'] ?><?= $isLow ? ' ⚠ low' : '' ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>

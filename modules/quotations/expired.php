@@ -86,7 +86,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                         <td><?= e($r['customer_name']) ?></td>
                         <td><?= e($r['quotation_date']) ?></td>
                         <td><?= e((string) ($r['expiry_date'] ?: '—')) ?></td>
-                        <td class="text-end"><?= e($r['currency']) ?> <?= e(number_format((float) $r['grand_total'], 2)) ?></td>
+                        <td class="text-end"><?= e(formatCurrency($r['grand_total'])) ?></td>
                         <td class="text-end">
                             <a class="btn btn-sm btn-outline-secondary" href="<?= e(BASE_URL) ?>/modules/quotations/duplicate.php?id=<?= $rid ?>">Duplicate</a>
                         </td>

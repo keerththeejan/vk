@@ -215,7 +215,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     <dt class="col-sm-3">Accessories</dt>
                     <dd class="col-sm-9"><?= nl2br(e($job['accessories_received'] ?? '—')) ?></dd>
                     <dt class="col-sm-3">Estimated</dt>
-                    <dd class="col-sm-9"><?= e(number_format((float) $job['estimated_cost'], 2)) ?></dd>
+                    <dd class="col-sm-9"><?= e(formatCurrency($job['estimated_cost'])) ?></dd>
                     <dt class="col-sm-3">Technician notes</dt>
                     <dd class="col-sm-9"><?= nl2br(e($job['technician_notes'] ?? '—')) ?></dd>
                     <dt class="col-sm-3">Repair warranty</dt>
@@ -242,7 +242,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                             <tr>
                                 <td><?= e($p['product_name']) ?></td>
                                 <td class="text-end"><?= (int) $p['quantity'] ?></td>
-                                <td class="text-end"><?= e(number_format((float) $p['line_total'], 2)) ?></td>
+                                <td class="text-end"><?= e(formatCurrency($p['line_total'])) ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -289,11 +289,11 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
         <div class="card vk-card mb-3">
             <div class="card-header bg-transparent fw-semibold">Billing</div>
             <div class="card-body small">
-                <div class="d-flex justify-content-between"><span>Advances / job payments</span><strong><?= e(number_format($advances, 2)) ?></strong></div>
+                <div class="d-flex justify-content-between"><span>Advances / job payments</span><strong><?= e(formatCurrency($advances)) ?></strong></div>
                 <?php if ($inv): ?>
                     <hr>
                     <div class="fw-semibold">Invoice <?= e($inv['invoice_number']) ?></div>
-                    <div>Total <?= e(number_format((float) $inv['grand_total'], 2)) ?> · Paid <?= e(number_format((float) $inv['paid_amount'], 2)) ?></div>
+                    <div>Total <?= e(formatCurrency($inv['grand_total'])) ?> · Paid <?= e(formatCurrency($inv['paid_amount'])) ?></div>
                     <a class="btn btn-sm btn-outline-primary mt-2" href="<?= e(BASE_URL) ?>/modules/invoices/view.php?id=<?= (int) $inv['id'] ?>">Open invoice</a>
                 <?php else: ?>
                     <p class="text-muted mb-0 mt-2">No invoice linked yet.</p>
@@ -309,7 +309,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     <ul class="list-group list-group-flush small">
                         <?php foreach ($payments as $p): ?>
                             <li class="list-group-item">
-                                <div class="fw-semibold"><?= e(number_format((float) $p['amount'], 2)) ?> · <?= e($p['method']) ?></div>
+                                <div class="fw-semibold"><?= e(formatCurrency($p['amount'])) ?> · <?= e($p['method']) ?></div>
                                 <div class="text-muted"><?= e($p['paid_at']) ?></div>
                             </li>
                         <?php endforeach; ?>

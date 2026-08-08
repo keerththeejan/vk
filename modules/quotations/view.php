@@ -150,10 +150,10 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                                 </td>
                                 <td class="text-center"><?= e(rtrim(rtrim(number_format((float) $ln['quantity'], 3), '0'), '.')) ?></td>
                                 <td class="text-center"><?= e((string) ($ln['unit'] ?: 'pcs')) ?></td>
-                                <td class="text-end"><?= e(number_format((float) $ln['unit_price'], 2)) ?></td>
-                                <td class="text-end"><?= e(number_format((float) $ln['discount_amount'], 2)) ?></td>
-                                <td class="text-end"><?= e(number_format((float) $ln['tax_amount'], 2)) ?></td>
-                                <td class="text-end fw-semibold"><?= e(number_format((float) $ln['line_total'], 2)) ?></td>
+                                <td class="text-end"><?= e(formatCurrency($ln['unit_price'])) ?></td>
+                                <td class="text-end"><?= e(formatCurrency($ln['discount_amount'])) ?></td>
+                                <td class="text-end"><?= e(formatCurrency($ln['tax_amount'])) ?></td>
+                                <td class="text-end fw-semibold"><?= e(formatCurrency($ln['line_total'])) ?></td>
                             </tr>
                         <?php endforeach; endif; ?>
                         </tbody>
@@ -178,10 +178,10 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                         <div class="card qtn-summary-card border-0 shadow-sm">
                             <div class="card-body py-2">
                                 <table class="table table-sm mb-0">
-                                    <tr><td class="text-muted">Subtotal</td><td class="text-end fw-semibold"><?= e(number_format((float) $q['subtotal'], 2)) ?></td></tr>
-                                    <tr><td class="text-muted">Discount</td><td class="text-end fw-semibold"><?= $totalDisc > 0 ? '-' . e(number_format($totalDisc, 2)) : e(number_format(0, 2)) ?></td></tr>
-                                    <tr><td class="text-muted">Tax</td><td class="text-end fw-semibold"><?= e(number_format((float) $q['tax_total'], 2)) ?></td></tr>
-                                    <tr class="qtn-grand-row"><td>Grand Total</td><td class="text-end"><?= e($currency) ?> <?= e(number_format((float) $q['grand_total'], 2)) ?></td></tr>
+                                    <tr><td class="text-muted">Subtotal</td><td class="text-end fw-semibold"><?= e(formatCurrency($q['subtotal'])) ?></td></tr>
+                                    <tr><td class="text-muted">Discount</td><td class="text-end fw-semibold"><?= $totalDisc > 0 ? '-' . e(formatCurrency($totalDisc)) : e(formatCurrency(0)) ?></td></tr>
+                                    <tr><td class="text-muted">Tax</td><td class="text-end fw-semibold"><?= e(formatCurrency($q['tax_total'])) ?></td></tr>
+                                    <tr class="qtn-grand-row"><td>Grand Total</td><td class="text-end"><?= e(formatCurrency($q['grand_total'])) ?></td></tr>
                                 </table>
                             </div>
                         </div>
@@ -230,16 +230,16 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 <div class="card-header bg-transparent fw-semibold">Financial Summary</div>
                 <div class="card-body">
                     <dl class="qtn-totals mb-0">
-                        <div><dt>Subtotal</dt><dd><?= e(number_format((float) $q['subtotal'], 2)) ?></dd></div>
-                        <div><dt>Item discount</dt><dd><?= e(number_format((float) $q['item_discount_total'], 2)) ?></dd></div>
-                        <div><dt>Overall discount</dt><dd><?= e(number_format((float) $q['overall_discount_amount'], 2)) ?></dd></div>
-                        <div><dt>Tax</dt><dd><?= e(number_format((float) $q['tax_total'], 2)) ?></dd></div>
-                        <div><dt>Shipping</dt><dd><?= e(number_format((float) $q['shipping_amount'], 2)) ?></dd></div>
-                        <div><dt>Additional</dt><dd><?= e(number_format((float) $q['additional_charges'], 2)) ?></dd></div>
-                        <div><dt>Round off</dt><dd><?= e(number_format((float) $q['round_off'], 2)) ?></dd></div>
-                        <div class="qtn-grand"><dt>Grand total</dt><dd><?= e($currency) ?> <?= e(number_format((float) $q['grand_total'], 2)) ?></dd></div>
-                        <div><dt>Est. cost</dt><dd><?= e(number_format((float) $q['estimated_cost'], 2)) ?></dd></div>
-                        <div><dt>Net profit</dt><dd><?= e(number_format((float) $q['net_profit'], 2)) ?></dd></div>
+                        <div><dt>Subtotal</dt><dd><?= e(formatCurrency($q['subtotal'])) ?></dd></div>
+                        <div><dt>Item discount</dt><dd><?= e(formatCurrency($q['item_discount_total'])) ?></dd></div>
+                        <div><dt>Overall discount</dt><dd><?= e(formatCurrency($q['overall_discount_amount'])) ?></dd></div>
+                        <div><dt>Tax</dt><dd><?= e(formatCurrency($q['tax_total'])) ?></dd></div>
+                        <div><dt>Shipping</dt><dd><?= e(formatCurrency($q['shipping_amount'])) ?></dd></div>
+                        <div><dt>Additional</dt><dd><?= e(formatCurrency($q['additional_charges'])) ?></dd></div>
+                        <div><dt>Round off</dt><dd><?= e(formatCurrency($q['round_off'])) ?></dd></div>
+                        <div class="qtn-grand"><dt>Grand total</dt><dd><?= e(formatCurrency($q['grand_total'])) ?></dd></div>
+                        <div><dt>Est. cost</dt><dd><?= e(formatCurrency($q['estimated_cost'])) ?></dd></div>
+                        <div><dt>Net profit</dt><dd><?= e(formatCurrency($q['net_profit'])) ?></dd></div>
                         <div><dt>Margin</dt><dd><?= e(number_format((float) $q['profit_margin_pct'], 2)) ?>%</dd></div>
                     </dl>
                 </div>
@@ -251,8 +251,8 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     <div class="mb-2"><strong><?= e($q['customer_name']) ?></strong></div>
                     <div>Phone: <?= e($phone !== '' ? $phone : '—') ?></div>
                     <div>Email: <?= e((string) ($q['email'] ?: $q['customer_email_db'] ?: '—')) ?></div>
-                    <div class="mt-2">Outstanding balance: <strong><?= e(number_format($balance, 2)) ?></strong></div>
-                    <div>Credit limit: <strong><?= e(number_format($creditLimit, 2)) ?></strong></div>
+                    <div class="mt-2">Outstanding balance: <strong><?= e(formatCurrency($balance)) ?></strong></div>
+                    <div>Credit limit: <strong><?= e(formatCurrency($creditLimit)) ?></strong></div>
                     <hr>
                     <div class="fw-semibold mb-1">Previous quotations</div>
                     <?php if (!$prevRows): ?>
@@ -260,7 +260,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     <?php else: foreach ($prevRows as $p): ?>
                         <div class="d-flex justify-content-between">
                             <a href="<?= e(BASE_URL) ?>/modules/quotations/view.php?id=<?= (int) $p['id'] ?>"><?= e($p['quotation_number']) ?></a>
-                            <span><?= e(number_format((float) $p['grand_total'], 0)) ?></span>
+                            <span><?= e(formatCurrency($p['grand_total'])) ?></span>
                         </div>
                     <?php endforeach; endif; ?>
                 </div>

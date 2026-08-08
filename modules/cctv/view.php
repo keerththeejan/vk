@@ -48,7 +48,7 @@ $waLink = $waPhone !== '' ? 'https://wa.me/' . $waPhone : '';
         <a class="btn btn-outline-warning" href="<?= e(BASE_URL) ?>/modules/warranties/add.php?cctv_installation_id=<?= $id ?>&customer_id=<?= (int) $job['customer_id'] ?>"><i class="bi bi-shield-check me-1"></i>Warranty</a>
         <a class="btn btn-outline-primary" href="<?= e(BASE_URL) ?>/modules/cctv/edit.php?id=<?= $id ?>"><i class="bi bi-pencil me-1"></i>Edit</a>
         <?php if (empty($job['invoice_id'])): ?>
-            <form method="post" action="<?= e(BASE_URL) ?>/modules/cctv/generate_invoice.php" class="d-inline" onsubmit="return confirm('Create invoice for installation charge <?= e(number_format((float) $job['installation_charge'], 2)) ?>?');">
+            <form method="post" action="<?= e(BASE_URL) ?>/modules/cctv/generate_invoice.php" class="d-inline" onsubmit="return confirm('Create invoice for installation charge <?= e(formatCurrency($job['installation_charge'])) ?>?');">
                 <input type="hidden" name="cctv_job_id" value="<?= $id ?>">
                 <button type="submit" class="btn btn-primary"><i class="bi bi-receipt me-1"></i>Generate invoice</button>
             </form>
@@ -77,7 +77,7 @@ $waLink = $waPhone !== '' ? 'https://wa.me/' . $waPhone : '';
                     <dt class="col-sm-3">DVR / NVR</dt>
                     <dd class="col-sm-9"><?= nl2br(e($job['dvr_nvr_details'] ?? '—')) ?></dd>
                     <dt class="col-sm-3">Charge</dt>
-                    <dd class="col-sm-9 fw-semibold"><?= e(number_format((float) $job['installation_charge'], 2)) ?></dd>
+                    <dd class="col-sm-9 fw-semibold"><?= e(formatCurrency($job['installation_charge'])) ?></dd>
                     <dt class="col-sm-3">Equipment</dt>
                     <dd class="col-sm-9"><?= nl2br(e($job['equipment_used'] ?? '—')) ?></dd>
                     <dt class="col-sm-3">Technician notes</dt>
@@ -92,11 +92,11 @@ $waLink = $waPhone !== '' ? 'https://wa.me/' . $waPhone : '';
         <div class="card vk-card mb-3">
             <div class="card-header bg-transparent fw-semibold">Billing</div>
             <div class="card-body small">
-                <div class="d-flex justify-content-between"><span>Advances / payments</span><strong><?= e(number_format($advances, 2)) ?></strong></div>
+                <div class="d-flex justify-content-between"><span>Advances / payments</span><strong><?= e(formatCurrency($advances)) ?></strong></div>
                 <?php if ($inv): ?>
                     <hr>
                     <div class="fw-semibold">Invoice <?= e($inv['invoice_number']) ?></div>
-                    <div>Total <?= e(number_format((float) $inv['grand_total'], 2)) ?> · Paid <?= e(number_format((float) $inv['paid_amount'], 2)) ?></div>
+                    <div>Total <?= e(formatCurrency($inv['grand_total'])) ?> · Paid <?= e(formatCurrency($inv['paid_amount'])) ?></div>
                     <a class="btn btn-sm btn-outline-primary mt-2" href="<?= e(BASE_URL) ?>/modules/invoices/view.php?id=<?= (int) $inv['id'] ?>">Open invoice</a>
                 <?php else: ?>
                     <p class="text-muted mb-0 mt-2">No invoice yet — use “Generate invoice” to bill the installation charge.</p>
@@ -112,7 +112,7 @@ $waLink = $waPhone !== '' ? 'https://wa.me/' . $waPhone : '';
                     <ul class="list-group list-group-flush small">
                         <?php foreach ($payments as $p): ?>
                             <li class="list-group-item">
-                                <div class="fw-semibold"><?= e(number_format((float) $p['amount'], 2)) ?> · <?= e($p['method']) ?></div>
+                                <div class="fw-semibold"><?= e(formatCurrency($p['amount'])) ?> · <?= e($p['method']) ?></div>
                                 <div class="text-muted"><?= e($p['paid_at']) ?></div>
                             </li>
                         <?php endforeach; ?>

@@ -168,11 +168,17 @@
     }
 
     function formatMoney(value) {
+        if (typeof formatCurrency === "function") {
+            return formatCurrency(value);
+        }
         var n = Number(value);
         if (!Number.isFinite(n)) {
-            return "₹0";
+            n = 0;
         }
-        return "₹" + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+        var fixed = n.toFixed(2);
+        var parts = fixed.split(".");
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return "Rs. " + parts.join(".");
     }
 
     function renderMaintReminders(rows) {

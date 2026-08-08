@@ -23,7 +23,13 @@
         if (Number.isNaN(num)) {
             return '—';
         }
-        return '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (typeof formatCurrency === 'function') {
+            return formatCurrency(num);
+        }
+        const fixed = num.toFixed(2);
+        const parts = fixed.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return 'Rs. ' + parts.join('.');
     }
 
     function setText(id, val, trend) {

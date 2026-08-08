@@ -68,7 +68,7 @@ $cards = [
     ['Rejected', $kpi['rejected'], 'bi-x-circle', 'danger', 'list.php?status=rejected'],
     ['Expired', $kpi['expired'], 'bi-clock-history', 'secondary', 'expired.php'],
     ['Converted', $kpi['converted'], 'bi-arrow-left-right', 'teal', 'converted.php'],
-    ['Monthly Revenue', 'LKR ' . number_format($kpi['month_revenue'], 0), 'bi-graph-up-arrow', 'indigo', 'analytics.php'],
+    ['Monthly Revenue', formatCurrency($kpi['month_revenue']), 'bi-graph-up-arrow', 'indigo', 'analytics.php'],
 ];
 ?>
 <div class="qtn-page qtn-dash-premium">
@@ -170,7 +170,7 @@ $cards = [
                             <tr>
                                 <td><a href="<?= e(BASE_URL) ?>/modules/quotations/view.php?id=<?= (int) $r['id'] ?>"><?= e($r['quotation_number']) ?></a></td>
                                 <td><?= e($r['customer_name']) ?></td>
-                                <td><?= e(($r['currency'] ?? 'LKR') . ' ' . number_format((float) $r['grand_total'], 2)) ?></td>
+                                <td><?= e(formatCurrency((float) $r['grand_total'])) ?></td>
                                 <td><span class="badge text-bg-<?= e(vk_quotation_status_badge($r['status'])) ?>"><?= e(vk_quotation_status_label($r['status'])) ?></span></td>
                             </tr>
                         <?php endforeach; endif; ?>
@@ -188,7 +188,7 @@ $cards = [
                     <?php else: foreach ($topCustomers as $c): ?>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <span><?= e($c['name']) ?><br><small class="text-muted"><?= (int) $c['cnt'] ?> quotes</small></span>
-                            <strong class="small"><?= e(number_format((float) $c['value'], 0)) ?></strong>
+                            <strong class="small"><?= e(formatCurrency($c['value'])) ?></strong>
                         </li>
                     <?php endforeach; endif; ?>
                 </ul>

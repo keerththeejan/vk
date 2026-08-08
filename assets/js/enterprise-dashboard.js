@@ -34,6 +34,25 @@
             .replace(/"/g, '&quot;');
     }
 
+    function formatMoney(amount) {
+        if (typeof formatCurrency === 'function') {
+            return formatCurrency(amount);
+        }
+        var n = Number(amount);
+        if (!Number.isFinite(n)) n = 0;
+        var fixed = n.toFixed(2);
+        var parts = fixed.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return 'Rs. ' + parts.join('.');
+    }
+
+    function chartMoneyTick(value) {
+        if (typeof vkChartCurrencyTick === 'function') {
+            return vkChartCurrencyTick(value);
+        }
+        return formatMoney(value);
+    }
+
     function readCache() {
         try {
             var raw = sessionStorage.getItem(cacheKey);
@@ -156,10 +175,26 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                return (ctx.dataset.label ? ctx.dataset.label + ': ' : '') + formatMoney(ctx.parsed.y);
+                            },
+                        },
+                    },
+                },
                 scales: {
                     x: { ticks: { color: c.text, font: { size: 10 } }, grid: { display: false } },
-                    y: { ticks: { color: c.text, font: { size: 10 } }, grid: { color: c.grid } },
+                    y: {
+                        ticks: {
+                            color: c.text,
+                            font: { size: 10 },
+                            callback: function (value) { return chartMoneyTick(value); },
+                        },
+                        grid: { color: c.grid },
+                    },
                 },
             },
         });
@@ -200,10 +235,26 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                return (ctx.dataset.label ? ctx.dataset.label + ': ' : '') + formatMoney(ctx.parsed.y);
+                            },
+                        },
+                    },
+                },
                 scales: {
                     x: { ticks: { color: c.text, font: { size: 10 } }, grid: { display: false } },
-                    y: { ticks: { color: c.text, font: { size: 10 } }, grid: { color: c.grid } },
+                    y: {
+                        ticks: {
+                            color: c.text,
+                            font: { size: 10 },
+                            callback: function (value) { return chartMoneyTick(value); },
+                        },
+                        grid: { color: c.grid },
+                    },
                 },
             },
         });
@@ -271,7 +322,7 @@
                 var href = r.invoice_id
                     ? baseUrl() + '/modules/invoices/view.php?id=' + r.invoice_id
                     : baseUrl() + '/modules/payments/list.php';
-                return '<tr><td><strong>₹' + esc(Number(r.amount || 0).toLocaleString()) + '</strong></td><td>' +
+                return '<tr><td><strong>' + esc(formatMoney(r.amount || 0)) + '</strong></td><td>' +
                     esc(r.customer_name || r.invoice_number || '—') + '</td><td>' + statusBadge(r.method) +
                     '</td><td>' + esc(String(r.paid_at || '').slice(0, 16)) +
                     '</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="' + esc(href) + '">Open</a></td></tr>';
@@ -346,9 +397,9 @@
             dot.classList.toggle('d-none', notifyCount <= 0);
         }
 
-        setDashKpi('vkDashFinRevenue', '₹' + Number(s.sales_month || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }));
-        setDashKpi('vkDashFinReceivable', '₹' + Number(s.outstanding || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }));
-        setDashKpi('vkDashFinCash', '₹' + Number(s.collections_today || s.sales_today || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }));
+        setDashKpi('vkDashFinRevenue', formatMoney(s.sales_month || 0));
+        setDashKpi('vkDashFinReceivable', formatMoney(s.outstanding || 0));
+        setDashKpi('vkDashFinCash', formatMoney(s.collections_today || s.sales_today || 0));
         setDashKpi('vkDashInvLow', String(s.low_stock || 0));
         setDashKpi('vkDashInvValue', String(s.stock_items || 0));
 
@@ -451,7 +502,7 @@
             notes.push({ t: 'Low stock alerts', d: s.low_stock + ' products below threshold', href: baseUrl() + '/modules/products/list.php' });
         }
         if ((s.outstanding || 0) > 0) {
-            notes.push({ t: 'Outstanding payments', d: '₹' + Number(s.outstanding).toLocaleString() + ' receivable', href: baseUrl() + '/modules/accounts/list.php' });
+            notes.push({ t: 'Outstanding payments', d: formatMoney(s.outstanding) + ' receivable', href: baseUrl() + '/modules/accounts/list.php' });
         }
         if ((s.critical_count || 0) > 0) {
             notes.push({ t: 'Critical alerts', d: s.critical_count + ' items need review', href: baseUrl() + '/modules/bookings/list.php?emergency=1' });

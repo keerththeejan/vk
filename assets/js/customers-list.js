@@ -34,6 +34,18 @@
         return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
+    function formatMoney(amount) {
+        if (typeof formatCurrency === 'function') {
+            return formatCurrency(amount);
+        }
+        var n = Number(amount);
+        if (!Number.isFinite(n)) n = 0;
+        var fixed = n.toFixed(2);
+        var parts = fixed.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return 'Rs. ' + parts.join('.');
+    }
+
     function initTooltips() {
         if (typeof bootstrap === 'undefined' || !bootstrap.Tooltip) {
             return;
@@ -230,7 +242,7 @@
                 const p = Math.min(1, (now - start) / duration);
                 const val = target * p;
                 if (isMoney) {
-                    el.textContent = prefix + '₹' + Math.round(val).toLocaleString('en-IN') + suffix;
+                    el.textContent = prefix + formatMoney(val) + suffix;
                 } else {
                     el.textContent = prefix + Math.round(val).toLocaleString('en-IN') + suffix;
                 }

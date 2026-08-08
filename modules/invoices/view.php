@@ -105,10 +105,10 @@ $isDraft = !empty($inv['is_draft']) || ($inv['status'] ?? '') === 'draft';
                         <tr>
                             <td class="align-middle py-3 ps-3"><?= $typeBadge ?><?= e($desc) ?></td>
                             <td class="text-end align-middle"><?= (int) $ln['quantity'] ?></td>
-                            <td class="text-end align-middle"><?= e(number_format((float) $ln['unit_price'], 2)) ?></td>
-                            <td class="text-end align-middle"><?= e(number_format((float) ($ln['discount_amount'] ?? 0), 2)) ?></td>
-                            <td class="text-end align-middle"><?= e(number_format((float) ($ln['tax_amount'] ?? 0), 2)) ?></td>
-                            <td class="text-end align-middle fw-semibold"><?= e(number_format($net, 2)) ?></td>
+                            <td class="text-end align-middle"><?= e(formatCurrency($ln['unit_price'])) ?></td>
+                            <td class="text-end align-middle"><?= e(formatCurrency(($ln['discount_amount'] ?? 0))) ?></td>
+                            <td class="text-end align-middle"><?= e(formatCurrency(($ln['tax_amount'] ?? 0))) ?></td>
+                            <td class="text-end align-middle fw-semibold"><?= e(formatCurrency($net)) ?></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
@@ -119,31 +119,31 @@ $isDraft = !empty($inv['is_draft']) || ($inv['status'] ?? '') === 'draft';
                     <div class="col-12 col-sm-7 col-lg-5">
                         <dl class="row small mb-0">
                             <dt class="col-6">Subtotal</dt>
-                            <dd class="col-6 text-end"><?= e(number_format((float) $inv['subtotal'], 2)) ?></dd>
+                            <dd class="col-6 text-end"><?= e(formatCurrency($inv['subtotal'])) ?></dd>
                             <dt class="col-6">Item discount</dt>
-                            <dd class="col-6 text-end"><?= e(number_format($itemDisc, 2)) ?></dd>
+                            <dd class="col-6 text-end"><?= e(formatCurrency($itemDisc)) ?></dd>
                             <dt class="col-6">Invoice discount</dt>
-                            <dd class="col-6 text-end"><?= e(number_format($invDisc, 2)) ?></dd>
+                            <dd class="col-6 text-end"><?= e(formatCurrency($invDisc)) ?></dd>
                             <?php if (abs($shipping) > 0.0001): ?>
                                 <dt class="col-6">Shipping</dt>
-                                <dd class="col-6 text-end"><?= e(number_format($shipping, 2)) ?></dd>
+                                <dd class="col-6 text-end"><?= e(formatCurrency($shipping)) ?></dd>
                             <?php endif; ?>
                             <?php if (abs($adjustment) > 0.0001): ?>
                                 <dt class="col-6">Adjustment</dt>
-                                <dd class="col-6 text-end"><?= e(number_format($adjustment, 2)) ?></dd>
+                                <dd class="col-6 text-end"><?= e(formatCurrency($adjustment)) ?></dd>
                             <?php endif; ?>
                             <dt class="col-6">Tax</dt>
-                            <dd class="col-6 text-end"><?= e(number_format((float) $inv['tax'], 2)) ?></dd>
+                            <dd class="col-6 text-end"><?= e(formatCurrency($inv['tax'])) ?></dd>
                             <?php if (abs($roundOff) > 0.0001): ?>
                                 <dt class="col-6">Round off</dt>
-                                <dd class="col-6 text-end"><?= e(number_format($roundOff, 2)) ?></dd>
+                                <dd class="col-6 text-end"><?= e(formatCurrency($roundOff)) ?></dd>
                             <?php endif; ?>
                             <dt class="col-6 fw-bold">Grand total</dt>
-                            <dd class="col-6 text-end fw-bold"><?= e(number_format((float) $inv['grand_total'], 2)) ?></dd>
+                            <dd class="col-6 text-end fw-bold"><?= e(formatCurrency($inv['grand_total'])) ?></dd>
                             <dt class="col-6">Paid</dt>
-                            <dd class="col-6 text-end"><?= e(number_format((float) $inv['paid_amount'], 2)) ?></dd>
+                            <dd class="col-6 text-end"><?= e(formatCurrency($inv['paid_amount'])) ?></dd>
                             <dt class="col-6 text-danger">Balance</dt>
-                            <dd class="col-6 text-end text-danger fw-semibold"><?= e(number_format($due, 2)) ?></dd>
+                            <dd class="col-6 text-end text-danger fw-semibold"><?= e(formatCurrency($due)) ?></dd>
                         </dl>
                     </div>
                 </div>
@@ -178,7 +178,7 @@ $isDraft = !empty($inv['is_draft']) || ($inv['status'] ?? '') === 'draft';
                         <?php foreach ($payments as $p): ?>
                             <li class="list-group-item d-flex justify-content-between align-items-start">
                                 <div>
-                                    <div class="fw-semibold"><?= e(number_format((float) $p['amount'], 2)) ?> · <?= e($p['method']) ?></div>
+                                    <div class="fw-semibold"><?= e(formatCurrency($p['amount'])) ?> · <?= e($p['method']) ?></div>
                                     <div class="text-muted"><?= e($p['paid_at']) ?></div>
                                     <?php if ($p['note']): ?><div><?= e($p['note']) ?></div><?php endif; ?>
                                 </div>

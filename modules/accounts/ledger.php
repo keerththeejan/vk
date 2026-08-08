@@ -37,7 +37,7 @@ $entries = $ledger->fetchAll();
     </div>
     <div class="text-end">
         <div class="small text-muted">Current balance</div>
-        <div class="fs-4 fw-bold"><?= e(number_format((float) $acc['current_balance'], 2)) ?></div>
+        <div class="fs-4 fw-bold"><?= e(formatCurrency($acc['current_balance'])) ?></div>
         <div class="small text-muted">Customer: debit increases amount due · credit reduces it.</div>
     </div>
 </div>
@@ -63,9 +63,9 @@ $entries = $ledger->fetchAll();
                         <td><?= (int) $e['id'] ?></td>
                         <td><?= e($e['entry_datetime']) ?></td>
                         <td><?= e($e['description'] ?? '') ?></td>
-                        <td><?= (float) $e['debit'] > 0 ? e(number_format((float) $e['debit'], 2)) : '—' ?></td>
-                        <td><?= (float) $e['credit'] > 0 ? e(number_format((float) $e['credit'], 2)) : '—' ?></td>
-                        <td class="fw-semibold"><?= e(number_format((float) $e['balance'], 2)) ?></td>
+                        <td class="text-end"><?= (float) $e['debit'] > 0 ? e(formatCurrency($e['debit'])) : '—' ?></td>
+                        <td class="text-end"><?= (float) $e['credit'] > 0 ? e(formatCurrency($e['credit'])) : '—' ?></td>
+                        <td class="fw-semibold text-end"><?= e(formatCurrency($e['balance'])) ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php endif; ?>

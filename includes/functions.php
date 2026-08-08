@@ -67,6 +67,8 @@ function e(?string $s): string
     return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+require_once __DIR__ . '/currency.php';
+
 /**
  * Build a public URL from the configured app base, similar to CodeIgniter's base_url().
  */

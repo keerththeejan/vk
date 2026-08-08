@@ -88,7 +88,7 @@ $fmtDate = static function (?string $d): string {
 $dateDisp = $fmtDate((string) $q['quotation_date']);
 $expiryDisp = $fmtDate((string) ($q['expiry_date'] ?: ''));
 $money = static function (float $n): string {
-    return number_format($n, 2);
+    return formatCurrency($n);
 };
 ?>
 <!DOCTYPE html>
@@ -1073,7 +1073,7 @@ $money = static function (float $n): string {
                     <?php if ((float) $q['round_off'] != 0.0): ?>
                     <tr><td>Round Off</td><td><?= e($money((float) $q['round_off'])) ?></td></tr>
                     <?php endif; ?>
-                    <tr class="grand"><td>Grand Total</td><td><?= e($currency) ?> <?= e($money((float) $q['grand_total'])) ?></td></tr>
+                    <tr class="grand"><td>Grand Total</td><td><?= e($money((float) $q['grand_total'])) ?></td></tr>
                 </table>
             </aside>
         </section>

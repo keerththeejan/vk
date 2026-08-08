@@ -341,7 +341,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     data-export-status="<?= e($disp['label']) ?>"
                     data-export-scheduled="<?= e($vkMaintFormatDate($scheduled)) ?>"
                     data-export-due="<?= e($vkMaintFormatDate($next)) ?>"
-                    data-export-cost="<?= e(number_format((float) $r['annual_fee'], 2)) ?>"
+                    data-export-cost="<?= e(formatCurrency($r['annual_fee'])) ?>"
                     data-export-created="<?= e($vkMaintFormatDate($r['created_at'] ?? null)) ?>">
                     <td class="vk-maint-sticky-col vk-maint-sticky-check"><input type="checkbox" class="form-check-input vk-maint-row-cb" value="<?= $id ?>" aria-label="Select <?= e($r['contract_number']) ?>"></td>
                     <td class="vk-maint-sticky-col vk-maint-sticky-no"><span class="vk-maint-contract vk-maint-highlight-target"><?= e($r['contract_number']) ?></span></td>
@@ -374,7 +374,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     <td><span class="vk-maint-pill vk-maint-pill-<?= e($disp['key']) ?>"><?= e($disp['label']) ?></span></td>
                     <td class="vk-maint-col-sched d-none d-xl-table-cell"><span class="vk-maint-date"><?= e($vkMaintFormatDate($scheduled)) ?></span></td>
                     <td><span class="vk-maint-date"><?= e($vkMaintFormatDate($next)) ?></span></td>
-                    <td class="text-end"><span class="vk-maint-cost"><?= e(number_format((float) $r['annual_fee'], 2)) ?></span></td>
+                    <td class="text-end"><span class="vk-maint-cost"><?= e(formatCurrency($r['annual_fee'])) ?></span></td>
                     <td class="vk-maint-col-created d-none d-lg-table-cell"><span class="vk-maint-date"><?= e($vkMaintFormatDate($r['created_at'] ?? null)) ?></span></td>
                     <td class="text-end">
                         <div class="vk-maint-actions">
@@ -429,7 +429,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                 <div class="vk-maint-mcard-meta">
                     <span class="vk-maint-pri vk-maint-pri-<?= e($pri['key']) ?>"><?= e($pri['label']) ?></span>
                     <span class="vk-maint-type"><?= e($typeLabel) ?></span>
-                    <span class="vk-maint-cost"><?= e(number_format((float) $r['annual_fee'], 2)) ?></span>
+                    <span class="vk-maint-cost"><?= e(formatCurrency($r['annual_fee'])) ?></span>
                     <span class="vk-maint-date">Due <?= e($vkMaintFormatDate($next)) ?></span>
                 </div>
                 <div class="vk-maint-mcard-actions">

@@ -325,9 +325,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  const currencyFormatter = () => {
-    const currency = document.getElementById("currency")?.value || "USD";
-    return new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 2 });
+  const formatMoney = (amount) => {
+    if (typeof formatCurrency === "function") {
+      return formatCurrency(amount);
+    }
+    let n = Number(amount);
+    if (!Number.isFinite(n)) n = 0;
+    const fixed = n.toFixed(2);
+    const parts = fixed.split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return `Rs. ${parts.join(".")}`;
   };
 
   const simpleSnapshot = () => {
@@ -560,7 +567,6 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const updateMetrics = () => {
-    const formatter = currencyFormatter();
     const cost = numberValue("cost_price");
     const price = numberValue("selling_price");
     const tax = numberValue("tax_rate") + numberValue("vat_gst");
@@ -586,22 +592,22 @@ document.addEventListener("DOMContentLoaded", () => {
     profitMarginValue.textContent = `${margin.toFixed(1)}%`;
     marginSummary.textContent = `${margin.toFixed(1)}%`;
     sideProfitMetric.textContent = `${margin.toFixed(1)}%`;
-    sideRevenueMetric.textContent = formatter.format(estimatedRevenue || 0);
-    inlineRevenueEstimate.textContent = formatter.format(estimatedRevenue || 0);
+    sideRevenueMetric.textContent = formatMoney(estimatedRevenue || 0);
+    inlineRevenueEstimate.textContent = formatMoney(estimatedRevenue || 0);
     inlineMarginHealth.textContent = margin >= 35 ? "High" : margin >= 20 ? "Healthy" : "Thin";
     inlineDiscountPressure.textContent = promo > 0 ? "Active promo" : "Low";
-    previewPrice.textContent = formatter.format(price || 0);
-    mobilePreviewPrice.textContent = formatter.format(price || 0);
-    inlinePreviewPrice.textContent = formatter.format(price || 0);
-    taxInclusiveValue.textContent = formatter.format(taxInclusive || 0);
-    promoRecommendation.textContent = promo > 0 && promo < price ? `Launch at ${formatter.format(promo)}` : "No recommendation";
+    previewPrice.textContent = formatMoney(price || 0);
+    mobilePreviewPrice.textContent = formatMoney(price || 0);
+    inlinePreviewPrice.textContent = formatMoney(price || 0);
+    taxInclusiveValue.textContent = formatMoney(taxInclusive || 0);
+    promoRecommendation.textContent = promo > 0 && promo < price ? `Launch at ${formatMoney(promo)}` : "No recommendation";
 
     const liveProfit = document.getElementById("liveProfitValue");
-    if (liveProfit) liveProfit.textContent = formatter.format(profit);
+    if (liveProfit) liveProfit.textContent = formatMoney(profit);
     const recommendedNode = document.getElementById("recommendedSellingPrice");
-    if (recommendedNode) recommendedNode.textContent = formatter.format(recommended);
+    if (recommendedNode) recommendedNode.textContent = formatMoney(recommended);
     const effectiveNode = document.getElementById("pricingEffectivePrice");
-    if (effectiveNode) effectiveNode.textContent = formatter.format(effective);
+    if (effectiveNode) effectiveNode.textContent = formatMoney(effective);
 
     const status = current <= minimum ? "Critical" : current <= reorder ? "Monitor" : "Healthy";
     inventoryStatusText.textContent = status;
@@ -801,9 +807,9 @@ document.addEventListener("DOMContentLoaded", () => {
       toast("SEO fields generated.", "success");
     }
     if (action === "price") {
-      const recommendation = price > 0 ? (price * 1.08).toFixed(2) : "0.00";
-      document.getElementById("promotional_price").value = recommendation;
-      toast(`Price recommendation applied: ${recommendation}`, "success");
+      const recommendation = price > 0 ? (price * 1.08) : 0;
+      document.getElementById("promotional_price").value = recommendation.toFixed(2);
+      toast(`Price recommendation applied: ${formatMoney(recommendation)}`, "success");
     }
     if (action === "category") {
       toast("Suggested category: Electronics > Smart Devices", "info");

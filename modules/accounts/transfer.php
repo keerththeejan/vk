@@ -267,7 +267,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     <div class="mb-3">
                         <label class="form-label">Current Balance</label>
                         <div class="input-group">
-                            <span class="input-group-text">LKR</span>
+                            <span class="input-group-text">Rs.</span>
                             <input class="form-control fw-semibold" id="from_balance" readonly>
                         </div>
                     </div>
@@ -309,7 +309,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     <div class="mb-3">
                         <label class="form-label">Current Balance</label>
                         <div class="input-group">
-                            <span class="input-group-text">LKR</span>
+                            <span class="input-group-text">Rs.</span>
                             <input class="form-control fw-semibold" id="to_balance" readonly>
                         </div>
                     </div>
@@ -450,7 +450,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
                     <tr>
                         <td><code><?= e(vk_transfer_voucher_no((int) $r['id'])) ?></code></td>
                         <td class="small text-nowrap"><?= e((string) ($r['voucher_date'] ?? substr((string) $r['created_at'], 0, 10))) ?></td>
-                        <td class="small"><?= e(number_format((float) $r['amount'], 2)) ?></td>
+                        <td class="small text-end"><?= e(formatCurrency($r['amount'])) ?></td>
                         <td class="small"><?= e((string) $r['from_code']) ?> — <?= e((string) $r['from_name']) ?></td>
                         <td class="small"><?= e((string) $r['to_code']) ?> — <?= e((string) $r['to_name']) ?></td>
                         <td><span class="badge text-bg-<?= e(vk_transfer_status_badge($st)) ?>"><?= e(ucfirst($st)) ?></span></td>
