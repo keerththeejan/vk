@@ -20,11 +20,19 @@ if (!$job) {
     exit;
 }
 
-$parts = $pdo->prepare(
-    'SELECT jp.*, p.name AS product_name FROM repair_job_parts jp JOIN products p ON p.id = jp.product_id WHERE jp.repair_job_id = ?'
-);
-$parts->execute([$id]);
-$partRows = $parts->fetchAll();
+$partRows = [];
+vk_repair_ensure_parts_table($pdo);
+if (db_table_exists($pdo, 'repair_job_parts') && db_table_exists($pdo, 'products')) {
+    $parts = $pdo->prepare(
+        'SELECT jp.*, COALESCE(p.name, \'Deleted part\') AS product_name
+         FROM repair_job_parts jp
+         LEFT JOIN products p ON p.id = jp.product_id
+         WHERE jp.repair_job_id = ?
+         ORDER BY jp.id'
+    );
+    $parts->execute([$id]);
+    $partRows = $parts->fetchAll();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

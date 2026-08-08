@@ -21,6 +21,7 @@ function vk_bootstrap_module(string $module): void
         'email_system' => __DIR__ . '/email_system.php',
         'email_imap_poll' => __DIR__ . '/email_imap_poll.php',
         'booking_automation' => __DIR__ . '/booking_automation.php',
+        'warranty_service' => __DIR__ . '/warranty_service.php',
     ];
 
     if (!isset($map[$module])) {
@@ -579,6 +580,42 @@ function db_table_exists_forget(?string $table = null): void
             vk_cache_set('schema_tables_v1', $map, 600);
         }
     }
+}
+
+/**
+ * Ensure repair_job_parts exists (missing on DBs that skipped v2 service upgrade).
+ */
+function vk_repair_ensure_parts_table(PDO $pdo): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+
+    if (db_table_exists($pdo, 'repair_job_parts')) {
+        return;
+    }
+    if (!db_table_exists($pdo, 'repair_jobs') || !db_table_exists($pdo, 'products')) {
+        return;
+    }
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS repair_job_parts (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            repair_job_id INT UNSIGNED NOT NULL,
+            product_id INT UNSIGNED NOT NULL,
+            quantity INT UNSIGNED NOT NULL DEFAULT 1,
+            unit_price DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+            line_total DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_rjp_job (repair_job_id),
+            INDEX idx_rjp_product (product_id),
+            CONSTRAINT fk_rjp_job FOREIGN KEY (repair_job_id) REFERENCES repair_jobs(id) ON DELETE CASCADE,
+            CONSTRAINT fk_rjp_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+    db_table_exists_forget('repair_job_parts');
 }
 
 /** Whether a column exists on a table (for gradual schema upgrades). */

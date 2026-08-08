@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 $pageTitle = 'Vehicle bookings';
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
+vk_bootstrap_module('vehicle_booking');
 vk_vehicle_auto_migrate($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

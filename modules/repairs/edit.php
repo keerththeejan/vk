@@ -15,6 +15,7 @@ $printerIssues = [
 ];
 
 $id = (int) ($_GET['id'] ?? 0);
+vk_repair_ensure_parts_table($pdo);
 $st = $pdo->prepare(
     'SELECT r.*, c.name AS customer_name FROM repair_jobs r JOIN customers c ON c.id = r.customer_id WHERE r.id = ?'
 );
@@ -137,13 +138,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $row = $st->fetch();
 }
 
-$parts = $pdo->prepare(
-    'SELECT jp.*, p.name AS product_name FROM repair_job_parts jp JOIN products p ON p.id = jp.product_id WHERE jp.repair_job_id = ? ORDER BY jp.id'
-);
-$parts->execute([$id]);
-$partRows = $parts->fetchAll();
+$partRows = [];
+if (db_table_exists($pdo, 'repair_job_parts') && db_table_exists($pdo, 'products')) {
+    $parts = $pdo->prepare(
+        'SELECT jp.*, COALESCE(p.name, \'Deleted part\') AS product_name
+         FROM repair_job_parts jp
+         LEFT JOIN products p ON p.id = jp.product_id
+         WHERE jp.repair_job_id = ?
+         ORDER BY jp.id'
+    );
+    $parts->execute([$id]);
+    $partRows = $parts->fetchAll();
+}
 
-$products = $pdo->query('SELECT * FROM products ORDER BY name')->fetchAll();
+$products = db_table_exists($pdo, 'products')
+    ? $pdo->query('SELECT * FROM products ORDER BY name')->fetchAll()
+    : [];
 $technicians = $pdo->query('SELECT id, name FROM technicians WHERE active = 1 ORDER BY name')->fetchAll();
 $templates = vk_st_templates_for_select($pdo);
 

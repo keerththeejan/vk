@@ -113,10 +113,10 @@ $money = static function (float $n): string {
             --page-x: 12mm;
             --page-y: 12mm;
             --radius: 6px;
-            --header-height: 102px;
+            --header-height: 95px;
             --footer-height: 24mm;
-            --lh-gap: 14px;
-            --lh-divider: #D0DAE8;
+            --lh-gap: 12px;
+            --lh-divider: #D5D5D5;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -129,7 +129,7 @@ $money = static function (float $n): string {
         html, body {
             background: #e8edf3;
             color: var(--vk-text);
-            font-family: Poppins, Arial, Helvetica, sans-serif;
+            font-family: Poppins, Montserrat, 'Open Sans', Arial, Helvetica, sans-serif;
             font-size: 10.5px;
             line-height: 1.35;
             -webkit-print-color-adjust: exact;
@@ -210,26 +210,28 @@ $money = static function (float $n): string {
             white-space: nowrap;
         }
 
-        /* ── HEADER — international corporate letterhead ── */
+        /* ── HEADER — balanced A4 corporate letterhead (20 / 55 / 25) ── */
         .letterhead-header {
             position: relative;
             z-index: 2;
-            flex: 0 0 var(--header-height);
-            height: var(--header-height);
-            max-height: var(--header-height);
+            flex: 0 0 auto;
+            min-height: var(--header-height);
+            height: auto;
             margin-top: 0;
             background: #fff;
             border-bottom: 2.5px solid var(--vk-brand);
             box-sizing: border-box;
+            overflow: visible;
         }
         .lh-row {
             display: flex;
             flex-wrap: nowrap;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
             width: 100%;
-            height: 100%;
-            padding: 10px var(--page-x);
+            min-height: var(--header-height);
+            height: auto;
+            padding: 12px var(--page-x);
             box-sizing: border-box;
             gap: 0;
         }
@@ -237,85 +239,132 @@ $money = static function (float $n): string {
             display: flex;
             align-items: center;
             min-width: 0;
-            height: 100%;
             box-sizing: border-box;
+            overflow: hidden;
         }
-        .lh-col-3 {
-            flex: 1 1 0;
-            max-width: none;
-            width: 0;
-        }
-        .lh-col-6 {
-            flex: 1.35 1 0;
-            max-width: none;
-            width: 0;
-            justify-content: center;
-            border-left: 1px solid var(--lh-divider);
-            border-right: 1px solid var(--lh-divider);
-            padding: 0 var(--lh-gap);
-        }
+        .lh-col-3,
         .lh-col--logo {
-            justify-content: flex-start;
+            flex: 0 0 20%;
+            width: 20%;
+            max-width: 20%;
+            justify-content: center;
             padding-right: var(--lh-gap);
         }
+        .lh-col-6 {
+            position: relative;
+            flex: 0 0 55%;
+            width: 55%;
+            max-width: 55%;
+            justify-content: center;
+            padding: 0 16px;
+            overflow: hidden;
+        }
+        .lh-col-6::before,
+        .lh-col-6::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1px;
+            height: 80px;
+            background: var(--lh-divider);
+            pointer-events: none;
+        }
+        .lh-col-6::before { left: 0; }
+        .lh-col-6::after { right: 0; }
         .lh-col--contact {
+            flex: 0 0 25%;
+            width: 25%;
+            max-width: 25%;
             justify-content: flex-end;
             padding-left: var(--lh-gap);
+            overflow: hidden;
         }
 
         .company-logo {
             display: flex;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             width: 100%;
             height: 100%;
         }
         .company-logo img {
             display: block;
-            width: 100px;
-            max-width: 110px;
+            width: 85px;
+            max-width: 90px;
             height: auto;
-            max-height: 82px;
+            max-height: 70px;
             object-fit: contain;
-            object-position: left center;
+            object-position: center center;
         }
 
         .letterhead-col--center {
             width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 1px;
+            gap: 0;
+            overflow: hidden;
         }
         .letterhead-company {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--vk-brand);
-            letter-spacing: 0.8px;
-            line-height: 1.1;
+            font-family: 'Poppins', 'Montserrat', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--vk-brand-deep);
+            letter-spacing: 2px;
+            line-height: 1.15;
             text-transform: uppercase;
-            margin: 0;
+            text-align: center;
+            margin: 0 0 6px;
+            max-width: 100%;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .letterhead-services-wrap {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            text-align: center;
         }
         .letterhead-services {
-            font-size: 10.5px;
-            font-weight: 500;
-            color: #222;
+            font-family: 'Poppins', 'Montserrat', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            color: #222222;
             margin: 0;
-            line-height: 1.25;
+            line-height: 1.35;
+            text-align: center;
+            max-width: 100%;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .letterhead-services .svc-sep {
+            display: inline-block;
+            margin: 0 0.4em;
+            font-weight: 600;
+            color: #222222;
         }
         .letterhead-tagline {
-            font-size: 9px;
+            font-family: 'Poppins', 'Montserrat', sans-serif;
+            font-size: 13px;
             font-style: italic;
-            font-weight: 400;
-            color: var(--vk-brand);
-            margin: 2px 0 0;
-            line-height: 1.2;
+            font-weight: 500;
+            color: var(--vk-brand-accent);
+            letter-spacing: 0.2px;
+            margin: 6px 0 0;
+            line-height: 1.3;
             text-align: center;
+            max-width: 100%;
+            width: 100%;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .letterhead-contact {
@@ -323,24 +372,35 @@ $money = static function (float $n): string {
             flex-direction: column;
             justify-content: center;
             align-items: flex-end;
-            gap: 5px;
+            gap: 8px;
             width: 100%;
+            max-width: 100%;
+            overflow: hidden;
         }
         .letterhead-contact-item {
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: flex-start;
-            gap: 6px;
+            gap: 8px;
+            max-width: 100%;
             white-space: nowrap;
-            font-size: 10px;
-            color: #222;
-            line-height: 1;
+            font-family: 'Poppins', 'Montserrat', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            color: #222222;
+            line-height: 22px;
             margin: 0;
+            overflow: hidden;
+        }
+        .letterhead-contact-item > span:last-child {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .icon-circle {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: var(--vk-brand);
             display: inline-flex;
@@ -349,8 +409,8 @@ $money = static function (float $n): string {
             flex-shrink: 0;
         }
         .icon-circle svg {
-            width: 9px;
-            height: 9px;
+            width: 8px;
+            height: 8px;
             fill: #fff;
             display: block;
         }
@@ -753,8 +813,9 @@ $money = static function (float $n): string {
                 overflow: visible;
             }
             .letterhead-header {
-                flex: 0 0 var(--header-height);
-                height: var(--header-height);
+                flex: 0 0 auto;
+                min-height: var(--header-height);
+                height: auto;
             }
             .footer.letterhead-footer {
                 flex: 0 0 var(--footer-height);
@@ -814,13 +875,18 @@ $money = static function (float $n): string {
                 padding: 12px var(--page-x);
             }
             .lh-col-3,
-            .lh-col-6 {
+            .lh-col--logo,
+            .lh-col-6,
+            .lh-col--contact {
                 flex: 0 0 100%;
+                width: 100%;
                 max-width: 100%;
                 border: 0;
                 padding: 8px 0;
                 justify-content: center;
             }
+            .lh-col-6::before,
+            .lh-col-6::after { display: none; }
             .lh-col--logo,
             .lh-col--contact { justify-content: center; padding: 8px 0; }
             .letterhead-contact { align-items: center; }
@@ -887,7 +953,7 @@ $money = static function (float $n): string {
             <div class="lh-col lh-col-3 lh-col--logo">
                 <div class="company-logo">
                     <?php if ($showLogo): ?>
-                    <img src="<?= e($logoUrl) ?>" alt="VK Network Logo" width="100" height="80">
+                    <img src="<?= e($logoUrl) ?>" alt="VK Network Logo" width="85" height="68">
                     <?php endif; ?>
                 </div>
             </div>
@@ -895,8 +961,8 @@ $money = static function (float $n): string {
                 <div class="letterhead-col--center">
                     <h2 class="letterhead-company"><?= e($businessName) ?></h2>
                     <div class="letterhead-services-wrap">
-                        <p class="letterhead-services">Software Development | Hardware Solutions</p>
-                        <p class="letterhead-services">CCTV Surveillance | Network Infrastructure</p>
+                        <p class="letterhead-services">Software Development <span class="svc-sep" aria-hidden="true">|</span> Hardware Solutions</p>
+                        <p class="letterhead-services">CCTV Surveillance <span class="svc-sep" aria-hidden="true">|</span> Network Infrastructure</p>
                     </div>
                     <p class="letterhead-tagline"><?= e($businessTagline) ?></p>
                 </div>
