@@ -38,9 +38,11 @@ function vk_ensure_finance_schemas(PDO $pdo): void
     require_once __DIR__ . '/invoices_schema.php';
     require_once __DIR__ . '/accounting_schema.php';
     require_once __DIR__ . '/payments_schema.php';
+    require_once __DIR__ . '/account_transfer_service.php';
     vk_ensure_invoices_schema($pdo);
     vk_ensure_payments_table($pdo);
     vk_ensure_account_ledger_table($pdo);
+    vk_ensure_account_transfers_schema($pdo);
     require_once __DIR__ . '/invoice_print_settings.php';
     vk_invoice_print_settings_ensure_schema($pdo);
 }

@@ -1,0 +1,42 @@
+[
+    {
+        "id": "bk_20260808_063039_8c876e",
+        "name": "",
+        "type": "database",
+        "components": [
+            "database"
+        ],
+        "created_at": "2026-08-08T06:30:39+00:00",
+        "created_by": "admin",
+        "created_by_id": 1,
+        "status": "completed",
+        "encrypted": false,
+        "php_version": "8.3.28",
+        "mysql_version": "8.4.7",
+        "db_name": "vk_billing",
+        "checksum": "63e9ba22558021a3b423d3d30e21f28d8f8b979c33b310e9adb627e7245a2920",
+        "size": 24514,
+        "filename": "vk_backup_20260808_063039_database.zip",
+        "location": "storage/backups"
+    },
+    {
+        "id": "bk_20260808_062910_6aca3b",
+        "name": "CLI test backup",
+        "type": "database",
+        "components": [
+            "database"
+        ],
+        "created_at": "2026-08-08T06:29:10+00:00",
+        "created_by": "admin",
+        "created_by_id": 1,
+        "status": "completed",
+        "encrypted": false,
+        "php_version": "8.2.29",
+        "mysql_version": "8.4.7",
+        "db_name": "vk_billing",
+        "checksum": "c938be1102a0ea17e8fa7de67764ca0d32b401373e8d2c3d253cc19c5566cb62",
+        "size": 168646,
+        "filename": "vk_backup_20260808_062910_database.sql",
+        "location": "storage/backups"
+    }
+]

@@ -80,6 +80,26 @@
     color: var(--bs-primary);
 }
 
+.es-debug {
+    max-height: 220px;
+    overflow: auto;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    font-size: 11px;
+    white-space: pre-wrap;
+}
+
+.es-log-table {
+    min-width: 1100px;
+}
+
+.es-log-table .badge {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
 @media (max-width: 767.98px) {
     .es-sticky-actions {
         flex-direction: column;

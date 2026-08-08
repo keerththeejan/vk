@@ -75,10 +75,10 @@ function vk_mail_detect_framework(): string
 function vk_mail_preset_vkitnet(): array
 {
     return [
-        'smtp_host' => 'vkitnet.info',
+        'smtp_host' => 'mail.vkitnet.info',
         'smtp_port' => 465,
         'smtp_secure' => 'ssl',
-        'imap_host' => 'vkitnet.info',
+        'imap_host' => 'mail.vkitnet.info',
         'imap_port' => 993,
         'pop3_port' => 995,
     ];

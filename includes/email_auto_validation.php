@@ -214,23 +214,33 @@ function vk_email_sync_environment_to_database(PDO $pdo, bool $enableImapPoll, b
 /**
  * Try SMTP connect (PHPMailer); on failure retry TLS :587 if first was SSL :465.
  *
- * @return array{ok:bool,profile:?string,error:?string,tried:array<int,array{profile:string,ok:bool,error:?string}>}
+ * @return array{ok:bool,profile:?string,error:?string,tried:array<int,array{profile:string,ok:bool,error:?string}>,transcript?:string}
  */
 function vk_email_probe_smtp(array $cfg): array
 {
     $autoload = ROOT_PATH . '/vendor/autoload.php';
     if (!is_file($autoload)) {
-        return ['ok' => false, 'profile' => null, 'error' => 'PHPMailer not installed (composer install)', 'tried' => []];
+        return ['ok' => false, 'profile' => null, 'error' => 'PHPMailer not installed (composer install)', 'tried' => [], 'transcript' => ''];
     }
     require_once $autoload;
 
+    $secureRaw = strtolower((string) ($cfg['smtp_secure'] ?? 'tls'));
+    $auth = array_key_exists('smtp_auth', $cfg) ? (bool) $cfg['smtp_auth'] : true;
+    if (trim((string) ($cfg['smtp_user'] ?? '')) === '') {
+        $auth = false;
+    }
+    $timeout = max(5, min(60, (int) ($cfg['timeout'] ?? 20)));
+    $relaxed = !empty($cfg['relaxed_ssl']);
+    $debug = !empty($cfg['debug']);
+    $transcript = '';
+
     $tries = [
-        ['host' => $cfg['smtp_host'], 'port' => (int) $cfg['smtp_port'], 'secure' => $cfg['smtp_secure']],
+        ['host' => $cfg['smtp_host'], 'port' => (int) $cfg['smtp_port'], 'secure' => $secureRaw],
     ];
-    if ($cfg['smtp_secure'] === 'ssl' && (int) $cfg['smtp_port'] === 465) {
+    if ($secureRaw === 'ssl' && (int) $cfg['smtp_port'] === 465) {
         $tries[] = ['host' => $cfg['smtp_host'], 'port' => 587, 'secure' => 'tls'];
     }
-    if ($cfg['smtp_secure'] === 'tls' && (int) $cfg['smtp_port'] === 587) {
+    if ($secureRaw === 'tls' && (int) $cfg['smtp_port'] === 587) {
         $tries[] = ['host' => $cfg['smtp_host'], 'port' => 465, 'secure' => 'ssl'];
     }
 
@@ -238,33 +248,99 @@ function vk_email_probe_smtp(array $cfg): array
     foreach ($tries as $try) {
         $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
         $profile = $try['secure'] . ':' . $try['port'];
+        $localTranscript = '';
         try {
             $mail->isSMTP();
             $mail->Host = (string) $try['host'];
             $mail->Port = (int) $try['port'];
-            $mail->SMTPAuth = true;
-            $mail->Username = (string) $cfg['smtp_user'];
-            $mail->Password = (string) $cfg['smtp_pass'];
-            $mail->SMTPSecure = $try['secure'] === 'ssl'
-                ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS
-                : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Timeout = 20;
+            $mail->Timeout = $timeout;
+            $mail->SMTPAuth = $auth;
+            if ($auth) {
+                $mail->Username = (string) $cfg['smtp_user'];
+                $mail->Password = (string) $cfg['smtp_pass'];
+            }
+            if ($try['secure'] === 'none') {
+                $mail->SMTPSecure = '';
+                $mail->SMTPAutoTLS = false;
+            } else {
+                $mail->SMTPSecure = $try['secure'] === 'ssl'
+                    ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS
+                    : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->SMTPAutoTLS = $try['secure'] !== 'ssl';
+            }
             $mail->SMTPOptions = [
                 'ssl' => [
-                    'verify_peer' => true,
-                    'verify_peer_name' => true,
-                    'allow_self_signed' => false,
+                    'verify_peer' => !$relaxed,
+                    'verify_peer_name' => !$relaxed,
+                    'allow_self_signed' => $relaxed,
                 ],
             ];
+            if ($debug) {
+                $mail->SMTPDebug = 2;
+                $mail->Debugoutput = static function ($str, $level) use (&$localTranscript): void {
+                    $localTranscript .= trim((string) $str) . "\n";
+                };
+            }
             if (!$mail->smtpConnect()) {
                 throw new RuntimeException('smtpConnect() returned false');
             }
             $mail->smtpClose();
             $tried[] = ['profile' => $profile, 'ok' => true, 'error' => null];
-            return ['ok' => true, 'profile' => $profile, 'error' => null, 'tried' => $tried];
+            return [
+                'ok' => true,
+                'profile' => $profile,
+                'error' => null,
+                'tried' => $tried,
+                'transcript' => $localTranscript,
+            ];
         } catch (Throwable $e) {
             $err = $e->getMessage();
+            // Retry same profile once with relaxed SSL if cert-related
+            if (!$relaxed && (str_contains(strtolower($err), 'certificate') || str_contains(strtolower($err), 'ssl'))) {
+                try {
+                    $mail2 = new \PHPMailer\PHPMailer\PHPMailer(true);
+                    $mail2->isSMTP();
+                    $mail2->Host = (string) $try['host'];
+                    $mail2->Port = (int) $try['port'];
+                    $mail2->Timeout = $timeout;
+                    $mail2->SMTPAuth = $auth;
+                    if ($auth) {
+                        $mail2->Username = (string) $cfg['smtp_user'];
+                        $mail2->Password = (string) $cfg['smtp_pass'];
+                    }
+                    if ($try['secure'] === 'none') {
+                        $mail2->SMTPSecure = '';
+                        $mail2->SMTPAutoTLS = false;
+                    } else {
+                        $mail2->SMTPSecure = $try['secure'] === 'ssl'
+                            ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS
+                            : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                        $mail2->SMTPAutoTLS = $try['secure'] !== 'ssl';
+                    }
+                    $mail2->SMTPOptions = [
+                        'ssl' => [
+                            'verify_peer' => false,
+                            'verify_peer_name' => false,
+                            'allow_self_signed' => true,
+                        ],
+                    ];
+                    if ($mail2->smtpConnect()) {
+                        $mail2->smtpClose();
+                        $tried[] = ['profile' => $profile . '+relaxed', 'ok' => true, 'error' => null];
+                        return [
+                            'ok' => true,
+                            'profile' => $profile . ' (relaxed SSL)',
+                            'error' => null,
+                            'tried' => $tried,
+                            'transcript' => $localTranscript,
+                        ];
+                    }
+                } catch (Throwable $e2) {
+                    $err = $e2->getMessage();
+                }
+            }
             $tried[] = ['profile' => $profile, 'ok' => false, 'error' => $err];
+            $transcript .= $localTranscript;
             try {
                 $mail->smtpClose();
             } catch (Throwable) {
@@ -279,6 +355,7 @@ function vk_email_probe_smtp(array $cfg): array
         'profile' => null,
         'error' => $last['error'] ?? 'SMTP failed',
         'tried' => $tried,
+        'transcript' => $transcript,
     ];
 }
 

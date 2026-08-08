@@ -26,17 +26,33 @@ function vk_email_env_int(string $name, int $default): int
 function vk_email_tables_migrate(PDO $pdo): void
 {
     $sqlFile = ROOT_PATH . '/sql/upgrade_email_system.sql';
-    if (!is_readable($sqlFile)) {
+    if (!db_table_exists($pdo, 'email_send_log') && is_readable($sqlFile)) {
+        $sql = file_get_contents($sqlFile);
+        if ($sql !== false && trim($sql) !== '') {
+            $pdo->exec($sql);
+        }
+    }
+
+    if (!db_table_exists($pdo, 'email_send_log')) {
         return;
     }
-    if (db_table_exists($pdo, 'email_send_log')) {
-        return;
+
+    $extraCols = [
+        'message_id' => "ALTER TABLE email_send_log ADD COLUMN message_id VARCHAR(255) NULL DEFAULT NULL AFTER error_message",
+        'smtp_server' => "ALTER TABLE email_send_log ADD COLUMN smtp_server VARCHAR(191) NULL DEFAULT NULL AFTER message_id",
+        'smtp_response' => "ALTER TABLE email_send_log ADD COLUMN smtp_response VARCHAR(500) NULL DEFAULT NULL AFTER smtp_server",
+        'sent_by' => "ALTER TABLE email_send_log ADD COLUMN sent_by VARCHAR(191) NULL DEFAULT NULL AFTER smtp_response",
+        'delivery_ms' => "ALTER TABLE email_send_log ADD COLUMN delivery_ms INT UNSIGNED NULL DEFAULT NULL AFTER sent_by",
+    ];
+    foreach ($extraCols as $col => $ddl) {
+        if (!db_column_exists($pdo, 'email_send_log', $col)) {
+            try {
+                $pdo->exec($ddl);
+            } catch (Throwable $e) {
+                // ignore race / unsupported ALTER
+            }
+        }
     }
-    $sql = file_get_contents($sqlFile);
-    if ($sql === false || trim($sql) === '') {
-        return;
-    }
-    $pdo->exec($sql);
 }
 
 function vk_email_sanitize_subject(string $subject): string
@@ -263,26 +279,69 @@ function vk_email_send_log_insert(
     string $toName,
     string $subject,
     string $bodyPreview,
-    string $status = 'sending'
+    string $status = 'sending',
+    array $meta = []
 ): int {
     vk_email_tables_migrate($pdo);
     if (!db_table_exists($pdo, 'email_send_log')) {
         return 0;
     }
-    $st = $pdo->prepare(
-        'INSERT INTO email_send_log
-        (direction, template_type, to_email, to_name, subject, body_preview, status, attempts, created_at)
-        VALUES (\'outbound\',?,?,?,?,?,?,1,NOW())'
-    );
-    $st->execute([$templateType, $toEmail, $toName, $subject, $bodyPreview, $status]);
+    $smtpServer = (string) ($meta['smtp_server'] ?? '');
+    $sentBy = (string) ($meta['sent_by'] ?? '');
+    if ($sentBy === '') {
+        $sentBy = trim((string) ($_SESSION['user_name'] ?? $_SESSION['username'] ?? ''));
+        if ($sentBy === '' && !empty($_SESSION['user_id'])) {
+            $sentBy = 'user#' . (int) $_SESSION['user_id'];
+        }
+    }
+    $hasExtra = db_column_exists($pdo, 'email_send_log', 'smtp_server');
+    if ($hasExtra) {
+        $st = $pdo->prepare(
+            'INSERT INTO email_send_log
+            (direction, template_type, to_email, to_name, subject, body_preview, status, attempts, smtp_server, sent_by, created_at)
+            VALUES (\'outbound\',?,?,?,?,?,?,1,?,?,NOW())'
+        );
+        $st->execute([$templateType, $toEmail, $toName, $subject, $bodyPreview, $status, $smtpServer !== '' ? $smtpServer : null, $sentBy !== '' ? $sentBy : null]);
+    } else {
+        $st = $pdo->prepare(
+            'INSERT INTO email_send_log
+            (direction, template_type, to_email, to_name, subject, body_preview, status, attempts, created_at)
+            VALUES (\'outbound\',?,?,?,?,?,?,1,NOW())'
+        );
+        $st->execute([$templateType, $toEmail, $toName, $subject, $bodyPreview, $status]);
+    }
     return (int) $pdo->lastInsertId();
 }
 
-function vk_email_send_log_finalize(PDO $pdo, int $logId, string $status, ?string $error, int $attempts): void
+/**
+ * @param array{message_id?:string,smtp_response?:string,delivery_ms?:int} $extra
+ */
+function vk_email_send_log_finalize(PDO $pdo, int $logId, string $status, ?string $error, int $attempts, array $extra = []): void
 {
     if ($logId <= 0 || !db_table_exists($pdo, 'email_send_log')) {
         return;
     }
+    $messageId = isset($extra['message_id']) ? mb_substr((string) $extra['message_id'], 0, 255, 'UTF-8') : null;
+    $smtpResponse = isset($extra['smtp_response']) ? mb_substr((string) $extra['smtp_response'], 0, 500, 'UTF-8') : ($status === 'sent' ? '250 OK' : $error);
+    $deliveryMs = isset($extra['delivery_ms']) ? (int) $extra['delivery_ms'] : null;
+
+    if (db_column_exists($pdo, 'email_send_log', 'message_id')) {
+        if ($status === 'sent') {
+            $st = $pdo->prepare(
+                'UPDATE email_send_log SET status = ?, error_message = ?, attempts = ?, sent_at = NOW(),
+                 message_id = COALESCE(?, message_id), smtp_response = ?, delivery_ms = ? WHERE id = ?'
+            );
+            $st->execute([$status, $error, $attempts, $messageId, $smtpResponse, $deliveryMs, $logId]);
+        } else {
+            $st = $pdo->prepare(
+                'UPDATE email_send_log SET status = ?, error_message = ?, attempts = ?, sent_at = NULL,
+                 smtp_response = ?, delivery_ms = ? WHERE id = ?'
+            );
+            $st->execute([$status, $error, $attempts, $smtpResponse, $deliveryMs, $logId]);
+        }
+        return;
+    }
+
     if ($status === 'sent') {
         $st = $pdo->prepare('UPDATE email_send_log SET status = ?, error_message = ?, attempts = ?, sent_at = NOW() WHERE id = ?');
     } else {
@@ -362,7 +421,11 @@ function vk_email_queue_process(PDO $pdo, int $limit = 25): array
                 $pdo->prepare('UPDATE email_outbound_queue SET status = \'failed\', attempts = ?, last_error = ? WHERE id = ?')
                     ->execute([$attempts, mb_substr($err, 0, 2000, 'UTF-8'), $id]);
             } else {
-                $delay = min(3600, (int) (60 * pow(2, min(6, $attempts))));
+                $base = 60;
+                if (function_exists('vk_settings_get')) {
+                    $base = max(30, min(3600, (int) vk_settings_get($pdo, 'email_queue_retry_interval', '60')));
+                }
+                $delay = min(3600, (int) ($base * pow(2, min(6, max(0, $attempts - 1)))));
                 $pdo->prepare(
                     'UPDATE email_outbound_queue SET status = \'pending\', attempts = ?, last_error = ?, next_attempt_at = DATE_ADD(NOW(), INTERVAL ' . $delay . ' SECOND) WHERE id = ?'
                 )->execute([$attempts, mb_substr($err, 0, 2000, 'UTF-8'), $id]);

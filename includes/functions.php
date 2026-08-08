@@ -22,6 +22,7 @@ function vk_bootstrap_module(string $module): void
         'email_imap_poll' => __DIR__ . '/email_imap_poll.php',
         'booking_automation' => __DIR__ . '/booking_automation.php',
         'warranty_service' => __DIR__ . '/warranty_service.php',
+        'backup_service' => __DIR__ . '/backup_service.php',
     ];
 
     if (!isset($map[$module])) {

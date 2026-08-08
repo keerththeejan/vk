@@ -41,6 +41,10 @@ function vk_load_dotenv(?string $path = null): void
         // Only skip if a non-empty value is already set (empty env var still allows .env to fill it).
         $existing = getenv($name);
         if ($existing !== false && trim((string) $existing) !== '') {
+            // Duplicate keys in .env: first wins. Track password conflicts for diagnostics.
+            if (in_array($name, ['VK_SMTP_PASS', 'MAIL_PASSWORD'], true) && !hash_equals((string) $existing, $value)) {
+                error_log('[env] Duplicate ' . $name . ' in .env with different values — first occurrence is used. Remove duplicates.');
+            }
             continue;
         }
         putenv($name . '=' . $value);

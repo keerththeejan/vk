@@ -69,7 +69,87 @@
         const fd = new FormData(form);
         const data = Object.fromEntries(fd.entries());
         data.smtp_secure = document.getElementById('smtp_secure')?.value || 'tls';
+        data.smtp_auth = document.getElementById('smtp_auth')?.checked ? '1' : '0';
+        data.smtp_debug = document.getElementById('smtp_debug')?.checked ? '1' : '0';
         return data;
+    }
+
+    function showReasons(reasons, errorText) {
+        const box = document.getElementById('esReasonsBox');
+        if (!box) return;
+        if ((!reasons || !reasons.length) && !errorText) {
+            box.classList.add('d-none');
+            box.innerHTML = '';
+            return;
+        }
+        const list = (reasons && reasons.length)
+            ? '<strong>Possible reasons:</strong><ul class="mb-0 mt-1">' + reasons.map((r) => `<li>${escapeHtml(r)}</li>`).join('') + '</ul>'
+            : '';
+        const err = errorText ? `<div class="mb-2" style="white-space:pre-wrap">${escapeHtml(errorText)}</div>` : '';
+        box.innerHTML = err + list;
+        box.classList.remove('d-none');
+    }
+
+    function showDebug(text) {
+        const el = document.getElementById('esDebugTranscript');
+        if (!el) return;
+        if (!text) {
+            el.classList.add('d-none');
+            el.textContent = '';
+            return;
+        }
+        el.textContent = text;
+        el.classList.remove('d-none');
+    }
+
+    function renderConnectionResult(steps, ok, error, reasons, report) {
+        const el = document.getElementById('esConnectionResult');
+        if (!el) {
+            return;
+        }
+        let reportHtml = '';
+        if (report && typeof report === 'object') {
+            reportHtml =
+                '<div class="es-report mt-3 small border-top pt-2">' +
+                (report.root_cause
+                    ? `<div><strong>Root Cause:</strong> ${escapeHtml(String(report.root_cause))}</div>`
+                    : '<div><strong>Root Cause:</strong> None — authentication succeeded</div>') +
+                (report.recommended_fix
+                    ? `<div><strong>Recommended Fix:</strong> ${escapeHtml(String(report.recommended_fix))}</div>`
+                    : '') +
+                (report.server_response
+                    ? `<div><strong>Server Response:</strong> <code>${escapeHtml(String(report.server_response))}</code></div>`
+                    : '') +
+                `<div><strong>SMTP Host:</strong> ${escapeHtml(String(report.smtp_host || ''))} · <strong>Port:</strong> ${escapeHtml(String(report.port || ''))} · <strong>Encryption:</strong> ${escapeHtml(String(report.encryption || ''))}</div>` +
+                `<div><strong>Authentication Result:</strong> ${escapeHtml(String(report.authentication_result || ''))}</div>` +
+                '</div>';
+        }
+        if (!steps || !steps.length) {
+            el.innerHTML = escapeHtml(error || 'No result.') + reportHtml;
+            showReasons(reasons, error);
+            return;
+        }
+        el.innerHTML =
+            (ok ? '<div class="text-success mb-2"><i class="bi bi-check-circle me-1"></i>Connection successful</div>' : '<div class="text-danger mb-2"><i class="bi bi-x-circle me-1"></i>Connection failed</div>') +
+            '<ul class="list-unstyled mb-0">' +
+            steps
+                .map((s) => {
+                    const cls =
+                        s.status === 'success' ? 'text-success' : s.status === 'failed' ? 'text-danger' : 'text-primary';
+                    return `<li class="small ${cls}"><i class="bi bi-${s.status === 'success' ? 'check-circle' : s.status === 'failed' ? 'x-circle' : 'arrow-repeat'} me-1"></i>${escapeHtml(s.label)}${s.detail ? ' — ' + escapeHtml(String(s.detail)) : ''}</li>`;
+                })
+                .join('') +
+            '</ul>' +
+            reportHtml;
+        showReasons(reasons, ok ? '' : error);
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 
     function renderSteps(container, steps) {
@@ -90,41 +170,10 @@
                         : s.status === 'failed'
                           ? 'x-circle-fill'
                           : 'arrow-repeat';
-                const detail = s.detail ? `<span class="text-muted ms-1">${escapeHtml(s.detail)}</span>` : '';
+                const detail = s.detail ? `<span class="text-muted ms-1">${escapeHtml(String(s.detail))}</span>` : '';
                 return `<li class="${cls}"><i class="bi bi-${icon} me-1"></i>${escapeHtml(s.label)}${detail}</li>`;
             })
             .join('');
-    }
-
-    function escapeHtml(str) {
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
-    }
-
-    function renderConnectionResult(steps, ok, error) {
-        const el = document.getElementById('esConnectionResult');
-        if (!el) {
-            return;
-        }
-        if (!steps || !steps.length) {
-            el.innerHTML = escapeHtml(error || 'No result.');
-            return;
-        }
-        el.innerHTML =
-            (ok ? '<div class="text-success mb-2"><i class="bi bi-check-circle me-1"></i>Connection successful</div>' : '') +
-            '<ul class="list-unstyled mb-0">' +
-            steps
-                .map((s) => {
-                    const cls =
-                        s.status === 'success' ? 'text-success' : s.status === 'failed' ? 'text-danger' : 'text-primary';
-                    return `<li class="small ${cls}">${escapeHtml(s.label)}${s.detail ? ' — ' + escapeHtml(s.detail) : ''}</li>`;
-                })
-                .join('') +
-            '</ul>' +
-            (error && !ok ? `<div class="text-danger small mt-2">${escapeHtml(error)}</div>` : '');
     }
 
     async function runConnectionTest(btn) {
@@ -138,12 +187,20 @@
         if (btn) {
             btn.disabled = false;
         }
-        renderConnectionResult(data.steps, data.ok, data.error);
+        renderConnectionResult(data.steps, data.ok, data.error, data.reasons, data.report);
+        showDebug(data.transcript || data.debug || '');
         const stepsEl = document.getElementById('esTestSteps');
         if (stepsEl && data.steps) {
             renderSteps(stepsEl, data.steps);
         }
-        toast(data.ok ? 'Connection successful.' : data.error || 'Connection failed.', data.ok ? 'success' : 'danger');
+        const toastMsg = data.ok
+            ? 'Connection successful.'
+            : (data.report && data.report.root_cause
+                ? data.report.root_cause
+                : (data.reasons && data.reasons[0]
+                    ? 'Authentication / connection failed — see diagnostics.'
+                    : (data.error || 'Connection failed.')));
+        toast(toastMsg, data.ok ? 'success' : 'danger');
     }
 
     const saveBtn = document.getElementById('esSaveSmtpBtn');
@@ -182,19 +239,195 @@
             }
             const stepsEl = document.getElementById('esTestSteps');
             renderSteps(stepsEl, [
-                { label: 'Connecting', status: 'running' },
-                { label: 'Authenticating', status: 'running' },
-                { label: 'Sending', status: 'running' },
+                { label: 'DNS Lookup', status: 'running' },
+                { label: 'SMTP Connection', status: 'running' },
+                { label: 'Authentication', status: 'running' },
+                { label: 'Send Test Mail', status: 'running' },
             ]);
             sendTestBtn.disabled = true;
             setLoading(true, 'Sending test email…');
-            const data = await apiPost('send_test', { to });
+
+            const payload = Object.assign(smtpPayload(), {
+                to,
+                subject: document.getElementById('esTestSubject')?.value || 'VK Network — SMTP Test',
+                message: document.getElementById('esTestMessage')?.value || '',
+                debug: document.getElementById('smtp_debug')?.checked ? '1' : '0',
+            });
+
+            const fileInput = document.getElementById('esTestAttachment');
+            let data;
+            if (fileInput && fileInput.files && fileInput.files[0]) {
+                const fd = new FormData();
+                Object.keys(payload).forEach((k) => fd.append(k, payload[k]));
+                fd.append('action', 'send_test');
+                fd.append('csrf_token', csrf);
+                fd.append('attachment', fileInput.files[0]);
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { Accept: 'application/json', 'X-CSRF-Token': csrf },
+                    credentials: 'same-origin',
+                    body: fd,
+                });
+                data = await res.json();
+            } else {
+                data = await apiPost('send_test', payload);
+            }
+
             setLoading(false);
             sendTestBtn.disabled = false;
             if (data.steps) {
                 renderSteps(stepsEl, data.steps);
+                renderConnectionResult(data.steps, data.ok, data.error, data.reasons, data.report);
             }
-            toast(data.ok ? data.message || 'Test email sent.' : data.error || 'Send failed.', data.ok ? 'success' : 'danger');
+            showDebug(data.debug || '');
+            showReasons(data.reasons, data.ok ? '' : data.error);
+            toast(data.ok ? data.message || 'Test email sent.' : 'Send failed — see diagnostics.', data.ok ? 'success' : 'danger');
+        });
+    }
+
+    document.querySelectorAll('.es-preset').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const host = btn.dataset.host || '';
+            const port = btn.dataset.port || '587';
+            const secure = btn.dataset.secure || 'tls';
+            const auth = btn.dataset.auth !== '0';
+            const hint = btn.dataset.hint || '';
+            const hostEl = document.getElementById('smtp_host');
+            const portEl = document.getElementById('smtp_port');
+            const secEl = document.getElementById('smtp_secure');
+            const authEl = document.getElementById('smtp_auth');
+            if (hostEl && host) hostEl.value = host;
+            if (portEl) portEl.value = port;
+            if (secEl) secEl.value = secure;
+            if (authEl) authEl.checked = auth;
+            const hintEl = document.getElementById('esPresetHint');
+            if (hintEl) hintEl.textContent = hint || 'Preset applied.';
+            toast('Preset applied: ' + (btn.textContent || '').trim(), 'success');
+        });
+    });
+
+    const processQueueBtn = document.getElementById('esProcessQueueBtn');
+    if (processQueueBtn) {
+        processQueueBtn.addEventListener('click', async () => {
+            processQueueBtn.disabled = true;
+            const data = await apiPost('queue_process', {});
+            processQueueBtn.disabled = false;
+            toast(data.ok ? (data.message || 'Queue processed.') : data.error || 'Failed', data.ok ? 'success' : 'danger');
+            if (data.ok) setTimeout(() => location.reload(), 700);
+        });
+    }
+
+    document.querySelectorAll('.es-queue-retry').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            const data = await apiPost('queue_retry', { id: btn.dataset.id });
+            toast(data.ok ? data.message : data.error || 'Failed', data.ok ? 'success' : 'danger');
+        });
+    });
+
+    document.querySelectorAll('.es-log-resend').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            if (!window.confirm('Resend this email?')) return;
+            const data = await apiPost('log_resend', { id: btn.dataset.id });
+            toast(data.ok ? data.message : data.error || 'Failed', data.ok ? 'success' : 'danger');
+            if (!data.ok) showReasons(data.reasons, data.error);
+        });
+    });
+
+    document.querySelectorAll('.es-log-delete').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            if (!window.confirm('Delete this log entry?')) return;
+            const data = await apiPost('log_delete', { id: btn.dataset.id });
+            toast(data.ok ? data.message : data.error || 'Failed', data.ok ? 'success' : 'danger');
+            if (data.ok) btn.closest('tr')?.remove();
+        });
+    });
+
+    let activeLogId = 0;
+    const logModalEl = document.getElementById('esLogModal');
+    const logModal = logModalEl && window.bootstrap ? new bootstrap.Modal(logModalEl) : null;
+
+    function fillLogFromRow(tr) {
+        if (!tr) return null;
+        return {
+            id: tr.dataset.logId || '',
+            to: tr.dataset.to || '',
+            subject: tr.dataset.subject || '',
+            body: tr.dataset.body || '',
+            error: tr.dataset.error || '',
+            status: tr.dataset.status || '',
+        };
+    }
+
+    document.querySelectorAll('.es-log-view').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const tr = btn.closest('tr');
+            const row = fillLogFromRow(tr);
+            if (!row || !logModal) return;
+            activeLogId = Number(row.id) || 0;
+            document.getElementById('esLogModalTitle').textContent = 'View email';
+            document.getElementById('esLogViewPane')?.classList.remove('d-none');
+            document.getElementById('esLogEditPane')?.classList.add('d-none');
+            document.getElementById('esLogRetryBtn')?.classList.add('d-none');
+            document.getElementById('esLogViewStatus').textContent = row.status || '—';
+            document.getElementById('esLogViewTo').textContent = row.to || '—';
+            document.getElementById('esLogViewSubject').textContent = row.subject || '—';
+            document.getElementById('esLogViewBody').textContent = row.body || '—';
+            document.getElementById('esLogViewError').textContent = row.error || '—';
+            logModal.show();
+        });
+    });
+
+    document.querySelectorAll('.es-log-edit').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const tr = btn.closest('tr');
+            const row = fillLogFromRow(tr);
+            if (!row || !logModal) return;
+            activeLogId = Number(row.id) || 0;
+            document.getElementById('esLogModalTitle').textContent = 'Edit & retry failed email';
+            document.getElementById('esLogViewPane')?.classList.add('d-none');
+            document.getElementById('esLogEditPane')?.classList.remove('d-none');
+            const retryBtn = document.getElementById('esLogRetryBtn');
+            retryBtn?.classList.remove('d-none');
+            document.getElementById('esEditTo').value = row.to || '';
+            document.getElementById('esEditSubject').value = row.subject || '';
+            document.getElementById('esEditMessage').value = row.body || '';
+            const errBox = document.getElementById('esEditErrorBox');
+            if (errBox) {
+                if (row.error) {
+                    errBox.textContent = 'Last error: ' + row.error;
+                    errBox.classList.remove('d-none');
+                } else {
+                    errBox.classList.add('d-none');
+                }
+            }
+            logModal.show();
+        });
+    });
+
+    const retryBtn = document.getElementById('esLogRetryBtn');
+    if (retryBtn) {
+        retryBtn.addEventListener('click', async () => {
+            if (!activeLogId) return;
+            retryBtn.disabled = true;
+            const data = await apiPost('log_resend', {
+                id: activeLogId,
+                to_email: document.getElementById('esEditTo')?.value || '',
+                subject: document.getElementById('esEditSubject')?.value || '',
+                message: document.getElementById('esEditMessage')?.value || '',
+            });
+            retryBtn.disabled = false;
+            toast(data.ok ? data.message : data.error || 'Retry failed', data.ok ? 'success' : 'danger');
+            if (!data.ok) {
+                const errBox = document.getElementById('esEditErrorBox');
+                if (errBox) {
+                    errBox.textContent = data.error || 'Retry failed';
+                    errBox.classList.remove('d-none');
+                }
+                showReasons(data.reasons, data.error);
+            } else {
+                logModal?.hide();
+                setTimeout(() => location.reload(), 700);
+            }
         });
     }
 

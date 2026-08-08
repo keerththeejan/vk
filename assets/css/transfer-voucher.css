@@ -1,0 +1,41 @@
+.tv-root {
+    --tv-radius: 0.75rem;
+}
+
+.tv-root .card.vk-card {
+    border-radius: var(--tv-radius);
+    box-shadow: 0 0.35rem 1.25rem rgba(15, 23, 42, 0.06);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.tv-from .card-header,
+.tv-to .card-header {
+    font-weight: 600;
+}
+
+.tv-actions {
+    position: sticky;
+    bottom: 0.75rem;
+    z-index: 20;
+    backdrop-filter: blur(6px);
+}
+
+.tv-loading {
+    z-index: 1080;
+}
+
+.tv-root .ts-wrapper .ts-control {
+    border-radius: 0.5rem;
+    min-height: 38px;
+}
+
+#tvSummary .badge {
+    font-size: 0.85rem;
+    padding: 0.45em 0.75em;
+}
+
+@media (max-width: 991.98px) {
+    .tv-actions {
+        position: static;
+    }
+}

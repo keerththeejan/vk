@@ -159,7 +159,7 @@ function vk_smtp_merge_laravel_mail_env(array $cfg): array
     }
     if (!vk_smtp_env_key_set('VK_SMTP_PASS')) {
         $mpw = vk_smtp_env_value('MAIL_PASSWORD');
-        if ($mpw !== null) {
+        if ($mpw !== null && trim((string) ($cfg['smtp_pass'] ?? '')) === '') {
             $cfg['smtp_pass'] = $mpw;
         }
     }
@@ -194,12 +194,51 @@ function vk_smtp_merge_env(array $cfg): array
         $cfg['smtp_port'] = max(1, (int) $p);
     }
     $cfg['smtp_user'] = vk_smtp_env_override_str('VK_SMTP_USER', $cfg['smtp_user']);
+
+    $dbPass = (string) ($cfg['smtp_pass'] ?? '');
     $passVk = vk_smtp_env_value('VK_SMTP_PASS');
-    if ($passVk !== null) {
+    $passMail = vk_smtp_env_value('MAIL_PASSWORD');
+    // Conflict-safe password resolution:
+    // A wrong first VK_SMTP_PASS in a duplicated .env previously overrode the working mailbox password.
+    if ($passVk !== null && $passMail !== null && !hash_equals($passVk, $passMail)) {
+        if ($dbPass !== '' && hash_equals($dbPass, $passMail)) {
+            $cfg['smtp_pass'] = $passMail;
+            error_log('[smtp] VK_SMTP_PASS and MAIL_PASSWORD conflict — using MAIL_PASSWORD (matches DB).');
+        } elseif ($dbPass !== '' && hash_equals($dbPass, $passVk)) {
+            $cfg['smtp_pass'] = $passVk;
+            error_log('[smtp] VK_SMTP_PASS and MAIL_PASSWORD conflict — using VK_SMTP_PASS (matches DB).');
+        } elseif ($dbPass !== '') {
+            // Keep working DB password; do not let a conflicting env value break production mail.
+            error_log('[smtp] VK_SMTP_PASS and MAIL_PASSWORD conflict — keeping encrypted DB password.');
+        } else {
+            $cfg['smtp_pass'] = $passMail;
+            error_log('[smtp] VK_SMTP_PASS and MAIL_PASSWORD conflict — preferring MAIL_PASSWORD.');
+        }
+    } elseif ($passVk !== null) {
         $cfg['smtp_pass'] = $passVk;
+    } elseif ($passMail !== null) {
+        $cfg['smtp_pass'] = $passMail;
     }
-    $sec = strtolower(vk_smtp_env_override_str('VK_SMTP_SECURE', $cfg['smtp_secure']));
-    $cfg['smtp_secure'] = $sec === 'ssl' ? 'ssl' : 'tls';
+
+    $secRaw = '';
+    if (vk_smtp_env_key_set('VK_SMTP_SECURE')) {
+        $secRaw = strtolower(trim((string) (vk_smtp_env_value('VK_SMTP_SECURE') ?? '')));
+    } elseif (vk_smtp_env_key_set('MAIL_ENCRYPTION')) {
+        $secRaw = strtolower(trim((string) (getenv('MAIL_ENCRYPTION') ?: '')));
+    }
+    if ($secRaw === 'ssl' || $secRaw === 'smtps') {
+        $cfg['smtp_secure'] = 'ssl';
+    } elseif ($secRaw === 'tls' || $secRaw === 'starttls') {
+        $cfg['smtp_secure'] = 'tls';
+    } elseif ($secRaw === 'none' || $secRaw === '') {
+        // leave DB/settings value when env encryption unset
+        if ($secRaw === 'none') {
+            $cfg['smtp_secure'] = 'none';
+        }
+    } else {
+        $cfg['smtp_secure'] = 'tls';
+    }
+
     $cfg['from_email'] = vk_smtp_env_override_str('VK_MAIL_FROM', $cfg['from_email']);
     $cfg['from_name'] = vk_smtp_env_override_str('VK_MAIL_FROM_NAME', $cfg['from_name']);
     $cfg['configured'] = $cfg['smtp_host'] !== '' && $cfg['from_email'] !== '';
@@ -379,14 +418,16 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
     if (!filter_var((string) $cfg['from_email'], FILTER_VALIDATE_EMAIL)) {
         return ['ok' => false, 'error' => 'Invalid From email'];
     }
-    if (((string) $cfg['smtp_user']) !== '' && trim((string) $cfg['smtp_pass']) === '') {
+    if (((string) $cfg['smtp_user']) !== '' && trim((string) $cfg['smtp_pass']) === '' && vk_settings_get($pdo, 'smtp_auth_enabled', '1') !== '0') {
         return [
             'ok' => false,
-            'error' => 'SMTP password is missing. Enter it under System Settings → Email and click Save SMTP + auto-reply, and/or set VK_SMTP_PASS or MAIL_PASSWORD in .env (use double quotes if the password contains $ or { }). Restart Apache after editing .env.',
+            'error' => "Authentication failed.\n\nPossible reasons:\n• Incorrect password\n• SMTP password not saved — enter it and click Save\n• Gmail App Password required\n• Set VK_SMTP_PASS or MAIL_PASSWORD in .env (quote values containing $)",
+            'reasons' => ['Incorrect password', 'SMTP password missing', 'Gmail App Password missing'],
         ];
     }
 
     if ($queueOnly && function_exists('vk_email_queue_enqueue')) {
+        $maxAttempts = max(1, min(10, (int) vk_settings_get($pdo, 'email_queue_max_retries', '5')));
         $qid = vk_email_queue_enqueue(
             $pdo,
             $templateType !== '' ? $templateType : 'queued',
@@ -394,11 +435,21 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
             (string) ($toName ?? ''),
             $subject,
             $body,
-            ($useHtml && $htmlBody !== '') ? $htmlBody : null
+            ($useHtml && $htmlBody !== '') ? $htmlBody : null,
+            $maxAttempts
         );
         if ($qid > 0) {
             if (function_exists('vk_email_send_log_insert')) {
-                vk_email_send_log_insert($pdo, $templateType, $to, (string) ($toName ?? ''), $subject, function_exists('vk_email_sanitize_body_preview') ? vk_email_sanitize_body_preview($body) : substr($body, 0, 500), 'queued');
+                vk_email_send_log_insert(
+                    $pdo,
+                    $templateType,
+                    $to,
+                    (string) ($toName ?? ''),
+                    $subject,
+                    function_exists('vk_email_sanitize_body_preview') ? vk_email_sanitize_body_preview($body) : substr($body, 0, 500),
+                    'queued',
+                    ['smtp_server' => (string) ($cfg['smtp_host'] ?? '')]
+                );
             }
             return ['ok' => true, 'error' => null, 'queued_id' => $qid];
         }
@@ -412,12 +463,28 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
     require_once $autoload;
 
     $logId = 0;
+    $sendStarted = microtime(true);
     if (function_exists('vk_email_send_log_insert')) {
         $preview = function_exists('vk_email_sanitize_body_preview') ? vk_email_sanitize_body_preview($body) : substr($body, 0, 500);
-        $logId = vk_email_send_log_insert($pdo, $templateType, $to, (string) ($toName ?? ''), $subject, $preview, 'sending');
+        $logId = vk_email_send_log_insert(
+            $pdo,
+            $templateType,
+            $to,
+            (string) ($toName ?? ''),
+            $subject,
+            $preview,
+            'sending',
+            ['smtp_server' => (string) ($cfg['smtp_host'] ?? '')]
+        );
     }
 
     $secureRaw = strtolower((string) ($cfg['smtp_secure'] ?? 'tls'));
+    $authEnabled = vk_settings_get($pdo, 'smtp_auth_enabled', '1') !== '0';
+    if (((string) $cfg['smtp_user']) === '') {
+        $authEnabled = false;
+    }
+    $debugMode = vk_settings_get($pdo, 'smtp_debug_mode', '0') === '1' || !empty($options['debug']);
+    $debugLog = '';
     $profiles = [[
         'host' => (string) $cfg['smtp_host'],
         'port' => (int) $cfg['smtp_port'],
@@ -448,7 +515,7 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
                 $mail->Host = $prof['host'];
                 $mail->Port = $prof['port'];
                 $mail->Timeout = $smtpTimeout;
-                $mail->SMTPAuth = ((string) $cfg['smtp_user']) !== '';
+                $mail->SMTPAuth = $authEnabled;
                 if ($mail->SMTPAuth) {
                     $mail->Username = (string) $cfg['smtp_user'];
                     $mail->Password = (string) $cfg['smtp_pass'];
@@ -471,6 +538,12 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
                         ],
                     ];
                 }
+                if ($debugMode) {
+                    $mail->SMTPDebug = 2;
+                    $mail->Debugoutput = static function ($str, $level) use (&$debugLog): void {
+                        $debugLog .= trim((string) $str) . "\n";
+                    };
+                }
                 $mail->CharSet = trim((string) vk_settings_get($pdo, 'smtp_charset', 'UTF-8')) ?: 'UTF-8';
                 $mail->setFrom((string) $cfg['from_email'], (string) ($cfg['from_name'] !== '' ? $cfg['from_name'] : 'VK Network'));
                 $replyTo = trim((string) vk_settings_get($pdo, 'reply_to_email', ''));
@@ -478,20 +551,43 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
                     $mail->addReplyTo($replyTo, (string) ($cfg['from_name'] !== '' ? $cfg['from_name'] : 'VK Network'));
                 }
                 $mail->addAddress($to, (string) ($toName ?? ''));
-                if ($useHtml && $htmlBody !== '') {
+                $signature = trim((string) vk_settings_get($pdo, 'email_default_signature', ''));
+                $bodyOut = $body;
+                $htmlOut = $htmlBody;
+                if ($signature !== '' && empty($options['skip_signature'])) {
+                    $bodyOut .= "\n\n" . $signature;
+                    if ($htmlOut !== '') {
+                        $htmlOut .= '<br><br>' . nl2br(htmlspecialchars($signature, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+                    }
+                }
+                if (!empty($options['attachment_path']) && is_string($options['attachment_path']) && is_file($options['attachment_path'])) {
+                    $mail->addAttachment(
+                        $options['attachment_path'],
+                        (string) ($options['attachment_name'] ?? basename($options['attachment_path']))
+                    );
+                }
+                if ($useHtml && $htmlOut !== '') {
                     $mail->isHTML(true);
-                    $mail->Body = $htmlBody;
-                    $mail->AltBody = $body;
+                    $mail->Body = $htmlOut;
+                    $mail->AltBody = $bodyOut;
                 } else {
                     $mail->isHTML(false);
-                    $mail->Body = $body;
+                    $mail->Body = $bodyOut;
                 }
                 $mail->Subject = $subject;
                 $mail->send();
                 if (function_exists('vk_email_send_log_finalize')) {
-                    vk_email_send_log_finalize($pdo, $logId, 'sent', null, $attemptNo);
+                    vk_email_send_log_finalize($pdo, $logId, 'sent', null, $attemptNo, [
+                        'message_id' => (string) ($mail->getLastMessageID() ?: ''),
+                        'smtp_response' => '250 OK',
+                        'delivery_ms' => (int) round((microtime(true) - $sendStarted) * 1000),
+                    ]);
                 }
-                return ['ok' => true, 'error' => null];
+                $ok = ['ok' => true, 'error' => null, 'message_id' => (string) ($mail->getLastMessageID() ?: '')];
+                if ($debugMode && $debugLog !== '') {
+                    $ok['debug'] = $debugLog;
+                }
+                return $ok;
             } catch (Throwable $e) {
                 $lastError = $e->getMessage();
                 if ($attempt < $maxRetries) {
@@ -503,10 +599,38 @@ function vk_mailer_send(PDO $pdo, string $to, string $subject, string $body, ?st
 
     $err = $lastError ?? 'Send failed';
     if (function_exists('vk_email_send_log_finalize')) {
-        vk_email_send_log_finalize($pdo, $logId, 'failed', mb_substr($err, 0, 2000, 'UTF-8'), max(1, $totalAttempts));
+        vk_email_send_log_finalize(
+            $pdo,
+            $logId,
+            'failed',
+            mb_substr($err, 0, 2000, 'UTF-8'),
+            max(1, $totalAttempts),
+            [
+                'smtp_response' => mb_substr($err, 0, 500, 'UTF-8'),
+                'delivery_ms' => (int) round((microtime(true) - $sendStarted) * 1000),
+            ]
+        );
     }
     if (defined('APP_DEBUG') && APP_DEBUG) {
         error_log('vk_mailer_send failed: ' . $err);
     }
-    return ['ok' => false, 'error' => $err];
+    $friendly = function_exists('vk_email_settings_diagnose_error')
+        ? vk_email_settings_diagnose_error(
+            $err,
+            (string) ($cfg['smtp_host'] ?? ''),
+            (string) ($cfg['smtp_user'] ?? ''),
+            $secureRaw,
+            (int) ($cfg['smtp_port'] ?? 587)
+        )
+        : ['message' => $err, 'reasons' => []];
+    $result = [
+        'ok' => false,
+        'error' => (string) ($friendly['message'] ?? $err),
+        'raw_error' => $err,
+        'reasons' => $friendly['reasons'] ?? [],
+    ];
+    if ($debugMode && $debugLog !== '') {
+        $result['debug'] = $debugLog;
+    }
+    return $result;
 }

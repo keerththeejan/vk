@@ -3,11 +3,18 @@ declare(strict_types=1);
 $pageTitle = 'Site Settings';
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
 require_settings_admin();
-$extraHead = '<link href="' . e(BASE_URL) . '/assets/css/settings-admin.css" rel="stylesheet">';
+$extraHead = '<link href="' . e(BASE_URL) . '/assets/css/settings-admin.css" rel="stylesheet">'
+    . '<link href="' . e(BASE_URL) . '/assets/css/backup-admin.css?v=' . e((string) @filemtime(dirname(__DIR__, 2) . '/assets/css/backup-admin.css')) . '" rel="stylesheet">';
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 
 $pdo = db();
 vk_settings_seed_defaults($pdo);
+vk_bootstrap_module('backup_service');
+try {
+    vk_backup_dir();
+} catch (Throwable $e) {
+    // folder creation best-effort
+}
 $s = vk_settings_all($pdo);
 vk_bootstrap_module('mailer');
 $smtp = vk_smtp_settings_get($pdo);
@@ -310,18 +317,212 @@ $tabs = [
             </div>
 
             <div class="tab-pane fade" id="pane-backup" role="tabpanel">
-                <div class="vk-settings-card">
-                    <div class="vk-card-head"><h2>Backup & Restore</h2><p>Export settings to JSON, import a prior backup, or restore factory defaults.</p></div>
-                    <div class="d-flex flex-wrap gap-2 mb-3">
-                        <a class="btn btn-primary" href="<?= e(BASE_URL) ?>/api/settings_export.php"><i class="bi bi-download me-1"></i>Export JSON</a>
-                        <button class="btn btn-outline-warning" type="button" data-restore-defaults><i class="bi bi-arrow-counterclockwise me-1"></i>Restore defaults</button>
+                <div class="vk-settings-card" id="vkBackupApp"
+                     data-api="<?= e(BASE_URL) ?>/api/backup.php"
+                     data-csrf="<?= e((string) ($GLOBALS['vk_csrf_token'] ?? csrf_token())) ?>">
+                    <div class="vk-card-head">
+                        <h2>Backup &amp; Restore</h2>
+                        <p>Enterprise database and file backups with validation, encryption, retention, and restore controls. Existing settings JSON export remains available below.</p>
                     </div>
-                    <form id="settingsImportForm" enctype="multipart/form-data">
-                        <label class="form-label" for="settings_import_file">Import settings JSON</label>
-                        <input class="form-control" type="file" id="settings_import_file" name="settings_file" accept="application/json,.json">
-                        <button class="btn btn-outline-light mt-3" type="submit">Import Backup</button>
-                    </form>
-                    <div id="backupAlert" class="alert d-none mt-3" role="alert"></div>
+
+                    <div class="vk-bk-grid" aria-label="Backup summary">
+                        <div class="vk-bk-kpi"><span class="lbl">Total Backups</span><span class="val" data-kpi="total">—</span></div>
+                        <div class="vk-bk-kpi"><span class="lbl">Latest Backup</span><span class="val" data-kpi="latest">—</span></div>
+                        <div class="vk-bk-kpi"><span class="lbl">Backup Size</span><span class="val" data-kpi="size">—</span></div>
+                        <div class="vk-bk-kpi"><span class="lbl">Database Version</span><span class="val" data-kpi="dbver">—</span></div>
+                        <div class="vk-bk-kpi"><span class="lbl">Storage Used</span><span class="val" data-kpi="storage">—</span></div>
+                        <div class="vk-bk-kpi"><span class="lbl">Auto Backup</span><span class="val" data-kpi="auto">—</span></div>
+                    </div>
+
+                    <div class="vk-bk-section">
+                        <h3><i class="bi bi-plus-circle"></i> Create Backup</h3>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label" for="bk_name">Backup name</label>
+                                <input class="form-control" id="bk_name" placeholder="Optional label">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="bk_password">Encryption password</label>
+                                <input class="form-control" type="password" id="bk_password" placeholder="Required only if encrypt is on" autocomplete="new-password">
+                            </div>
+                        </div>
+                        <div class="vk-bk-checks mb-3">
+                            <?php
+                            $bkChecks = [
+                                'database' => 'Database',
+                                'uploads' => 'Uploads',
+                                'documents' => 'Documents',
+                                'images' => 'Images',
+                                'config' => 'Configuration Files',
+                                'logs' => 'Logs',
+                                'cache' => 'Cache',
+                                'system' => 'Entire System',
+                            ];
+                            foreach ($bkChecks as $ck => $cl): ?>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="bk_component" id="bkc_<?= e($ck) ?>" value="<?= e($ck) ?>" <?= $ck === 'database' ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="bkc_<?= e($ck) ?>"><?= e($cl) ?></label>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="d-flex flex-wrap gap-3 mb-3">
+                            <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="bk_compress" checked><label class="form-check-label" for="bk_compress">Compress (ZIP)</label></div>
+                            <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="bk_gzip"><label class="form-check-label" for="bk_gzip">GZIP SQL</label></div>
+                            <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="bk_encrypt"><label class="form-check-label" for="bk_encrypt">Encrypt Backup</label></div>
+                        </div>
+                        <div class="vk-bk-actions">
+                            <button type="button" class="btn btn-primary" data-bk-create="full"><i class="bi bi-database-fill-down me-1"></i>Full Database Backup</button>
+                            <button type="button" class="btn btn-outline-light" data-bk-create="database"><i class="bi bi-filetype-sql me-1"></i>Database Only</button>
+                            <button type="button" class="btn btn-outline-light" data-bk-create="files"><i class="bi bi-folder2-open me-1"></i>Files Only</button>
+                            <button type="button" class="btn btn-outline-warning" data-bk-create="system"><i class="bi bi-hdd-stack me-1"></i>Complete System Backup</button>
+                        </div>
+                        <div id="vkBkProgress" class="vk-bk-progress">
+                            <div class="d-flex justify-content-between small mb-1"><span id="vkBkProgressLabel">Working…</span><span class="text-muted">Please wait</span></div>
+                            <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                                <div id="vkBkProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vk-bk-section">
+                        <h3><i class="bi bi-clock-history"></i> Automatic Backup</h3>
+                        <form id="vkBkScheduleForm" class="row g-3">
+                            <div class="col-md-3">
+                                <div class="form-check form-switch mt-4">
+                                    <input class="form-check-input" type="checkbox" id="bk_auto_enabled">
+                                    <label class="form-check-label" for="bk_auto_enabled">Enable auto backup</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="bk_auto_frequency">Frequency</label>
+                                <select class="form-select" id="bk_auto_frequency">
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="bk_auto_time">Custom Time</label>
+                                <input class="form-control" type="time" id="bk_auto_time" value="02:00">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="bk_retention">Keep last</label>
+                                <select class="form-select" id="bk_retention">
+                                    <?php foreach ([5, 10, 20, 50, 100] as $n): ?>
+                                        <option value="<?= $n ?>" <?= $n === 10 ? 'selected' : '' ?>><?= $n ?> backups</option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <div class="vk-bk-checks">
+                                    <?php foreach (['database' => 'Database', 'uploads' => 'Uploads', 'config' => 'Config', 'images' => 'Images'] as $ck => $cl): ?>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="bk_auto_component" id="bkac_<?= e($ck) ?>" value="<?= e($ck) ?>" <?= $ck === 'database' ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="bkac_<?= e($ck) ?>"><?= e($cl) ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button class="btn btn-primary" type="submit"><i class="bi bi-save me-1"></i>Save Schedule</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="vk-bk-section">
+                        <h3><i class="bi bi-table"></i> Backup History</h3>
+                        <div class="vk-bk-table-wrap">
+                            <table class="vk-bk-table">
+                                <thead>
+                                    <tr>
+                                        <th>Backup Name</th>
+                                        <th>Type</th>
+                                        <th>Created By</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Size</th>
+                                        <th>Status</th>
+                                        <th>Location</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vkBkTableBody">
+                                    <tr><td colspan="9" class="text-center text-muted py-4">Loading…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-6">
+                            <div class="vk-bk-section h-100">
+                                <h3><i class="bi bi-upload"></i> Restore / Upload</h3>
+                                <form id="vkBkUploadForm">
+                                    <div class="mb-2">
+                                        <label class="form-label" for="bk_upload_file">Upload backup (ZIP / SQL / GZIP / ENC)</label>
+                                        <input class="form-control" type="file" id="bk_upload_file" accept=".zip,.sql,.gz,.enc,application/zip,application/sql,application/gzip">
+                                    </div>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="bk_upload_mode">Restore mode</label>
+                                            <select class="form-select" id="bk_upload_mode">
+                                                <option value="database">Database</option>
+                                                <option value="files">Files</option>
+                                                <option value="everything">Everything</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="bk_upload_password">Password</label>
+                                            <input class="form-control" type="password" id="bk_upload_password" autocomplete="new-password">
+                                        </div>
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="bk_upload_restore_now">
+                                        <label class="form-check-label" for="bk_upload_restore_now">Restore immediately after upload</label>
+                                    </div>
+                                    <button class="btn btn-warning" type="submit"><i class="bi bi-cloud-upload me-1"></i>Upload / Restore</button>
+                                </form>
+                                <div class="mt-3">
+                                    <div class="small text-muted mb-1">Restore / verify log</div>
+                                    <div id="vkBkRestoreLog" class="vk-bk-log">Ready.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="vk-bk-section h-100">
+                                <h3><i class="bi bi-info-circle"></i> System Information</h3>
+                                <div class="row g-2 small">
+                                    <div class="col-6"><span class="text-muted">PHP Version</span><div class="fw-semibold" data-sys="php">—</div></div>
+                                    <div class="col-6"><span class="text-muted">MySQL Version</span><div class="fw-semibold" data-sys="mysql">—</div></div>
+                                    <div class="col-6"><span class="text-muted">Database Size</span><div class="fw-semibold" data-sys="dbsize">—</div></div>
+                                    <div class="col-6"><span class="text-muted">Server Storage</span><div class="fw-semibold" data-sys="server">—</div></div>
+                                    <div class="col-6"><span class="text-muted">Free Space</span><div class="fw-semibold" data-sys="free">—</div></div>
+                                    <div class="col-6"><span class="text-muted">Backup Folder</span><div class="fw-semibold" data-sys="folder">—</div></div>
+                                    <div class="col-12"><span class="text-muted">Last Backup</span><div class="fw-semibold" data-sys="last">—</div></div>
+                                </div>
+                                <hr class="border-secondary opacity-25">
+                                <h3 class="mt-2"><i class="bi bi-journal-text"></i> Operation Logs</h3>
+                                <div id="vkBkOpsLog" class="vk-bk-log">Loading…</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vk-bk-section">
+                        <h3><i class="bi bi-sliders"></i> Settings JSON (legacy)</h3>
+                        <p class="small text-muted">Export/import CMS settings only — separate from full database backups.</p>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <a class="btn btn-outline-light" href="<?= e(BASE_URL) ?>/api/settings_export.php"><i class="bi bi-download me-1"></i>Export Settings JSON</a>
+                            <button class="btn btn-outline-warning" type="button" data-restore-defaults><i class="bi bi-arrow-counterclockwise me-1"></i>Restore settings defaults</button>
+                        </div>
+                        <form id="settingsImportForm" enctype="multipart/form-data">
+                            <label class="form-label" for="settings_import_file">Import settings JSON</label>
+                            <input class="form-control" type="file" id="settings_import_file" name="settings_file" accept="application/json,.json">
+                            <button class="btn btn-outline-light mt-3" type="submit">Import Settings Backup</button>
+                        </form>
+                    </div>
+
+                    <div id="vkBkAlert" class="alert d-none mt-3" role="alert"></div>
+                    <div id="backupAlert" class="alert d-none mt-2" role="alert"></div>
                 </div>
             </div>
         </section>
@@ -351,5 +552,6 @@ $tabs = [
 </div>
 
 <?php
-$extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/system-settings.js"></script>';
+$extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/system-settings.js"></script>'
+    . '<script src="' . e(BASE_URL) . '/assets/js/backup-admin.js?v=' . e((string) @filemtime(dirname(__DIR__, 2) . '/assets/js/backup-admin.js')) . '"></script>';
 require_once dirname(__DIR__, 2) . '/includes/layout_end.php';
