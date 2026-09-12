@@ -29,7 +29,10 @@ $countSt->execute($params);
 $total = (int) $countSt->fetchColumn();
 $pg = paginate($total, $page, $perPage);
 
-$sql = "SELECT r.*, c.name AS customer_name, t.name AS technician_name
+$sql = "SELECT r.id, r.job_number, r.status, r.device_type, r.problem_description,
+               r.estimated_cost, r.created_at, r.technician_id, r.invoice_id,
+               r.warranty_expiry, r.emergency_priority,
+               c.name AS customer_name, t.name AS technician_name
         FROM repair_jobs r
         JOIN customers c ON c.id = r.customer_id
         LEFT JOIN technicians t ON t.id = r.technician_id
@@ -144,10 +147,7 @@ foreach ($rows as $rowSum) {
 
 $cssV = (string) @filemtime(dirname(__DIR__, 2) . '/assets/css/repairs-list.css');
 $jsV = (string) @filemtime(dirname(__DIR__, 2) . '/assets/js/repairs-list.js');
-$extraHead = '<link rel="preconnect" href="https://fonts.googleapis.com">'
-    . '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-    . '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">'
-    . '<link href="' . e(base_url('assets/css/repairs-list.css')) . '?v=' . e($cssV) . '" rel="stylesheet">';
+$extraHead = '<link href="' . e(base_url('assets/css/repairs-list.css')) . '?v=' . e($cssV) . '" rel="stylesheet">';
 
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 ?>

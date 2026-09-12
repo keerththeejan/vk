@@ -16,7 +16,8 @@ CREATE INDEX IF NOT EXISTS idx_cctv_status ON cctv_installations (status);
 CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices (invoice_date);
 
 -- Customers
-CREATE INDEX IF NOT EXISTS idx_customers_name ON customers (name);
+CREATE INDEX IF NOT EXISTS idx_customers_email ON customers (email);
+CREATE INDEX IF NOT EXISTS idx_customers_created_at ON customers (created_at);
 
 -- Web services public listing
 CREATE INDEX IF NOT EXISTS idx_web_services_active_sort ON web_services (active, sort_order, id);

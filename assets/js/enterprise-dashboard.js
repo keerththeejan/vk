@@ -85,7 +85,7 @@
             dateEl.textContent = now.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
         }
         if (timeEl) {
-            timeEl.textContent = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            timeEl.textContent = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
         }
     }
 
@@ -139,6 +139,24 @@
         };
     }
 
+    function loadChartJs() {
+        if (window.Chart) {
+            return Promise.resolve();
+        }
+        if (window.__vkChartJsLoading) {
+            return window.__vkChartJsLoading;
+        }
+        window.__vkChartJsLoading = new Promise(function (resolve, reject) {
+            var script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+            script.async = true;
+            script.onload = function () { resolve(); };
+            script.onerror = function () { reject(new Error('chart.js')); };
+            document.head.appendChild(script);
+        });
+        return window.__vkChartJsLoading;
+    }
+
     function upsertChart(id, config) {
         var canvas = document.getElementById(id);
         if (!canvas || typeof window.Chart === 'undefined') {
@@ -154,11 +172,17 @@
     }
 
     function renderCharts(data) {
+        if (!document.getElementById('vkChartMonthlySales') && !document.getElementById('vkChartQuoteStatus')) {
+            return;
+        }
+        if (typeof window.Chart === 'undefined') {
+            loadChartJs().then(function () { renderCharts(data); }).catch(function () {});
+            return;
+        }
         var charts = (data && data.charts) || {};
         var c = chartColors();
         var monthly = charts.monthly_sales || { labels: [], values: [] };
         var quoteStatus = charts.quotation_status || { labels: [], values: [] };
-        var growth = charts.customer_growth || { labels: [], values: [] };
 
         upsertChart('vkChartMonthlySales', {
             type: 'bar',
@@ -214,70 +238,6 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'bottom', labels: { color: c.text, boxWidth: 10, font: { size: 10 } } },
-                },
-            },
-        });
-
-        upsertChart('vkChartRevenue', {
-            type: 'line',
-            data: {
-                labels: monthly.labels || [],
-                datasets: [{
-                    label: 'Revenue',
-                    data: monthly.values || [],
-                    borderColor: c.success,
-                    backgroundColor: 'rgba(34,197,94,0.15)',
-                    fill: true,
-                    tension: 0.35,
-                    pointRadius: 3,
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function (ctx) {
-                                return (ctx.dataset.label ? ctx.dataset.label + ': ' : '') + formatMoney(ctx.parsed.y);
-                            },
-                        },
-                    },
-                },
-                scales: {
-                    x: { ticks: { color: c.text, font: { size: 10 } }, grid: { display: false } },
-                    y: {
-                        ticks: {
-                            color: c.text,
-                            font: { size: 10 },
-                            callback: function (value) { return chartMoneyTick(value); },
-                        },
-                        grid: { color: c.grid },
-                    },
-                },
-            },
-        });
-
-        upsertChart('vkChartCustomers', {
-            type: 'bar',
-            data: {
-                labels: growth.labels || [],
-                datasets: [{
-                    label: 'New customers',
-                    data: growth.values || [],
-                    backgroundColor: c.cyan,
-                    borderRadius: 6,
-                    maxBarThickness: 28,
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { ticks: { color: c.text, font: { size: 10 } }, grid: { display: false } },
-                    y: { ticks: { color: c.text, font: { size: 10 } }, grid: { color: c.grid }, beginAtZero: true },
                 },
             },
         });
@@ -707,7 +667,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         initGreeting();
         updateClock();
-        setInterval(updateClock, 1000);
+        setInterval(updateClock, 30000);
         initGlobalSearch();
         initNotifications();
         initWidgets();

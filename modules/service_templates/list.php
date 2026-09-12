@@ -13,10 +13,7 @@ $permsJson = htmlspecialchars(json_encode($perms, JSON_THROW_ON_ERROR), ENT_QUOT
 $cssV = (string) @filemtime(dirname(__DIR__, 2) . '/assets/css/service-templates.css');
 $listCssV = (string) @filemtime(dirname(__DIR__, 2) . '/assets/css/service-templates-list.css');
 $jsV = (string) @filemtime(dirname(__DIR__, 2) . '/assets/js/service-templates-admin.js');
-$extraHead = '<link rel="preconnect" href="https://fonts.googleapis.com">'
-    . '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-    . '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">'
-    . '<link href="' . e(base_url('assets/css/service-templates.css')) . '?v=' . e($cssV) . '" rel="stylesheet">'
+$extraHead = '<link href="' . e(base_url('assets/css/service-templates.css')) . '?v=' . e($cssV) . '" rel="stylesheet">'
     . '<link href="' . e(base_url('assets/css/service-templates-list.css')) . '?v=' . e($listCssV) . '" rel="stylesheet">';
 
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';

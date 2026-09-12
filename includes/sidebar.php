@@ -27,7 +27,7 @@ function nav_active(string $needle): string
         </div>
         <nav class="nav flex-column py-2 flex-grow-1">
             <span class="vk-nav-label">Command</span>
-            <a class="nav-link px-3 py-2 <?= nav_active('/dashboard.php') ?>" href="<?= e(BASE_URL) ?>/modules/dashboard.php"><i class="bi bi-speedometer2 me-2"></i><span>Dashboard</span></a>
+            <a class="nav-link px-3 py-2 <?= nav_active('/modules/dashboard.php') ?>" href="<?= e(BASE_URL) ?>/modules/dashboard.php"><i class="bi bi-speedometer2 me-2"></i><span>Dashboard</span></a>
             <a class="nav-link px-3 py-2 <?= nav_active('/bookings/') ?>" href="<?= e(BASE_URL) ?>/modules/bookings/list.php"><i class="bi bi-calendar2-check me-2"></i><span>Web bookings</span></a>
             <a class="nav-link px-3 py-2 <?= nav_active('/customers/') ?>" href="<?= e(BASE_URL) ?>/modules/customers/list.php"><i class="bi bi-people me-2"></i><span>Customers</span></a>
 

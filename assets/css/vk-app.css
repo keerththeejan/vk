@@ -1,0 +1,307 @@
+/**
+ * VK Network — compact enterprise shell
+ * Loaded after style.css. Does not replace module-specific list CSS.
+ */
+:root {
+    --vk-radius: 10px;
+    --vk-radius-sm: 8px;
+    --vk-space: 0.75rem;
+    --vk-focus: 0 0 0 3px rgba(37, 99, 235, 0.28);
+    --vk-border: rgba(15, 23, 42, 0.1);
+    --vk-text: #0f172a;
+    --vk-muted: #64748b;
+    --vk-surface: #f4f6f9;
+    --vk-card: #ffffff;
+    --vk-primary: #1d4ed8;
+    --vk-danger: #dc2626;
+    --vk-success: #15803d;
+    --vk-warning: #b45309;
+    --vk-sidebar-w: 232px;
+    --vk-sidebar-mini: 76px;
+    --vk-font: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+}
+
+[data-bs-theme="dark"] {
+    --vk-border: rgba(148, 163, 184, 0.16);
+    --vk-text: #e8eef7;
+    --vk-muted: #94a3b8;
+    --vk-surface: #0b1220;
+    --vk-card: #111827;
+    --vk-focus: 0 0 0 3px rgba(59, 130, 246, 0.35);
+}
+
+html.vk-sidebar-mini {
+    --vk-sidebar-w: var(--vk-sidebar-mini);
+}
+
+.vk-skip-link {
+    position: absolute;
+    left: 0.75rem;
+    top: 0.75rem;
+    z-index: 4000;
+}
+
+.vk-app,
+.vk-app body {
+    font-family: var(--vk-font);
+}
+
+body.vk-app {
+    background: var(--vk-surface);
+    color: var(--vk-text);
+}
+
+.vk-app .vk-main {
+    background: var(--vk-surface);
+}
+
+.vk-app .vk-sidebar {
+    width: var(--vk-sidebar-w);
+    background: #0b1b36;
+}
+
+@media (min-width: 992px) {
+    .vk-app .vk-sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .vk-app .vk-sidebar .offcanvas-body {
+        overflow: hidden;
+        min-height: 0;
+    }
+
+    .vk-app .vk-sidebar nav.nav {
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+}
+
+html.vk-sidebar-mini .vk-sidebar,
+body.vk-sidebar-mini .vk-sidebar {
+    width: var(--vk-sidebar-mini);
+}
+
+html.vk-sidebar-mini .vk-sidebar-brand-copy,
+html.vk-sidebar-mini .vk-nav-label,
+html.vk-sidebar-mini .vk-sidebar .nav-link span,
+html.vk-sidebar-mini .vk-sidebar-foot span {
+    display: none;
+}
+
+html.vk-sidebar-mini .vk-sidebar .nav-link {
+    justify-content: center;
+    padding-inline: 0 !important;
+}
+
+html.vk-sidebar-mini .vk-sidebar .nav-link i {
+    margin-right: 0 !important;
+}
+
+.vk-app .vk-navbar {
+    background: #0d2248;
+    min-height: 3.25rem;
+}
+
+.vk-app .vk-navbar-inner {
+    min-height: 3.25rem;
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+}
+
+.vk-app .vk-sidebar .nav-link {
+    border-radius: 0;
+    padding-top: 0.42rem;
+    padding-bottom: 0.42rem;
+    font-size: 0.84rem;
+}
+
+.vk-app .vk-sidebar .nav-link.active,
+.vk-app .vk-sidebar .nav-link[aria-current="page"] {
+    background: rgba(255, 255, 255, 0.1);
+    border-left-color: #ef4444;
+}
+
+.vk-app .vk-nav-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    opacity: 0.55;
+    padding: 0.85rem 1rem 0.25rem;
+}
+
+.vk-app main.container-fluid {
+    padding-top: 0.85rem;
+    padding-bottom: 1.25rem;
+}
+
+.vk-app .vk-card,
+.vk-app .card.vk-card {
+    border: 1px solid var(--vk-border);
+    border-radius: var(--vk-radius);
+    box-shadow: none;
+    background: var(--vk-card);
+}
+
+.vk-app .btn {
+    border-radius: var(--vk-radius-sm);
+    font-weight: 600;
+}
+
+.vk-app .btn-primary {
+    background: var(--vk-primary);
+    border-color: var(--vk-primary);
+}
+
+.vk-app .form-control,
+.vk-app .form-select {
+    min-height: 2.25rem;
+    border-radius: var(--vk-radius-sm);
+    font-size: 0.9rem;
+}
+
+.vk-app .form-control:focus,
+.vk-app .form-select:focus,
+.vk-app .btn:focus-visible,
+.vk-app .nav-link:focus-visible,
+.vk-app a:focus-visible {
+    box-shadow: var(--vk-focus);
+    outline: none;
+}
+
+.vk-app .form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+    color: var(--vk-muted);
+}
+
+.vk-app table.table {
+    font-size: 0.84rem;
+}
+
+.vk-app table.table > :not(caption) > * > * {
+    padding: 0.5rem 0.7rem;
+    vertical-align: middle;
+}
+
+.vk-app .table-responsive,
+.vk-app .table-responsive-stack {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.vk-app .table thead th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.vk-app .pagination {
+    margin-bottom: 0;
+}
+
+.vk-toast-host {
+    z-index: 1080;
+}
+
+.vk-app .vk-top-search {
+    min-height: 2.2rem;
+    width: min(32vw, 22rem);
+    border-radius: 999px;
+}
+
+.vk-app .vk-top-search button span {
+    display: none;
+}
+
+.vk-app .vk-quick-create {
+    min-height: 2.2rem;
+    padding-inline: 0.85rem;
+}
+
+.vk-app .vk-floating-whatsapp {
+    right: 0.85rem;
+    bottom: 0.85rem;
+    padding: 0.65rem;
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.22);
+    font-weight: 650;
+}
+
+.vk-app .vk-floating-whatsapp span {
+    display: none;
+}
+
+.vk-app form.is-submitting {
+    pointer-events: none;
+    opacity: 0.82;
+}
+
+/* Dashboard compactness */
+.vk-dash-admin .vk-dash-exec {
+    position: static;
+    box-shadow: none;
+    backdrop-filter: none;
+    padding: 0.65rem 0.85rem;
+}
+
+.vk-dash-admin .vk-dash-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.55rem;
+}
+
+.vk-dash-admin .vk-dash-today-strip {
+    gap: 0.55rem;
+}
+
+.vk-dash-admin .vk-dash-actions-grid-wide {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 1399.98px) {
+    .vk-dash-admin .vk-dash-kpi-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .vk-dash-admin .vk-dash-actions-grid-wide {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 991.98px) {
+    .vk-dash-admin .vk-dash-kpi-grid,
+    .vk-dash-admin .vk-dash-actions-grid-wide,
+    .vk-dash-admin .vk-dash-today-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    .vk-app .vk-navbar .vk-brand-copy {
+        display: none;
+    }
+
+    .vk-dash-admin .vk-dash-kpi-grid,
+    .vk-dash-admin .vk-dash-actions-grid-wide,
+    .vk-dash-admin .vk-dash-today-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .vk-app .table-responsive table {
+        min-width: 640px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vk-app *,
+    .vk-app *::before,
+    .vk-app *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}

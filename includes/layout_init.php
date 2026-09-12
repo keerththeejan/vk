@@ -7,6 +7,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/init.php';
 require_admin();
 $pdo = db();
+require_once __DIR__ . '/performance_indexes.php';
+vk_ensure_performance_indexes($pdo);
 $currentUser = current_user($pdo) ?: vk_auth_cached_user() ?: [];
 if (!defined('VK_LAYOUT_BOOTSTRAPPED')) {
     define('VK_LAYOUT_BOOTSTRAPPED', true);

@@ -20,6 +20,16 @@ if (session_status() === PHP_SESSION_NONE) {
     session_name(SESSION_NAME);
     // Prevent PHP from injecting Cache-Control: no-store (breaks public HTML caching).
     session_cache_limiter('');
+    $httpsOn = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || ((string) ($_SERVER['SERVER_PORT'] ?? '') === '443');
+    session_set_cookie_params([
+        'lifetime' => (int) ini_get('session.cookie_lifetime'),
+        'path' => (string) (ini_get('session.cookie_path') ?: '/'),
+        'domain' => (string) (ini_get('session.cookie_domain') ?: ''),
+        'secure' => $httpsOn,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
     $shouldStartSession = true;
     if (defined('VK_PUBLIC_BOOTSTRAP') && VK_PUBLIC_BOOTSTRAP) {

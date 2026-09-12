@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 } elseif (!empty($_SESSION['user_id'])) {
     $dest = (($_SESSION['user_role'] ?? 'admin') === 'technician')
         ? BASE_URL . '/tech/index.php'
-        : BASE_URL . '/dashboard.php';
+        : BASE_URL . '/modules/dashboard.php';
     header('Location: ' . $dest);
     exit;
 }
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result['ok'] ?? false) {
             $dest = (($_SESSION['user_role'] ?? 'viewer') === 'technician')
                 ? BASE_URL . '/tech/index.php'
-                : BASE_URL . '/dashboard.php';
+                : BASE_URL . '/modules/dashboard.php';
             header('Location: ' . $dest);
             exit;
         }
@@ -292,7 +292,7 @@ $brandInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $
         .vk-field-icon {
             position: absolute;
             left: 1rem;
-            top: 30px;
+            top: 26px;
             z-index: 5;
             transform: translateY(-50%);
             color: #8fb9ff;
@@ -301,35 +301,28 @@ $brandInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $
             transition: color 180ms ease, transform 180ms ease;
         }
 
+        .vk-field-label {
+            display: block;
+            margin: 0 0 0.4rem 0.15rem;
+            color: #9daccc;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
         .vk-field .form-control {
-            height: 60px;
+            height: 52px;
             border: 1px solid rgba(164, 202, 255, 0.22);
-            border-radius: 17px;
+            border-radius: 14px;
             color: var(--vk-text);
             background: rgba(5, 12, 26, 0.68);
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
             padding-left: 3rem;
-            padding-right: 1rem;
-            transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease, transform 180ms ease;
+            padding-right: 2.8rem;
+            transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
         }
 
-        .vk-field .form-floating > label {
-            left: 2rem;
-            color: #9daccc;
-            font-weight: 500;
-        }
-
-        .vk-field .form-floating > .form-control:focus,
-        .vk-field .form-floating > .form-control:not(:placeholder-shown) {
-            padding-top: 1.72rem;
-            padding-bottom: 0.58rem;
-        }
-
-        .vk-field .form-floating > .form-control:focus ~ label,
-        .vk-field .form-floating > .form-control:not(:placeholder-shown) ~ label {
-            color: #b9d7ff;
-            opacity: 1;
-            transform: scale(0.84) translateY(-0.7rem) translateX(0.18rem);
+        .vk-field .form-control::placeholder {
+            color: #7f8fad;
         }
 
         .vk-field .form-control:focus {
@@ -382,9 +375,14 @@ $brandInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $
         }
 
         .invalid-feedback {
+            display: none;
             margin: 0.45rem 0 0 0.25rem;
             color: #ffb6c6;
             font-size: 0.82rem;
+        }
+
+        .was-validated .form-control:invalid ~ .invalid-feedback {
+            display: block;
         }
 
         .vk-submit {
@@ -568,12 +566,13 @@ $brandInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $
                     </div>
                 <?php endif; ?>
 
-                <form class="vk-form needs-validation" method="post" action="" autocomplete="off" novalidate>
+                <form class="vk-form needs-validation" method="post" action="" autocomplete="on" novalidate>
                     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
-                    <div class="vk-field">
-                        <i class="bi bi-person-badge vk-field-icon" aria-hidden="true"></i>
-                        <div class="form-floating">
+                    <div>
+                        <label class="vk-field-label" for="identity">Username or email</label>
+                        <div class="vk-field">
+                            <i class="bi bi-person-badge vk-field-icon" aria-hidden="true"></i>
                             <input
                                 class="form-control"
                                 type="text"
@@ -589,14 +588,14 @@ $brandInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $
                                 value="<?= htmlspecialchars($identity) ?>"
                                 aria-describedby="usernameFeedback"
                             >
-                            <label for="identity">Username or email</label>
                             <div class="invalid-feedback" id="usernameFeedback">Enter your username or email.</div>
                         </div>
                     </div>
 
-                    <div class="vk-field">
-                        <i class="bi bi-key vk-field-icon" aria-hidden="true"></i>
-                        <div class="form-floating">
+                    <div>
+                        <label class="vk-field-label" for="password">Password</label>
+                        <div class="vk-field">
+                            <i class="bi bi-key vk-field-icon" aria-hidden="true"></i>
                             <input
                                 class="form-control vk-password-input"
                                 type="password"
@@ -607,7 +606,6 @@ $brandInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $
                                 autocomplete="current-password"
                                 aria-describedby="passwordFeedback"
                             >
-                            <label for="password">Password</label>
                             <button class="vk-password-toggle" type="button" aria-label="Show password" aria-controls="password">
                                 <i class="bi bi-eye" aria-hidden="true"></i>
                             </button>
@@ -641,7 +639,6 @@ $brandInitials = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $
     </section>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     (() => {
         const form = document.querySelector('.vk-form');

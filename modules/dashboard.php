@@ -14,26 +14,16 @@ $quickActions = [
     ['title' => 'Add Customer', 'icon' => 'bi-person-plus', 'href' => BASE_URL . '/modules/customers/add.php', 'tone' => 'indigo'],
     ['title' => 'Add Product', 'icon' => 'bi-box-seam', 'href' => BASE_URL . '/modules/products/add.php', 'tone' => 'teal'],
     ['title' => 'Add Service', 'icon' => 'bi-wrench-adjustable', 'href' => BASE_URL . '/modules/repairs/add.php', 'tone' => 'cyan'],
-    ['title' => 'Add Supplier', 'icon' => 'bi-truck', 'href' => BASE_URL . '/modules/products/add.php', 'tone' => 'amber'],
     ['title' => 'Receive Payment', 'icon' => 'bi-cash-coin', 'href' => BASE_URL . '/modules/payments/list.php', 'tone' => 'green'],
-    ['title' => 'Customer Ledger', 'icon' => 'bi-journal-text', 'href' => BASE_URL . '/modules/accounts/list.php', 'tone' => 'slate'],
-    ['title' => 'Reports', 'icon' => 'bi-bar-chart-line', 'href' => BASE_URL . '/modules/quotations/reports.php', 'tone' => 'purple'],
-    ['title' => 'Settings', 'icon' => 'bi-gear', 'href' => BASE_URL . '/modules/settings/index.php', 'tone' => 'slate'],
 ];
 
 $kpiCards = [
     ['label' => 'Customers', 'metric' => 'total-customers', 'sub' => 'Directory', 'icon' => 'bi-people', 'tone' => 'blue', 'href' => '/modules/customers/list.php', 'spark' => 'customers'],
     ['label' => 'Quotations', 'metric' => 'quotations-total', 'sub' => 'All quotes', 'icon' => 'bi-file-earmark-text', 'tone' => 'purple', 'href' => '/modules/quotations/list.php', 'spark' => 'quotes'],
     ['label' => 'Pending Quotes', 'metric' => 'quotations-pending', 'sub' => 'Awaiting approval', 'icon' => 'bi-hourglass-split', 'tone' => 'orange', 'href' => '/modules/quotations/approval.php'],
-    ['label' => 'Approved Quotes', 'metric' => 'quotations-approved', 'sub' => 'Ready to convert', 'icon' => 'bi-check2-circle', 'tone' => 'green', 'href' => '/modules/quotations/list.php?status=approved'],
     ['label' => 'Invoices', 'metric' => 'invoices-total', 'sub' => 'Billed documents', 'icon' => 'bi-receipt', 'tone' => 'blue', 'href' => '/modules/invoices/list.php'],
-    ['label' => 'Total Sales', 'metric' => 'sales-month', 'sub' => 'This month', 'icon' => 'bi-graph-up-arrow', 'tone' => 'green', 'href' => '/modules/invoices/list.php', 'spark' => 'revenue', 'money' => true],
-    ['label' => 'Monthly Revenue', 'metric' => 'sales-month-kpi', 'sub' => 'Invoice total', 'icon' => 'bi-currency-rupee', 'tone' => 'teal', 'href' => '/modules/invoices/list.php', 'money' => true],
+    ['label' => 'Monthly Revenue', 'metric' => 'sales-month', 'sub' => 'This month', 'icon' => 'bi-graph-up-arrow', 'tone' => 'green', 'href' => '/modules/invoices/list.php', 'spark' => 'revenue', 'money' => true],
     ['label' => 'Outstanding', 'metric' => 'outstanding', 'sub' => 'Receivables', 'icon' => 'bi-wallet2', 'tone' => 'red', 'href' => '/modules/accounts/list.php', 'money' => true],
-    ['label' => 'Products', 'metric' => 'products-total', 'sub' => 'Catalog', 'icon' => 'bi-box-seam', 'tone' => 'teal', 'href' => '/modules/products/list.php'],
-    ['label' => 'Services', 'metric' => 'total-services', 'sub' => 'Active offerings', 'icon' => 'bi-gear-wide-connected', 'tone' => 'indigo', 'href' => '/modules/web_services/gallery.php'],
-    ['label' => 'Suppliers', 'metric' => 'suppliers-total', 'sub' => 'Vendors', 'icon' => 'bi-truck', 'tone' => 'orange', 'href' => '/modules/products/list.php'],
-    ['label' => 'Stock Items', 'metric' => 'stock-items', 'sub' => 'Units on hand', 'icon' => 'bi-boxes', 'tone' => 'blue', 'href' => '/modules/products/list.php'],
     ['label' => 'Low Stock', 'metric' => 'low-stock', 'sub' => 'Alerts', 'icon' => 'bi-exclamation-triangle', 'tone' => 'red', 'href' => '/modules/products/list.php'],
     ['label' => "Today's Activity", 'metric' => 'today-activities', 'sub' => 'Quotes · bills · jobs', 'icon' => 'bi-lightning-charge', 'tone' => 'purple', 'href' => '/modules/bookings/list.php', 'spark' => 'activity'],
 ];
@@ -41,8 +31,7 @@ $kpiCards = [
 $cssV = (string) @filemtime(dirname(__DIR__) . '/assets/css/enterprise-dashboard.css');
 $jsEntV = (string) @filemtime(dirname(__DIR__) . '/assets/js/enterprise-dashboard.js');
 $extraHead = ($extraHead ?? '')
-    . '<link rel="stylesheet" href="' . e(base_url('assets/css/enterprise-dashboard.css')) . '?v=' . e($cssV) . '">'
-    . '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>';
+    . '<link rel="stylesheet" href="' . e(base_url('assets/css/enterprise-dashboard.css')) . '?v=' . e($cssV) . '">';
 
 $extraScripts = ($extraScripts ?? '') . "\n"
     . '<script src="' . e(base_url('assets/js/dashboard-widgets.js')) . '?v=' . e(vk_asset_mtime_version('assets/js/dashboard-widgets.js')) . '" defer></script>'
@@ -64,30 +53,16 @@ require_once dirname(__DIR__) . '/includes/layout_start.php';
             <h1 class="vk-dash-exec-title" id="dashboardTitle"><?= e($branchName) ?></h1>
             <div class="vk-dash-exec-meta">
                 <span><i class="bi bi-calendar3 me-1" aria-hidden="true"></i><strong id="vkDashDate"><?= e(date('D, M j, Y')) ?></strong></span>
-                <span><i class="bi bi-clock me-1" aria-hidden="true"></i><strong id="vkDashTime"><?= e(date('H:i:s')) ?></strong></span>
+                <span><i class="bi bi-clock me-1" aria-hidden="true"></i><strong id="vkDashTime"><?= e(date('H:i')) ?></strong></span>
                 <span><i class="bi bi-person-circle me-1" aria-hidden="true"></i><strong><?= e($userDisplay) ?></strong> · <?= e(ucfirst(str_replace('_', ' ', $userRole))) ?></span>
             </div>
         </div>
     </div>
     <div class="vk-dash-exec-tools">
-        <form id="vkDashSearchForm" class="vk-dash-search" role="search">
-            <i class="bi bi-search" aria-hidden="true"></i>
-            <input type="search" id="vkDashGlobalSearch" placeholder="Search customers, invoices, repairs…" aria-label="Global dashboard search" autocomplete="off">
-            <select id="vkDashSearchScope" class="visually-hidden" aria-hidden="true" tabindex="-1">
-                <option value="customers">Customers</option>
-                <option value="invoices">Invoices</option>
-                <option value="repairs">Repairs</option>
-                <option value="bookings">Bookings</option>
-                <option value="products">Products</option>
-                <option value="maintenance">Maintenance</option>
-            </select>
-        </form>
         <button type="button" class="vk-dash-icon-btn position-relative" id="vkDashNotifyBtn" aria-label="Notifications" aria-expanded="false">
             <i class="bi bi-bell" aria-hidden="true"></i>
             <span class="vk-dash-badge-dot d-none" id="vkDashNotifyDot" aria-hidden="true"></span>
         </button>
-        <a class="vk-dash-icon-btn" href="<?= e(BASE_URL) ?>/modules/settings/index.php" aria-label="Profile and settings" title="Settings &amp; profile"><i class="bi bi-person-gear" aria-hidden="true"></i></a>
-        <a class="vk-dash-icon-btn text-danger" href="<?= e(BASE_URL) ?>/logout.php" aria-label="Logout" title="Logout"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></a>
     </div>
 </header>
 
@@ -206,28 +181,16 @@ require_once dirname(__DIR__) . '/includes/layout_start.php';
             </div>
             <div class="vk-dash-widget-body">
                 <div class="row g-3">
-                    <div class="col-lg-6">
+                    <div class="col-lg-7">
                         <div class="vk-dash-chart-card">
                             <h3 class="vk-dash-chart-title">Monthly sales</h3>
                             <canvas id="vkChartMonthlySales" height="160" aria-label="Monthly sales chart"></canvas>
                         </div>
                     </div>
-                    <div class="col-lg-6">
+                    <div class="col-lg-5">
                         <div class="vk-dash-chart-card">
                             <h3 class="vk-dash-chart-title">Quotation status</h3>
                             <canvas id="vkChartQuoteStatus" height="160" aria-label="Quotation status chart"></canvas>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="vk-dash-chart-card">
-                            <h3 class="vk-dash-chart-title">Revenue trend</h3>
-                            <canvas id="vkChartRevenue" height="140" aria-label="Revenue trend chart"></canvas>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="vk-dash-chart-card">
-                            <h3 class="vk-dash-chart-title">Customer growth</h3>
-                            <canvas id="vkChartCustomers" height="140" aria-label="Customer growth chart"></canvas>
                         </div>
                     </div>
                 </div>

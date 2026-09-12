@@ -41,7 +41,8 @@ require_once __DIR__ . '/includes/layout_start.php';
             <div class="col-lg-8">
                 <div class="text-info fw-semibold small text-uppercase">Secure enterprise workspace</div>
                 <h1 class="display-6 fw-bold mb-2">Welcome, <?= e((string) ($user['fullname'] ?: $user['username'] ?: 'User')) ?></h1>
-                <p class="text-muted mb-0">Your VK Network account is active with <?= e(vk_auth_role_label($role)) ?> access. Role-based modules and approvals are enforced across the system.</p>
+                <p class="text-muted mb-3">Your VK Network account is active with <?= e(vk_auth_role_label($role)) ?> access. Role-based modules and approvals are enforced across the system.</p>
+                <a class="btn btn-primary" href="<?= e(BASE_URL) ?>/modules/dashboard.php"><i class="bi bi-speedometer2 me-1"></i>Open operations dashboard</a>
             </div>
             <div class="col-lg-4">
                 <div class="vk-enterprise-stat">

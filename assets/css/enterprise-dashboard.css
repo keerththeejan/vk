@@ -164,8 +164,7 @@ main.container-fluid:has(.vk-dash-admin) { padding: 8px 10px !important; }
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 8px;
 }
 @media (min-width: 768px) { .vk-dash-kpi-grid { grid-template-columns: repeat(4, 1fr); } }
-@media (min-width: 1200px) { .vk-dash-kpi-grid { grid-template-columns: repeat(5, 1fr); } }
-@media (min-width: 1600px) { .vk-dash-kpi-grid { grid-template-columns: repeat(10, 1fr); } }
+@media (min-width: 1200px) { .vk-dash-kpi-grid { grid-template-columns: repeat(4, 1fr); } }
 
 .vk-dash-kpi {
     position: relative; display: flex; align-items: center; gap: 8px;
@@ -452,7 +451,7 @@ main.container-fluid:has(.vk-dash-admin) { padding: 8px 10px !important; }
 
 .vk-dash-actions-grid-wide { grid-template-columns: repeat(2, 1fr); }
 @media (min-width: 576px) { .vk-dash-actions-grid-wide { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 992px) { .vk-dash-actions-grid-wide { grid-template-columns: repeat(5, 1fr); } }
+@media (min-width: 992px) { .vk-dash-actions-grid-wide { grid-template-columns: repeat(6, 1fr); } }
 
 .vk-dash-chart-card {
     padding: 10px 12px; border-radius: 10px; border: 1px solid var(--vk-dash-border);

@@ -69,12 +69,44 @@
     });
 
     const sidebarMiniKey = 'vk_sidebar_mini';
-    if (localStorage.getItem(sidebarMiniKey) === '1') {
-        document.body.classList.add('vk-sidebar-mini');
+    function syncSidebarMini(on) {
+        document.documentElement.classList.toggle('vk-sidebar-mini', on);
+        document.body.classList.toggle('vk-sidebar-mini', on);
+        localStorage.setItem(sidebarMiniKey, on ? '1' : '0');
+    }
+    if (localStorage.getItem(sidebarMiniKey) === '1' || document.documentElement.classList.contains('vk-sidebar-mini')) {
+        syncSidebarMini(true);
     }
     document.getElementById('sidebarMiniToggle')?.addEventListener('click', function () {
-        document.body.classList.toggle('vk-sidebar-mini');
-        localStorage.setItem(sidebarMiniKey, document.body.classList.contains('vk-sidebar-mini') ? '1' : '0');
+        syncSidebarMini(!document.documentElement.classList.contains('vk-sidebar-mini'));
+    });
+
+    document.querySelectorAll('.vk-sidebar a.nav-link.active').forEach(function (a) {
+        a.setAttribute('aria-current', 'page');
+    });
+
+    document.addEventListener('submit', function (ev) {
+        const form = ev.target;
+        if (!(form instanceof HTMLFormElement)) {
+            return;
+        }
+        const method = (form.getAttribute('method') || 'get').toLowerCase();
+        if (method !== 'post') {
+            return;
+        }
+        if (form.dataset.vkSubmitting === '1') {
+            ev.preventDefault();
+            return;
+        }
+        form.dataset.vkSubmitting = '1';
+        form.classList.add('is-submitting');
+        form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (btn) {
+            btn.disabled = true;
+            btn.setAttribute('aria-busy', 'true');
+        });
+        if (form.hasAttribute('data-loading')) {
+            showLoader(true);
+        }
     });
 
     document.querySelectorAll('.vk-dashboard-2026 .vk-kpi-card .fs-3, .vk-dashboard-2026 .vk-kpi-card .fs-4, .vk-dashboard-2026 .vk-kpi-card .fs-5').forEach(function (el) {

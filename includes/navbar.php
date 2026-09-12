@@ -35,9 +35,9 @@ if (isset($pdo) && function_exists('vk_auth_role_can_manage') && vk_auth_role_ca
 
         <div class="vk-nav-center">
             <form class="vk-top-search" role="search" action="<?= e(BASE_URL) ?>/modules/customers/list.php" method="get">
-                <i class="bi bi-search"></i>
-                <input type="search" name="q" placeholder="Ask AI or search customers, jobs, invoices..." aria-label="Search customers, jobs, and invoices">
-                <button type="submit" aria-label="Run AI search"><i class="bi bi-stars"></i><span>AI</span></button>
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" name="q" placeholder="Search customers…" aria-label="Search customers" autocomplete="off">
+                <button type="submit" aria-label="Search"><i class="bi bi-arrow-return-left" aria-hidden="true"></i><span>Search</span></button>
             </form>
         </div>
 
@@ -83,6 +83,7 @@ if (isset($pdo) && function_exists('vk_auth_role_can_manage') && vk_auth_role_ca
                 <ul class="dropdown-menu dropdown-menu-end shadow vk-premium-dropdown">
                     <li><span class="dropdown-item-text small text-muted"><?= e($cu['username'] ?? '') ?></span></li>
                     <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="<?= e(BASE_URL) ?>/dashboard.php"><i class="bi bi-person-badge me-2"></i>Account overview</a></li>
                     <li><a class="dropdown-item" target="_blank" rel="noopener" href="<?= e(BASE_URL) ?>/index.php"><i class="bi bi-globe2 me-2"></i>Public website</a></li>
                     <li><a class="dropdown-item" href="<?= e(BASE_URL) ?>/logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                 </ul>
@@ -95,14 +96,14 @@ if (isset($pdo) && function_exists('vk_auth_role_can_manage') && vk_auth_role_ca
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content vk-search-modal">
             <div class="modal-header border-0">
-                <h2 class="modal-title h6" id="vkSearchModalLabel">AI workspace search</h2>
+                <h2 class="modal-title h6" id="vkSearchModalLabel">Search customers</h2>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body pt-0">
                 <form class="vk-top-search vk-top-search-modal" role="search" action="<?= e(BASE_URL) ?>/modules/customers/list.php" method="get">
-                    <i class="bi bi-search"></i>
-                    <input type="search" name="q" placeholder="Search customers, jobs, invoices..." aria-label="Search customers, jobs, and invoices">
-                    <button type="submit" aria-label="Run AI search"><i class="bi bi-stars"></i><span>AI</span></button>
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input type="search" name="q" placeholder="Search customers…" aria-label="Search customers" autocomplete="off">
+                    <button type="submit" aria-label="Search"><i class="bi bi-arrow-return-left" aria-hidden="true"></i><span>Search</span></button>
                 </form>
             </div>
         </div>

@@ -1,6 +1,6 @@
         </main>
-        <a class="vk-floating-whatsapp" href="<?= e(BASE_URL) ?>/modules/whatsapp/index.php" aria-label="WhatsApp support automation">
-            <i class="bi bi-whatsapp"></i>
+        <a class="vk-floating-whatsapp" href="<?= e(BASE_URL) ?>/modules/whatsapp/index.php" aria-label="WhatsApp support automation" title="WhatsApp automation">
+            <i class="bi bi-whatsapp" aria-hidden="true"></i>
             <span>Support</span>
         </a>
         <footer class="border-top py-3 px-3 text-center small text-muted bg-body-secondary bg-opacity-25">

@@ -5,12 +5,14 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 
 $from = trim((string) ($_GET['from'] ?? ''));
 $to = trim((string) ($_GET['to'] ?? ''));
+$q = trim((string) ($_GET['q'] ?? ''));
 $cust = (int) ($_GET['customer_id'] ?? 0);
 $page = max(1, (int) ($_GET['p'] ?? 1));
 $perPage = 15;
 
 $where = '1=1';
 $params = [];
+$countFrom = 'FROM invoices i';
 if ($from !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
     $where .= ' AND i.invoice_date >= ?';
     $params[] = $from;
@@ -23,13 +25,21 @@ if ($cust > 0) {
     $where .= ' AND i.customer_id = ?';
     $params[] = $cust;
 }
+if ($q !== '') {
+    $countFrom = 'FROM invoices i JOIN customers c ON c.id = i.customer_id';
+    $where .= ' AND (i.invoice_number LIKE ? OR c.name LIKE ?)';
+    $like = '%' . $q . '%';
+    $params[] = $like;
+    $params[] = $like;
+}
 
-$countSt = $pdo->prepare("SELECT COUNT(*) FROM invoices i WHERE $where");
+$countSt = $pdo->prepare("SELECT COUNT(*) $countFrom WHERE $where");
 $countSt->execute($params);
 $total = (int) $countSt->fetchColumn();
 $pg = paginate($total, $page, $perPage);
 
-$sql = "SELECT i.*, c.name AS customer_name
+$sql = "SELECT i.id, i.invoice_number, i.invoice_date, i.grand_total, i.paid_amount, i.status,
+               c.name AS customer_name
         FROM invoices i
         JOIN customers c ON c.id = i.customer_id
         WHERE $where
@@ -39,7 +49,30 @@ $st = $pdo->prepare($sql);
 $st->execute($params);
 $rows = $st->fetchAll();
 
-$custs = $pdo->query('SELECT id, name FROM customers ORDER BY name')->fetchAll();
+$custs = $pdo->query(
+    'SELECT DISTINCT c.id, c.name
+     FROM customers c
+     INNER JOIN invoices i ON i.customer_id = c.id
+     ORDER BY c.name
+     LIMIT 400'
+)->fetchAll();
+if ($cust > 0) {
+    $found = false;
+    foreach ($custs as $cRow) {
+        if ((int) $cRow['id'] === $cust) {
+            $found = true;
+            break;
+        }
+    }
+    if (!$found) {
+        $extraCust = $pdo->prepare('SELECT id, name FROM customers WHERE id = ? LIMIT 1');
+        $extraCust->execute([$cust]);
+        $extraRow = $extraCust->fetch();
+        if ($extraRow) {
+            $custs[] = $extraRow;
+        }
+    }
+}
 ?>
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
     <h1 class="h3 mb-0">Invoices</h1>
@@ -49,15 +82,19 @@ $custs = $pdo->query('SELECT id, name FROM customers ORDER BY name')->fetchAll()
     </div>
 </div>
 <form class="row g-2 mb-3 align-items-end" method="get" action="">
-    <div class="col-6 col-md-2">
-        <label class="form-label small mb-0">From</label>
-        <input type="date" name="from" class="form-control" value="<?= e($from) ?>">
+    <div class="col-12 col-md-3">
+        <label class="form-label small mb-0" for="invoiceSearch">Search</label>
+        <input type="search" id="invoiceSearch" name="q" class="form-control" value="<?= e($q) ?>" placeholder="Invoice no. or customer" autocomplete="off">
     </div>
     <div class="col-6 col-md-2">
-        <label class="form-label small mb-0">To</label>
-        <input type="date" name="to" class="form-control" value="<?= e($to) ?>">
+        <label class="form-label small mb-0" for="invoiceFrom">From</label>
+        <input type="date" id="invoiceFrom" name="from" class="form-control" value="<?= e($from) ?>">
     </div>
-    <div class="col-12 col-md-4">
+    <div class="col-6 col-md-2">
+        <label class="form-label small mb-0" for="invoiceTo">To</label>
+        <input type="date" id="invoiceTo" name="to" class="form-control" value="<?= e($to) ?>">
+    </div>
+    <div class="col-12 col-md-3">
         <label class="form-label small mb-0">Customer</label>
         <select name="customer_id" class="form-select">
             <option value="0">All customers</option>
@@ -133,7 +170,7 @@ $custs = $pdo->query('SELECT id, name FROM customers ORDER BY name')->fetchAll()
     <ul class="pagination pagination-sm flex-wrap">
         <?php for ($i = 1; $i <= $pg['pages']; $i++): ?>
             <li class="page-item <?= $i === $pg['page'] ? 'active' : '' ?>">
-                <a class="page-link" href="?<?= e(http_build_query(['from' => $from, 'to' => $to, 'customer_id' => $cust, 'p' => $i])) ?>"><?= $i ?></a>
+                <a class="page-link" href="?<?= e(http_build_query(['q' => $q, 'from' => $from, 'to' => $to, 'customer_id' => $cust, 'p' => $i])) ?>"><?= $i ?></a>
             </li>
         <?php endfor; ?>
     </ul>

@@ -23,7 +23,8 @@ $countSt->execute($params);
 $total = (int) $countSt->fetchColumn();
 $pg = paginate($total, $page, $perPage);
 
-$sql = "SELECT c.*, a.code AS account_code, a.current_balance
+$sql = "SELECT c.id, c.name, c.phone, c.email, c.address, c.created_at,
+               a.code AS account_code, a.current_balance
         FROM customers c
         JOIN accounts a ON a.customer_id = c.id
         WHERE $where
@@ -180,7 +181,7 @@ foreach ($rows as $rowDist) {
 
 $cssV = (string) @filemtime(dirname(__DIR__, 2) . '/assets/css/customers-list.css');
 $jsV = (string) @filemtime(dirname(__DIR__, 2) . '/assets/js/customers-list.js');
-$extraHead = '<link rel="stylesheet" href="' . e(base_url('assets/css/customers-list.css')) . '?v=' . e($cssV) . '" media="print" onload="this.media=\'all\'">'
+$extraHead = '<link rel="stylesheet" href="' . e(base_url('assets/css/customers-list.css')) . '?v=' . e($cssV) . '">'
     . '<noscript><link rel="stylesheet" href="' . e(base_url('assets/css/customers-list.css')) . '?v=' . e($cssV) . '"></noscript>';
 
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';

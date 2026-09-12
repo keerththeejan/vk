@@ -83,10 +83,7 @@ $vkCctvLocShort = static function (string $loc): string {
 
 $cssV = (string) @filemtime(dirname(__DIR__, 2) . '/assets/css/cctv-list.css');
 $jsV = (string) @filemtime(dirname(__DIR__, 2) . '/assets/js/cctv-list.js');
-$extraHead = '<link rel="preconnect" href="https://fonts.googleapis.com">'
-    . '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-    . '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">'
-    . '<link href="' . e(base_url('assets/css/cctv-list.css')) . '?v=' . e($cssV) . '" rel="stylesheet">';
+$extraHead = '<link href="' . e(base_url('assets/css/cctv-list.css')) . '?v=' . e($cssV) . '" rel="stylesheet">';
 
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 ?>
