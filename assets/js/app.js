@@ -73,6 +73,12 @@
         document.documentElement.classList.toggle('vk-sidebar-mini', on);
         document.body.classList.toggle('vk-sidebar-mini', on);
         localStorage.setItem(sidebarMiniKey, on ? '1' : '0');
+        const toggle = document.getElementById('sidebarMiniToggle');
+        if (toggle) {
+            toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+            toggle.setAttribute('aria-label', on ? 'Expand sidebar' : 'Collapse sidebar');
+            toggle.setAttribute('title', on ? 'Expand sidebar' : 'Collapse sidebar');
+        }
     }
     if (localStorage.getItem(sidebarMiniKey) === '1' || document.documentElement.classList.contains('vk-sidebar-mini')) {
         syncSidebarMini(true);

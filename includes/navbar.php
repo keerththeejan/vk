@@ -70,7 +70,7 @@ if (isset($pdo) && function_exists('vk_auth_role_can_manage') && vk_auth_role_ca
                 <i class="bi bi-sun-fill d-none" id="themeIconLight"></i>
             </button>
             <div class="dropdown">
-                <button class="btn btn-light dropdown-toggle vk-profile-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <button class="btn btn-light dropdown-toggle vk-profile-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="User menu">
                     <span class="vk-profile-avatar">
                         <span class="vk-online-dot" aria-hidden="true"></span>
                         <i class="bi bi-person-fill"></i>

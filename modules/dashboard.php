@@ -10,22 +10,42 @@ $dashLogo = function_exists('getLogo') ? getLogo('mobile') : base_url('assets/im
 
 $quickActions = [
     ['title' => 'New Quotation', 'icon' => 'bi-file-earmark-plus', 'href' => BASE_URL . '/modules/quotations/create.php', 'tone' => 'blue'],
-    ['title' => 'New Invoice', 'icon' => 'bi-receipt', 'href' => BASE_URL . '/modules/invoices/create.php', 'tone' => 'purple'],
-    ['title' => 'Add Customer', 'icon' => 'bi-person-plus', 'href' => BASE_URL . '/modules/customers/add.php', 'tone' => 'indigo'],
+    ['title' => 'New Invoice', 'icon' => 'bi-receipt', 'href' => BASE_URL . '/modules/invoices/create.php', 'tone' => 'purple', 'kbd' => 'Alt+I'],
+    ['title' => 'Add Customer', 'icon' => 'bi-person-plus', 'href' => BASE_URL . '/modules/customers/add.php', 'tone' => 'indigo', 'kbd' => 'Alt+C'],
     ['title' => 'Add Product', 'icon' => 'bi-box-seam', 'href' => BASE_URL . '/modules/products/add.php', 'tone' => 'teal'],
-    ['title' => 'Add Service', 'icon' => 'bi-wrench-adjustable', 'href' => BASE_URL . '/modules/repairs/add.php', 'tone' => 'cyan'],
+    ['title' => 'Add Service', 'icon' => 'bi-wrench-adjustable', 'href' => BASE_URL . '/modules/repairs/add.php', 'tone' => 'cyan', 'kbd' => 'Alt+R'],
     ['title' => 'Receive Payment', 'icon' => 'bi-cash-coin', 'href' => BASE_URL . '/modules/payments/list.php', 'tone' => 'green'],
+    ['title' => 'Add Supplier', 'icon' => 'bi-building', 'href' => BASE_URL . '/modules/products/add.php', 'tone' => 'amber'],
+    ['title' => 'Customer Ledger', 'icon' => 'bi-journal-text', 'href' => BASE_URL . '/modules/accounts/list.php', 'tone' => 'slate'],
+    ['title' => 'Reports', 'icon' => 'bi-graph-up', 'href' => BASE_URL . '/modules/quotations/reports.php', 'tone' => 'indigo'],
+    ['title' => 'Settings', 'icon' => 'bi-gear', 'href' => BASE_URL . '/modules/settings/index.php', 'tone' => 'slate'],
 ];
 
 $kpiCards = [
     ['label' => 'Customers', 'metric' => 'total-customers', 'sub' => 'Directory', 'icon' => 'bi-people', 'tone' => 'blue', 'href' => '/modules/customers/list.php', 'spark' => 'customers'],
     ['label' => 'Quotations', 'metric' => 'quotations-total', 'sub' => 'All quotes', 'icon' => 'bi-file-earmark-text', 'tone' => 'purple', 'href' => '/modules/quotations/list.php', 'spark' => 'quotes'],
     ['label' => 'Pending Quotes', 'metric' => 'quotations-pending', 'sub' => 'Awaiting approval', 'icon' => 'bi-hourglass-split', 'tone' => 'orange', 'href' => '/modules/quotations/approval.php'],
+    ['label' => 'Approved Quotes', 'metric' => 'quotations-approved', 'sub' => 'Approved', 'icon' => 'bi-check2-circle', 'tone' => 'green', 'href' => '/modules/quotations/list.php?status=approved'],
     ['label' => 'Invoices', 'metric' => 'invoices-total', 'sub' => 'Billed documents', 'icon' => 'bi-receipt', 'tone' => 'blue', 'href' => '/modules/invoices/list.php'],
-    ['label' => 'Monthly Revenue', 'metric' => 'sales-month', 'sub' => 'This month', 'icon' => 'bi-graph-up-arrow', 'tone' => 'green', 'href' => '/modules/invoices/list.php', 'spark' => 'revenue', 'money' => true],
-    ['label' => 'Outstanding', 'metric' => 'outstanding', 'sub' => 'Receivables', 'icon' => 'bi-wallet2', 'tone' => 'red', 'href' => '/modules/accounts/list.php', 'money' => true],
-    ['label' => 'Low Stock', 'metric' => 'low-stock', 'sub' => 'Alerts', 'icon' => 'bi-exclamation-triangle', 'tone' => 'red', 'href' => '/modules/products/list.php'],
+    ['label' => 'Monthly Revenue', 'metric' => 'sales-month', 'sub' => 'This month', 'icon' => 'bi-graph-up-arrow', 'tone' => 'green', 'href' => '/modules/invoices/list.php', 'spark' => 'revenue'],
+    ['label' => 'Outstanding', 'metric' => 'outstanding', 'sub' => 'Receivables', 'icon' => 'bi-wallet2', 'tone' => 'red', 'href' => '/modules/accounts/list.php'],
+    ['label' => 'Products', 'metric' => 'products-total', 'sub' => 'Catalog', 'icon' => 'bi-box-seam', 'tone' => 'teal', 'href' => '/modules/products/list.php'],
+    ['label' => 'Services', 'metric' => 'total-services', 'sub' => 'Service jobs', 'icon' => 'bi-wrench-adjustable', 'tone' => 'cyan', 'href' => '/modules/repairs/list.php', 'spark' => 'repairs'],
+    ['label' => 'Suppliers', 'metric' => 'suppliers-total', 'sub' => 'Vendors', 'icon' => 'bi-building', 'tone' => 'orange', 'href' => '/modules/products/list.php'],
+    ['label' => 'Stock Items', 'metric' => 'stock-items', 'sub' => 'On hand', 'icon' => 'bi-boxes', 'tone' => 'indigo', 'href' => '/modules/products/list.php'],
+    ['label' => 'Low Stock', 'metric' => 'low-stock', 'sub' => 'Alerts', 'icon' => 'bi-exclamation-triangle', 'tone' => 'red', 'href' => '/modules/products/list.php?stock=low'],
     ['label' => "Today's Activity", 'metric' => 'today-activities', 'sub' => 'Quotes · bills · jobs', 'icon' => 'bi-lightning-charge', 'tone' => 'purple', 'href' => '/modules/bookings/list.php', 'spark' => 'activity'],
+];
+
+$searchScopes = [
+    'customers' => 'Customers',
+    'invoices' => 'Invoices',
+    'repairs' => 'Repairs',
+    'products' => 'Products',
+    'maintenance' => 'Maintenance',
+    'bookings' => 'Bookings',
+    'cctv' => 'CCTV',
+    'technicians' => 'Technicians',
 ];
 
 $cssV = (string) @filemtime(dirname(__DIR__) . '/assets/css/enterprise-dashboard.css');
@@ -41,6 +61,7 @@ require_once dirname(__DIR__) . '/includes/layout_start.php';
 ?>
 <div class="vk-dashboard-2026 vk-dash-admin vk-dash-skeleton" data-vk-dashboard="async">
 
+<div id="vkDashLoadError" class="d-none mb-2" role="alert"></div>
 <div id="vkSmtpAlerts" class="d-none mb-2" aria-live="polite"></div>
 <div id="vkSchemaAlert" class="d-none mb-2"></div>
 <div id="vkEmergencyPanel" class="d-none mb-2"></div>
@@ -59,7 +80,22 @@ require_once dirname(__DIR__) . '/includes/layout_start.php';
         </div>
     </div>
     <div class="vk-dash-exec-tools">
-        <button type="button" class="vk-dash-icon-btn position-relative" id="vkDashNotifyBtn" aria-label="Notifications" aria-expanded="false">
+        <form class="vk-dash-search-form" id="vkDashSearchForm" role="search">
+            <div class="vk-dash-search">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" id="vkDashGlobalSearch" name="q" placeholder="Search records…" aria-label="Dashboard search" autocomplete="off">
+            </div>
+            <label class="visually-hidden" for="vkDashSearchScope">Search in</label>
+            <select id="vkDashSearchScope" class="vk-dash-search-scope" aria-label="Search in">
+                <?php foreach ($searchScopes as $scopeKey => $scopeLabel): ?>
+                <option value="<?= e($scopeKey) ?>"><?= e($scopeLabel) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <button type="submit" class="vk-dash-icon-btn" aria-label="Run search">
+                <i class="bi bi-arrow-return-left" aria-hidden="true"></i>
+            </button>
+        </form>
+        <button type="button" class="vk-dash-icon-btn position-relative" id="vkDashNotifyBtn" aria-label="Notifications" aria-expanded="false" aria-controls="vkDashNotifyPanel">
             <i class="bi bi-bell" aria-hidden="true"></i>
             <span class="vk-dash-badge-dot d-none" id="vkDashNotifyDot" aria-hidden="true"></span>
         </button>
@@ -120,6 +156,9 @@ require_once dirname(__DIR__) . '/includes/layout_start.php';
             <a class="vk-dash-action vk-dash-action-<?= e($action['tone']) ?>" href="<?= e($action['href']) ?>">
                 <span class="vk-dash-action-icon"><i class="bi <?= e($action['icon']) ?>" aria-hidden="true"></i></span>
                 <strong><?= e($action['title']) ?></strong>
+                <?php if (!empty($action['kbd'])): ?>
+                <kbd><?= e($action['kbd']) ?></kbd>
+                <?php endif; ?>
             </a>
             <?php endforeach; ?>
         </div>
@@ -181,16 +220,22 @@ require_once dirname(__DIR__) . '/includes/layout_start.php';
             </div>
             <div class="vk-dash-widget-body">
                 <div class="row g-3">
-                    <div class="col-lg-7">
+                    <div class="col-lg-6">
                         <div class="vk-dash-chart-card">
                             <h3 class="vk-dash-chart-title">Monthly sales</h3>
                             <canvas id="vkChartMonthlySales" height="160" aria-label="Monthly sales chart"></canvas>
                         </div>
                     </div>
-                    <div class="col-lg-5">
+                    <div class="col-md-6 col-lg-3">
                         <div class="vk-dash-chart-card">
                             <h3 class="vk-dash-chart-title">Quotation status</h3>
                             <canvas id="vkChartQuoteStatus" height="160" aria-label="Quotation status chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="vk-dash-chart-card">
+                            <h3 class="vk-dash-chart-title">Customer growth</h3>
+                            <canvas id="vkChartCustomerGrowth" height="160" aria-label="Customer growth chart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -224,7 +269,7 @@ require_once dirname(__DIR__) . '/includes/layout_start.php';
                 <a class="small text-decoration-none" href="<?= e(BASE_URL) ?>/modules/maintenance/list.php">View all</a>
             </div>
             <div class="vk-dash-widget-body p-0">
-                <div class="vk-dash-table-wrap">
+                <div class="vk-dash-table-wrap table-responsive">
                     <table class="table vk-dash-table table-sm mb-0">
                         <thead class="table-light"><tr><th>Contract</th><th>Customer</th><th>Next</th></tr></thead>
                         <tbody data-vk-table="maint-reminders">
@@ -258,9 +303,9 @@ require_once dirname(__DIR__) . '/includes/layout_start.php';
 </div>
 
 <div class="vk-dash-notify-backdrop" id="vkDashNotifyBackdrop" aria-hidden="true"></div>
-<aside class="vk-dash-notify-panel" id="vkDashNotifyPanel" aria-hidden="true" aria-label="Notification center">
+<aside class="vk-dash-notify-panel" id="vkDashNotifyPanel" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="vkDashNotifyHeading">
     <div class="vk-dash-notify-head">
-        <h2 class="h6 mb-0 fw-bold">Notifications <span class="badge rounded-pill bg-danger ms-1" id="vkDashNotifyCount">0</span></h2>
+        <h2 class="h6 mb-0 fw-bold" id="vkDashNotifyHeading">Notifications <span class="badge rounded-pill bg-danger ms-1" id="vkDashNotifyCount">0</span></h2>
         <button type="button" class="vk-dash-icon-btn" id="vkDashNotifyClose" aria-label="Close notifications"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
     </div>
     <div class="vk-dash-notify-scroll" id="vkDashNotifyList"><p class="small text-muted">Loading…</p></div>

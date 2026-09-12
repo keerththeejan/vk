@@ -627,5 +627,14 @@
     });
 
     animateBars();
+    try {
+        var params = new URLSearchParams(window.location.search);
+        if (searchEl && params.get('q')) {
+            searchEl.value = params.get('q');
+        }
+        if (filterStock && params.get('stock')) {
+            filterStock.value = params.get('stock');
+        }
+    } catch (e) {}
     fetchProducts();
 })();

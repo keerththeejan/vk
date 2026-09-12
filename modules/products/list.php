@@ -182,7 +182,7 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
     <div class="vk-prod-toolbar-inner">
         <div class="vk-prod-search-wrap">
             <i class="bi bi-search vk-prod-search-ico" aria-hidden="true"></i>
-            <input type="search" id="product-search" class="vk-prod-ctl w-100 ps-4" placeholder="Search name, SKU, barcode, category…" aria-label="Search products">
+            <input type="search" id="product-search" class="vk-prod-ctl w-100 ps-4" placeholder="Search name, SKU, barcode, category…" aria-label="Search products" value="<?= e(trim((string) ($_GET['q'] ?? ''))) ?>">
         </div>
         <select id="filter-category" class="vk-prod-ctl vk-prod-ctl-sm" aria-label="Filter by category">
             <option value="">All categories</option>

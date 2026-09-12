@@ -6,7 +6,7 @@
     var inflight = null;
 
     function baseUrl() {
-        return window.VK_BASE_URL || "";
+        return String(window.VK_BASE_URL || "").replace(/\/$/, "");
     }
 
     function esc(s) {
@@ -300,12 +300,12 @@
             host.innerHTML =
                 '<div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2">' +
                 "<span><i class=\"bi bi-envelope-exclamation me-2\"></i>Email system not configured.</span>" +
-                '<a class="btn btn-sm btn-outline-warning" href="' + esc(baseUrl() + "/modules/settings/index.php#pane-mail") + '">Open Email Settings</a></div>';
+                '<a class="btn btn-sm btn-outline-warning" href="' + esc(baseUrl() + "/modules/settings/index.php#pane-email") + '">Open Email Settings</a></div>';
         } else if (flag === "missing_password") {
             host.innerHTML =
                 '<div class="alert alert-info small d-flex flex-wrap justify-content-between align-items-center gap-2">' +
                 "<span><i class=\"bi bi-key me-2\"></i>SMTP password is not stored.</span>" +
-                '<a class="btn btn-sm btn-outline-primary" href="' + esc(baseUrl() + "/modules/settings/index.php#pane-mail") + '">Add password</a></div>';
+                '<a class="btn btn-sm btn-outline-primary" href="' + esc(baseUrl() + "/modules/settings/index.php#pane-email") + '">Add password</a></div>';
         }
     }
 
@@ -326,6 +326,22 @@
         if (cached) {
             applyStats(cached);
         }
-        fetchStats().then(applyStats);
+        fetchStats().then(function (data) {
+            applyStats(data);
+            var err = document.getElementById("vkDashLoadError");
+            if (!err) {
+                return;
+            }
+            if (data && data.ok) {
+                err.classList.add("d-none");
+                err.innerHTML = "";
+                return;
+            }
+            if (cached) {
+                return;
+            }
+            err.classList.remove("d-none");
+            err.innerHTML = '<div class="alert alert-warning mb-0">Dashboard stats could not be loaded. Refresh the page to try again.</div>';
+        });
     });
 })();

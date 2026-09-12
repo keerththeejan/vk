@@ -172,7 +172,7 @@
     }
 
     function renderCharts(data) {
-        if (!document.getElementById('vkChartMonthlySales') && !document.getElementById('vkChartQuoteStatus')) {
+        if (!document.getElementById('vkChartMonthlySales') && !document.getElementById('vkChartQuoteStatus') && !document.getElementById('vkChartCustomerGrowth')) {
             return;
         }
         if (typeof window.Chart === 'undefined') {
@@ -183,6 +183,7 @@
         var c = chartColors();
         var monthly = charts.monthly_sales || { labels: [], values: [] };
         var quoteStatus = charts.quotation_status || { labels: [], values: [] };
+        var growth = charts.customer_growth || { labels: [], values: [] };
 
         upsertChart('vkChartMonthlySales', {
             type: 'bar',
@@ -238,6 +239,36 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'bottom', labels: { color: c.text, boxWidth: 10, font: { size: 10 } } },
+                },
+            },
+        });
+
+        upsertChart('vkChartCustomerGrowth', {
+            type: 'line',
+            data: {
+                labels: growth.labels || [],
+                datasets: [{
+                    label: 'Customers',
+                    data: growth.values || [],
+                    borderColor: c.cyan,
+                    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    borderWidth: 2,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: c.text, font: { size: 10 } }, grid: { display: false } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: c.text, font: { size: 10 }, precision: 0 },
+                        grid: { color: c.grid },
+                    },
                 },
             },
         });
@@ -459,7 +490,7 @@
             notes.push({ t: 'Pending quotations', d: s.quotations_pending + ' awaiting approval', href: baseUrl() + '/modules/quotations/approval.php' });
         }
         if ((s.low_stock || 0) > 0) {
-            notes.push({ t: 'Low stock alerts', d: s.low_stock + ' products below threshold', href: baseUrl() + '/modules/products/list.php' });
+            notes.push({ t: 'Low stock alerts', d: s.low_stock + ' products below threshold', href: baseUrl() + '/modules/products/list.php?stock=low' });
         }
         if ((s.outstanding || 0) > 0) {
             notes.push({ t: 'Outstanding payments', d: formatMoney(s.outstanding) + ' receivable', href: baseUrl() + '/modules/accounts/list.php' });
@@ -474,7 +505,7 @@
             notes.push({ t: 'Pending jobs', d: s.pending_jobs + ' jobs in pipeline', href: baseUrl() + '/modules/repairs/list.php' });
         }
         if (data.smtp_warning) {
-            notes.push({ t: 'Email system', d: 'SMTP configuration needs attention', href: baseUrl() + '/modules/settings/index.php#pane-mail' });
+            notes.push({ t: 'Email system', d: 'SMTP configuration needs attention', href: baseUrl() + '/modules/settings/index.php#pane-email' });
         }
         host.innerHTML = notes.length
             ? notes.map(function (n) {
@@ -528,17 +559,48 @@
         var panel = document.getElementById('vkDashNotifyPanel');
         var backdrop = document.getElementById('vkDashNotifyBackdrop');
         var close = document.getElementById('vkDashNotifyClose');
-        function open() {
-            if (panel) panel.classList.add('is-open');
-            if (backdrop) backdrop.classList.add('is-open');
+
+        function setOpen(on) {
+            if (panel) {
+                panel.classList.toggle('is-open', on);
+                panel.setAttribute('aria-hidden', on ? 'false' : 'true');
+            }
+            if (backdrop) {
+                backdrop.classList.toggle('is-open', on);
+                backdrop.setAttribute('aria-hidden', on ? 'false' : 'true');
+            }
+            if (btn) {
+                btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+            }
+            document.body.classList.toggle('vk-dash-notify-open', on);
+            if (on && close) {
+                close.focus();
+            } else if (!on && btn) {
+                btn.focus();
+            }
         }
-        function shut() {
-            if (panel) panel.classList.remove('is-open');
-            if (backdrop) backdrop.classList.remove('is-open');
+
+        function isOpen() {
+            return !!(panel && panel.classList.contains('is-open'));
         }
-        if (btn) btn.addEventListener('click', open);
-        if (close) close.addEventListener('click', shut);
-        if (backdrop) backdrop.addEventListener('click', shut);
+
+        if (btn) {
+            btn.addEventListener('click', function () {
+                setOpen(!isOpen());
+            });
+        }
+        if (close) {
+            close.addEventListener('click', function () { setOpen(false); });
+        }
+        if (backdrop) {
+            backdrop.addEventListener('click', function () { setOpen(false); });
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && isOpen()) {
+                e.preventDefault();
+                setOpen(false);
+            }
+        });
     }
 
     function initWidgets() {
@@ -554,6 +616,16 @@
             store = {};
         }
 
+        function syncToggle(w, toggle) {
+            var collapsed = w.classList.contains('is-collapsed');
+            toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            var icon = toggle.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('bi-chevron-up', !collapsed);
+                icon.classList.toggle('bi-chevron-down', collapsed);
+            }
+        }
+
         widgets.forEach(function (w) {
             var id = w.getAttribute('data-widget-id');
             if (store[id] && store[id].collapsed) {
@@ -561,12 +633,14 @@
             }
             var toggle = w.querySelector('[data-widget-toggle]');
             if (toggle) {
+                syncToggle(w, toggle);
                 toggle.addEventListener('click', function (e) {
                     e.stopPropagation();
                     w.classList.toggle('is-collapsed');
                     store[id] = store[id] || {};
                     store[id].collapsed = w.classList.contains('is-collapsed');
                     localStorage.setItem(widgetStoreKey, JSON.stringify(store));
+                    syncToggle(w, toggle);
                 });
             }
         });
@@ -580,36 +654,53 @@
             });
         }
 
+        var canDrag = false;
+        try {
+            canDrag = window.matchMedia('(pointer: fine)').matches && window.matchMedia('(min-width: 992px)').matches;
+        } catch (e2) {
+            canDrag = window.innerWidth >= 992;
+        }
+
         var dragId = null;
-        widgets.forEach(function (w) {
-            w.setAttribute('draggable', 'true');
-            w.addEventListener('dragstart', function () {
-                dragId = w.getAttribute('data-widget-id');
-                w.classList.add('opacity-50');
-            });
-            w.addEventListener('dragend', function () {
-                w.classList.remove('opacity-50');
-                dragId = null;
-                var order = Array.prototype.map.call(container.querySelectorAll('.vk-dash-widget[data-widget-id]'), function (el) {
-                    return el.getAttribute('data-widget-id');
-                });
-                store.order = order;
-                localStorage.setItem(widgetStoreKey, JSON.stringify(store));
-            });
-            w.addEventListener('dragover', function (e) {
-                e.preventDefault();
-            });
-            w.addEventListener('drop', function (e) {
-                e.preventDefault();
-                if (!dragId) {
+        if (canDrag) {
+            widgets.forEach(function (w) {
+                var head = w.querySelector('.vk-dash-widget-head');
+                if (!head) {
                     return;
                 }
-                var dragged = container.querySelector('[data-widget-id="' + dragId + '"]');
-                if (dragged && dragged !== w) {
-                    container.insertBefore(dragged, w);
-                }
+                head.setAttribute('draggable', 'true');
+                head.addEventListener('dragstart', function (e) {
+                    if (e.target.closest('a, button, input, select, textarea')) {
+                        e.preventDefault();
+                        return;
+                    }
+                    dragId = w.getAttribute('data-widget-id');
+                    w.classList.add('opacity-50');
+                });
+                head.addEventListener('dragend', function () {
+                    w.classList.remove('opacity-50');
+                    dragId = null;
+                    var order = Array.prototype.map.call(container.querySelectorAll('.vk-dash-widget[data-widget-id]'), function (el) {
+                        return el.getAttribute('data-widget-id');
+                    });
+                    store.order = order;
+                    localStorage.setItem(widgetStoreKey, JSON.stringify(store));
+                });
+                w.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                });
+                w.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    if (!dragId) {
+                        return;
+                    }
+                    var dragged = container.querySelector('[data-widget-id="' + dragId + '"]');
+                    if (dragged && dragged !== w) {
+                        container.insertBefore(dragged, w);
+                    }
+                });
             });
-        });
+        }
     }
 
     function initKeyboardShortcuts() {

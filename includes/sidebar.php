@@ -20,7 +20,7 @@ function nav_active(string $needle): string
                     <div class="vk-brand-red fw-bold lh-1">IT Network</div>
                     <small class="text-white-50 text-uppercase">Repair &middot; CCTV &middot; Hardware</small>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-light ms-auto vk-sidebar-toggle" id="sidebarMiniToggle" aria-label="Collapse sidebar" title="Collapse sidebar">
+                <button type="button" class="btn btn-sm btn-outline-light ms-auto vk-sidebar-toggle" id="sidebarMiniToggle" aria-label="Collapse sidebar" title="Collapse sidebar" aria-pressed="false">
                     <i class="bi bi-layout-sidebar-inset"></i>
                 </button>
             </div>
@@ -58,7 +58,7 @@ function nav_active(string $needle): string
             <a class="nav-link px-3 py-2 <?= nav_active('/products/') ?>" href="<?= e(BASE_URL) ?>/modules/products/list.php"><i class="bi bi-cpu me-2"></i><span>Parts &amp; products</span></a>
             <?php $quotationNavOpen = str_contains($path, '/quotations/'); ?>
             <div class="vk-nav-group">
-                <button class="nav-link px-3 py-2 w-100 text-start border-0 bg-transparent text-white d-flex align-items-center <?= $quotationNavOpen ? '' : 'collapsed' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#quotationMgmtNav" aria-expanded="<?= $quotationNavOpen ? 'true' : 'false' ?>">
+                <button class="nav-link px-3 py-2 w-100 text-start border-0 bg-transparent text-white d-flex align-items-center <?= $quotationNavOpen ? '' : 'collapsed' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#quotationMgmtNav" aria-controls="quotationMgmtNav" aria-expanded="<?= $quotationNavOpen ? 'true' : 'false' ?>">
                     <i class="bi bi-file-earmark-ruled me-2"></i><span>Quotation Management</span><i class="bi bi-chevron-down ms-auto small"></i>
                 </button>
                 <div class="collapse <?= $quotationNavOpen ? 'show' : '' ?>" id="quotationMgmtNav">
@@ -79,7 +79,7 @@ function nav_active(string $needle): string
             </div>
             <?php $invoiceNavOpen = str_contains($path, '/invoices/'); ?>
             <div class="vk-nav-group">
-                <button class="nav-link px-3 py-2 w-100 text-start border-0 bg-transparent text-white d-flex align-items-center <?= $invoiceNavOpen ? '' : 'collapsed' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#invoiceMgmtNav" aria-expanded="<?= $invoiceNavOpen ? 'true' : 'false' ?>">
+                <button class="nav-link px-3 py-2 w-100 text-start border-0 bg-transparent text-white d-flex align-items-center <?= $invoiceNavOpen ? '' : 'collapsed' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#invoiceMgmtNav" aria-controls="invoiceMgmtNav" aria-expanded="<?= $invoiceNavOpen ? 'true' : 'false' ?>">
                     <i class="bi bi-receipt me-2"></i><span>Invoice Management</span><i class="bi bi-chevron-down ms-auto small"></i>
                 </button>
                 <div class="collapse <?= $invoiceNavOpen ? 'show' : '' ?>" id="invoiceMgmtNav">
@@ -92,7 +92,7 @@ function nav_active(string $needle): string
                 </div>
             </div>
             <a class="nav-link px-3 py-2 <?= nav_active('/payments/') ?>" href="<?= e(BASE_URL) ?>/modules/payments/list.php"><i class="bi bi-cash-coin me-2"></i><span>Payments</span></a>
-            <a class="nav-link px-3 py-2 <?= nav_active('/accounts/') ?>" href="<?= e(BASE_URL) ?>/modules/accounts/list.php"><i class="bi bi-wallet2 me-2"></i><span>Accounts</span></a>
+            <a class="nav-link px-3 py-2 <?= (str_contains($path, '/accounts/') && !str_contains($path, '/accounts/transfer')) ? 'active' : '' ?>" href="<?= e(BASE_URL) ?>/modules/accounts/list.php"><i class="bi bi-wallet2 me-2"></i><span>Accounts</span></a>
             <a class="nav-link px-3 py-2 <?= nav_active('/accounts/transfer') ?>" href="<?= e(BASE_URL) ?>/modules/accounts/transfer.php"><i class="bi bi-arrow-left-right me-2"></i><span>Transfer</span></a>
 
             <span class="vk-nav-label">Admin</span>

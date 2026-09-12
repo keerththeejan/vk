@@ -324,10 +324,27 @@
         }
     });
 
-    if (window.location.hash) {
-        const trigger = document.querySelector('[data-bs-target="' + CSS.escape(window.location.hash) + '"]');
-        if (trigger && window.bootstrap && window.bootstrap.Tab) {
-            new window.bootstrap.Tab(trigger).show();
+    function activateHashTab() {
+        var hash = window.location.hash || '';
+        if (hash === '#pane-mail') {
+            hash = '#pane-email';
+            try {
+                history.replaceState(null, '', hash);
+            } catch (e) {
+                window.location.hash = hash;
+            }
         }
+        if (!hash || hash.charAt(0) !== '#') {
+            return;
+        }
+        var trigger = document.querySelector('[data-bs-target="' + hash + '"]');
+        if (trigger && window.bootstrap && window.bootstrap.Tab) {
+            window.bootstrap.Tab.getOrCreateInstance(trigger).show();
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', activateHashTab);
+    } else {
+        activateHashTab();
     }
 })();

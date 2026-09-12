@@ -552,6 +552,6 @@ $tabs = [
 </div>
 
 <?php
-$extraScripts = '<script src="' . e(BASE_URL) . '/assets/js/system-settings.js"></script>'
+$extraScripts = '<script defer src="' . e(BASE_URL) . '/assets/js/system-settings.js?v=' . e((string) @filemtime(dirname(__DIR__, 2) . '/assets/js/system-settings.js')) . '"></script>'
     . '<script src="' . e(BASE_URL) . '/assets/js/backup-admin.js?v=' . e((string) @filemtime(dirname(__DIR__, 2) . '/assets/js/backup-admin.js')) . '"></script>';
 require_once dirname(__DIR__, 2) . '/includes/layout_end.php';
