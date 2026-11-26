@@ -1,247 +1,157 @@
 <?php
 declare(strict_types=1);
-require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
 
-$id = (int) ($_GET['id'] ?? 0);
-$st = $pdo->prepare('SELECT * FROM products WHERE id = ?');
-$st->execute([$id]);
-$row = $st->fetch();
+require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
+require_once __DIR__ . '/create/Support/ProductSchema.php';
+
+$id = max(0, (int) ($_GET['id'] ?? 0));
+$stmt = $pdo->prepare('SELECT * FROM products WHERE id = ? LIMIT 1');
+$stmt->execute([$id]);
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$row) {
-        flash_set('error', 'Product not found.');
-        redirect('/modules/products/list.php');
+    flash_set('error', 'Product not found.');
+    redirect('/modules/products/list.php');
 }
 
-// load warranty if exists
-$warranty = $pdo->prepare('SELECT * FROM product_warranties WHERE product_id = ? LIMIT 1');
-$warranty->execute([$id]);
-$wrow = $warranty->fetch() ?: null;
+$columns = ProductSchema::columns($pdo, 'products');
+$has = static fn(string $name): bool => in_array($name, $columns, true);
+$serialNumber = '';
+if (ProductSchema::tableExists($pdo, 'product_inventory')) {
+    $inventoryColumns = ProductSchema::columns($pdo, 'product_inventory');
+    if (in_array('serial_number', $inventoryColumns, true)) {
+        $serialStmt = $pdo->prepare('SELECT serial_number FROM product_inventory WHERE product_id = ? LIMIT 1');
+        $serialStmt->execute([$id]);
+        $serialNumber = (string) ($serialStmt->fetchColumn() ?: '');
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $name = trim((string) ($_POST['name'] ?? ''));
-        $price = (float) ($_POST['price'] ?? 0);
-        $stock = (int) ($_POST['stock'] ?? 0);
-        $lowTh = max(0, (int) ($_POST['low_stock_threshold'] ?? 5));
-        $category = trim((string) ($_POST['category'] ?? ''));
-
-        // warranty inputs
-        $w_enabled = isset($_POST['warranty_enabled']) ? 1 : 0;
-        $w_type = trim((string) ($_POST['warranty_type'] ?? ''));
-        $w_period = (int) ($_POST['warranty_period'] ?? 0);
-        $w_start = trim((string) ($_POST['warranty_start_date'] ?? '')) ?: null;
-
-        try {
-                if ($name === '') throw new RuntimeException('Name is required.');
-                if ($price < 0 || $stock < 0) throw new RuntimeException('Price and stock must be zero or positive.');
-
-                $pdo->beginTransaction();
-                $u = $pdo->prepare('UPDATE products SET name=?, price=?, stock=?, low_stock_threshold=?, category=?, has_warranty=? WHERE id=?');
-                $u->execute([$name, $price, $stock, $lowTh, $category ?: null, $w_enabled, $id]);
-
-                // handle warranty upload
-                $docPath = $wrow['warranty_document'] ?? null;
-                if (!empty($_FILES['warranty_document']['name'])) {
-                        $up = $_FILES['warranty_document'];
-                        $allowed = ['application/pdf','image/jpeg','image/png'];
-                        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                        $mime = finfo_file($finfo, $up['tmp_name']);
-                        finfo_close($finfo);
-                        if (!in_array($mime, $allowed, true) || $up['size'] > 5 * 1024 * 1024) {
-                                throw new RuntimeException('Invalid warranty document upload.');
-                        }
-                        $ext = pathinfo($up['name'], PATHINFO_EXTENSION);
-                        $dir = __DIR__ . '/../../uploads/warranties';
-                        if (!is_dir($dir)) mkdir($dir, 0755, true);
-                        $fn = uniqid('wr_') . '.' . $ext;
-                        $dest = $dir . '/' . $fn;
-                        if (!move_uploaded_file($up['tmp_name'], $dest)) {
-                                throw new RuntimeException('Failed to save warranty document.');
-                        }
-                        $docPath = 'uploads/warranties/' . $fn;
-                }
-
-                $expiry = null;
-                if ($w_start && $w_period > 0) {
-                        $d = new DateTime($w_start);
-                        $d->modify('+' . $w_period . ' months');
-                        $expiry = $d->format('Y-m-d');
-                }
-
-                if ($w_enabled) {
-                        if ($wrow) {
-                                $upw = $pdo->prepare('UPDATE product_warranties SET warranty_enabled=1, warranty_type=?, warranty_period=?, warranty_period_type=?, warranty_start_date=?, warranty_expiry_date=?, warranty_coverage=?, warranty_terms=?, warranty_claim_process=?, warranty_document=?, warranty_status=? WHERE product_id=?');
-                                $upw->execute([$w_type, $w_period, 'months', $w_start, $expiry, $_POST['warranty_coverage'] ?? '', $_POST['warranty_terms'] ?? '', $_POST['warranty_claim_process'] ?? '', $docPath, $expiry && (new DateTime($expiry) > new DateTime()) ? 'Active' : 'Pending', $id]);
-                        } else {
-                                $ins = $pdo->prepare('INSERT INTO product_warranties (product_id, warranty_enabled, warranty_type, warranty_period, warranty_period_type, warranty_start_date, warranty_expiry_date, warranty_coverage, warranty_terms, warranty_claim_process, warranty_document, warranty_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
-                                $ins->execute([$id, 1, $w_type, $w_period, 'months', $w_start, $expiry, $_POST['warranty_coverage'] ?? '', $_POST['warranty_terms'] ?? '', $_POST['warranty_claim_process'] ?? '', $docPath, $expiry && (new DateTime($expiry) > new DateTime()) ? 'Active' : 'Pending']);
-                        }
-                } else {
-                        // remove warranty if exists
-                        if ($wrow) {
-                                $del = $pdo->prepare('DELETE FROM product_warranties WHERE product_id = ?');
-                                $del->execute([$id]);
-                        }
-                }
-
-                $pdo->commit();
-                flash_set('success', 'Product updated.');
-                redirect('/modules/products/list.php');
-        } catch (Throwable $e) {
-                if ($pdo->inTransaction()) $pdo->rollBack();
-                flash_set('error', $e->getMessage());
+    try {
+        if (!csrf_verify(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
+            throw new RuntimeException('Your session expired. Refresh and try again.');
         }
+        $name = trim((string) ($_POST['name'] ?? ''));
+        $sku = trim((string) ($_POST['sku'] ?? ''));
+        $description = trim((string) ($_POST['description'] ?? ''));
+        $purchase = $_POST['cost_price'] ?? null;
+        $selling = $_POST['selling_price'] ?? null;
+        $currentStock = $_POST['current_stock'] ?? null;
+        $minimumStock = $_POST['minimum_stock'] ?? 0;
+        $reorderLevel = $_POST['reorder_level'] ?? 0;
+        $warrantyDays = $_POST['warranty_period'] ?? 0;
+        if ($name === '') throw new RuntimeException('Product name is required.');
+        if ($has('sku')) {
+            if ($sku === '') throw new RuntimeException('Product code is required.');
+            $dupe = $pdo->prepare('SELECT id FROM products WHERE sku = ? AND id <> ? LIMIT 1');
+            $dupe->execute([$sku, $id]);
+            if ($dupe->fetchColumn()) throw new RuntimeException('That product code is already in use.');
+        }
+        foreach (['purchase price' => $purchase, 'selling price' => $selling] as $label => $value) {
+            if (!is_numeric($value) || (float) $value < 0) throw new RuntimeException('Enter a valid non-negative ' . $label . '.');
+        }
+        foreach (['current stock' => $currentStock, 'minimum stock' => $minimumStock, 'reorder level' => $reorderLevel, 'warranty period' => $warrantyDays] as $label => $value) {
+            if (!is_numeric($value) || (float) $value < 0 || (float) $value !== (float) (int) $value) throw new RuntimeException('Enter a valid whole number for ' . $label . '.');
+        }
+
+        $updates = [
+            'sku' => $sku, 'name' => $name,
+            'description' => $description !== '' ? $description : null,
+            'cost_price' => (float) $purchase, 'selling_price' => (float) $selling, 'price' => (float) $selling,
+            'opening_stock' => (int) ($_POST['opening_stock'] ?? $currentStock),
+            'stock' => (int) $currentStock, 'current_stock' => (int) $currentStock,
+            'min_stock' => (int) $minimumStock, 'low_stock_threshold' => (int) $minimumStock,
+            'reorder_level' => (int) $reorderLevel,
+            'warranty_enabled' => (int) $warrantyDays > 0 ? 1 : 0,
+            'warranty_period' => (int) $warrantyDays, 'warranty_duration_days' => (int) $warrantyDays,
+            'serial_number' => trim((string) ($_POST['serial_number'] ?? '')) ?: null,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+        $updates = array_intersect_key($updates, array_flip($columns));
+        if (!$updates) throw new RuntimeException('The product table has no supported fields to update.');
+        $set = implode(', ', array_map(static fn(string $column): string => $column . ' = ?', array_keys($updates)));
+
+        $pdo->beginTransaction();
+        $update = $pdo->prepare('UPDATE products SET ' . $set . ' WHERE id = ?');
+        $update->execute([...array_values($updates), $id]);
+
+        $serial = trim((string) ($_POST['serial_number'] ?? ''));
+        if (ProductSchema::tableExists($pdo, 'product_inventory')) {
+            $inventoryColumns = ProductSchema::columns($pdo, 'product_inventory');
+            if (in_array('serial_number', $inventoryColumns, true)) {
+                $invStmt = $pdo->prepare('SELECT product_id FROM product_inventory WHERE product_id = ? LIMIT 1');
+                $invStmt->execute([$id]);
+                if ($invStmt->fetchColumn()) {
+                    $pdo->prepare('UPDATE product_inventory SET serial_number = ? WHERE product_id = ?')->execute([$serial ?: null, $id]);
+                } else {
+                    ProductSchema::insertFiltered($pdo, 'product_inventory', ['product_id' => $id, 'current_stock' => (int) $currentStock, 'minimum_stock' => (int) $minimumStock, 'reorder_level' => (int) $reorderLevel, 'serial_number' => $serial ?: null, 'created_at' => date('Y-m-d H:i:s')]);
+                }
+            }
+        }
+
+        if (!empty($_FILES['product_image']['tmp_name']) && is_uploaded_file($_FILES['product_image']['tmp_name'])) {
+            if ((int) ($_FILES['product_image']['size'] ?? 0) > 10 * 1024 * 1024) throw new RuntimeException('Product images must be 10 MB or smaller.');
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file((string) $_FILES['product_image']['tmp_name']);
+            $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
+            if (!isset($extensions[$mime])) throw new RuntimeException('Use a JPG, PNG, WebP, or GIF product image.');
+            $dir = dirname(__DIR__, 2) . '/uploads/products/' . $id;
+            if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) throw new RuntimeException('Unable to create the product image folder.');
+            $imagePath = 'uploads/products/' . $id . '/' . bin2hex(random_bytes(12)) . '.' . $extensions[$mime];
+            if (!move_uploaded_file((string) $_FILES['product_image']['tmp_name'], dirname(__DIR__, 2) . '/' . $imagePath)) throw new RuntimeException('Unable to save the product image.');
+            if (ProductSchema::tableExists($pdo, 'product_images')) {
+                ProductSchema::insertFiltered($pdo, 'product_images', ['product_id' => $id, 'path' => $imagePath, 'is_thumbnail' => 1, 'sort_order' => 0, 'created_at' => date('Y-m-d H:i:s')]);
+            } elseif ($has('image_path')) {
+                $pdo->prepare('UPDATE products SET image_path = ? WHERE id = ?')->execute([$imagePath, $id]);
+            }
+        }
+
+        $pdo->commit();
+        flash_set('success', 'Product updated.');
+        redirect('/modules/products/list.php');
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        flash_set('error', $e->getMessage());
+        redirect('/modules/products/edit.php?id=' . $id);
+    }
 }
 
+$st = $pdo->prepare('SELECT * FROM products WHERE id = ? LIMIT 1');
+$st->execute([$id]);
+$row = $st->fetch(PDO::FETCH_ASSOC) ?: $row;
 $pageTitle = 'Edit product';
-$extraHead = '<link rel="stylesheet" href="' . e(base_url('assets/css/product-admin.css')) . '">';
-$extraScripts = '<script src="' . e(base_url('assets/js/product-admin.js')) . '"></script>';
+$extraHead = '<link rel="stylesheet" href="' . e(base_url('assets/product-create/product-create.css')) . '">';
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 ?>
-<div class="mb-3">
-        <a href="<?= e(BASE_URL) ?>/modules/products/list.php" class="text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Back</a>
+<div class="pc-root pc-simple">
+    <header class="pc-toolbar card border-0 shadow-sm mb-3">
+        <div class="card-body py-3 d-flex align-items-center justify-content-between gap-3 flex-wrap">
+            <div><h1 class="pc-title h4 mb-1">Edit Product</h1><p class="small text-secondary mb-0">Update inventory and pricing details</p></div>
+            <a class="btn btn-outline-secondary" href="<?= e(base_url('modules/products/list.php')) ?>">Back to Products</a>
+        </div>
+    </header>
+    <form class="pc-form" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+        <div class="pc-simple-card">
+            <section class="pc-simple-section"><h2>Basic Information</h2><div class="row g-3">
+                <div class="col-md-4"><label class="form-label" for="sku">Product Code</label><input class="form-control" id="sku" name="sku" maxlength="128" value="<?= e((string) ($row['sku'] ?? '')) ?>" <?= $has('sku') ? 'required' : 'readonly' ?>></div>
+                <div class="col-md-8"><label class="form-label" for="name">Product Name <span class="text-danger">*</span></label><input class="form-control" id="name" name="name" required maxlength="255" value="<?= e((string) ($row['name'] ?? '')) ?>"></div>
+                <div class="col-12"><label class="form-label" for="description">Description</label><textarea class="form-control" id="description" name="description" rows="3"><?= e((string) ($row['description'] ?? $row['short_description'] ?? '')) ?></textarea></div>
+                <div class="col-md-6"><label class="form-label" for="serial_number">Serial Number</label><input class="form-control" id="serial_number" name="serial_number" value="<?= e($serialNumber) ?>"></div>
+                <div class="col-md-6"><label class="form-label" for="warranty_period">Warranty Period (Days)</label><input class="form-control" type="number" id="warranty_period" name="warranty_period" min="0" max="36500" step="1" value="<?= e((string) ($row['warranty_duration_days'] ?? $row['warranty_period'] ?? 0)) ?>"></div>
+            </div></section>
+            <section class="pc-simple-section"><h2>Pricing</h2><div class="row g-3">
+                <div class="col-md-6"><label class="form-label" for="cost_price">Purchase Price</label><input class="form-control" type="number" id="cost_price" name="cost_price" min="0" step="0.01" required value="<?= e((string) ($row['cost_price'] ?? 0)) ?>"></div>
+                <div class="col-md-6"><label class="form-label" for="selling_price">Selling Price</label><input class="form-control" type="number" id="selling_price" name="selling_price" min="0" step="0.01" required value="<?= e((string) ($row['selling_price'] ?? $row['price'] ?? 0)) ?>"></div>
+            </div></section>
+            <section class="pc-simple-section"><h2>Inventory</h2><div class="row g-3">
+                <div class="col-sm-6 col-lg-3"><label class="form-label" for="opening_stock">Opening Stock</label><input class="form-control" type="number" id="opening_stock" name="opening_stock" min="0" step="1" value="<?= e((string) ($row['opening_stock'] ?? $row['stock'] ?? 0)) ?>"></div>
+                <div class="col-sm-6 col-lg-3"><label class="form-label" for="current_stock">Current Stock</label><input class="form-control" type="number" id="current_stock" name="current_stock" min="0" step="1" required value="<?= e((string) ($row['stock'] ?? $row['current_stock'] ?? $row['opening_stock'] ?? 0)) ?>"></div>
+                <div class="col-sm-6 col-lg-3"><label class="form-label" for="minimum_stock">Minimum Stock</label><input class="form-control" type="number" id="minimum_stock" name="minimum_stock" min="0" step="1" value="<?= e((string) ($row['min_stock'] ?? $row['low_stock_threshold'] ?? 0)) ?>"></div>
+                <div class="col-sm-6 col-lg-3"><label class="form-label" for="reorder_level">Reorder Level</label><input class="form-control" type="number" id="reorder_level" name="reorder_level" min="0" step="1" value="<?= e((string) ($row['reorder_level'] ?? 0)) ?>"></div>
+                <div class="col-sm-6 col-lg-3"><label class="form-label" for="product_image">Product Image</label><input class="form-control" type="file" id="product_image" name="product_image" accept="image/jpeg,image/png,image/webp,image/gif"></div>
+            </div></section>
+        </div>
+        <div class="pc-simple-actions"><a class="btn btn-outline-secondary" href="<?= e(base_url('modules/products/list.php')) ?>">Cancel</a><button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i>Save Product</button></div>
+    </form>
 </div>
-<h1 class="h3 mb-3">Edit product</h1>
-<form method="post" enctype="multipart/form-data" id="product-form">
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card vk-card mb-3">
-            <div class="card-body">
-                <h5 class="mb-3">Basic Product Information</h5>
-                <div class="mb-3">
-                        <label class="form-label" for="name">Name <span class="text-danger">*</span></label>
-                        <input class="form-control" id="name" name="name" required maxlength="255" value="<?= e($_POST['name'] ?? $row['name']) ?>">
-                </div>
-                <div class="row g-3">
-                        <div class="col-md-6">
-                                <label class="form-label" for="price">Price</label>
-                                <input class="form-control" type="number" step="0.01" min="0" id="price" name="price" required value="<?= e((string) ($_POST['price'] ?? $row['price'])) ?>">
-                        </div>
-                        <div class="col-md-6">
-                                <label class="form-label" for="stock">Stock</label>
-                                <input class="form-control" type="number" min="0" id="stock" name="stock" required value="<?= e((string) ($_POST['stock'] ?? $row['stock'])) ?>">
-                        </div>
-                </div>
-                <div class="mb-3 mt-3">
-                                <label class="form-label" for="low_stock_threshold">Low stock alert at or below</label>
-                                <input class="form-control" type="number" min="0" id="low_stock_threshold" name="low_stock_threshold" value="<?= e((string) ($_POST['low_stock_threshold'] ?? ($row['low_stock_threshold'] ?? 5))) ?>">
-                </div>
-                <div class="mb-3">
-                                <label class="form-label" for="category">Category</label>
-                                <input class="form-control" id="category" name="category" maxlength="128" value="<?= e($_POST['category'] ?? ($row['category'] ?? '')) ?>">
-                </div>
-            </div>
-        </div>
-
-        <!-- Inventory section placeholder -->
-        <div class="card vk-card mb-3">
-            <div class="card-body">
-                <h5 class="mb-3">Inventory Management</h5>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Warehouse</label>
-                        <select class="form-select" name="warehouse_id">
-                            <option value="">Default Warehouse</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Reorder Level</label>
-                        <input class="form-control" name="reorder_level" type="number" min="0" value="<?= e($row['reorder_level'] ?? 0) ?>">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Warranty Management -->
-        <div class="card vk-card mb-3 warranty-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h5 class="mb-1">Warranty Management</h5>
-                        <div class="small text-muted">Configure warranty details and documents for this product.</div>
-                    </div>
-                    <div>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="warranty-toggle" name="warranty_enabled" value="1" <?= $wrow && $wrow['warranty_enabled'] ? 'checked' : '' ?>>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="warranty-fields" class="mt-3 <?= $wrow && $wrow['warranty_enabled'] ? '' : 'd-none' ?>">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Warranty Type</label>
-                            <select class="form-select" name="warranty_type">
-                                <?php $types = ['Manufacturer Warranty','Seller Warranty','Replacement Warranty','Service Warranty','Extended Warranty']; foreach ($types as $t): ?>
-                                    <option <?= ($wrow && $wrow['warranty_type'] === $t) ? 'selected' : '' ?>><?= e($t) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Period (months)</label>
-                            <input class="form-control" type="number" name="warranty_period" id="warranty-period" min="0" value="<?= e($wrow['warranty_period'] ?? 12) ?>">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Start Date</label>
-                            <input class="form-control" type="date" name="warranty_start_date" id="warranty-start" value="<?= e($wrow['warranty_start_date'] ?? '') ?>">
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mt-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Expiry Date</label>
-                            <input class="form-control" type="date" id="warranty-expiry" readonly value="<?= e($wrow['warranty_expiry_date'] ?? '') ?>">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Warranty Status</label>
-                            <select class="form-select" name="warranty_status">
-                                <option <?= ($wrow && $wrow['warranty_status'] === 'Pending') ? 'selected' : '' ?>>Pending</option>
-                                <option <?= ($wrow && $wrow['warranty_status'] === 'Active') ? 'selected' : '' ?>>Active</option>
-                                <option <?= ($wrow && $wrow['warranty_status'] === 'Expired') ? 'selected' : '' ?>>Expired</option>
-                                <option <?= ($wrow && $wrow['warranty_status'] === 'Lifetime') ? 'selected' : '' ?>>Lifetime</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="mt-3">
-                        <label class="form-label">Warranty Coverage</label>
-                        <textarea class="form-control" name="warranty_coverage" rows="3"><?= e($wrow['warranty_coverage'] ?? '') ?></textarea>
-                    </div>
-
-                    <div class="mt-3">
-                        <label class="form-label">Warranty Terms &amp; Conditions</label>
-                        <textarea class="form-control" name="warranty_terms" rows="5"><?= e($wrow['warranty_terms'] ?? '') ?></textarea>
-                    </div>
-
-                    <div class="mt-3">
-                        <label class="form-label">Warranty Claim Process</label>
-                        <textarea class="form-control" name="warranty_claim_process" rows="3"><?= e($wrow['warranty_claim_process'] ?? '') ?></textarea>
-                    </div>
-
-                    <div class="mt-3">
-                        <label class="form-label">Upload Warranty Document (PDF, JPG, PNG)</label>
-                        <input class="form-control" type="file" name="warranty_document" accept="application/pdf,image/*">
-                        <?php if (!empty($wrow['warranty_document'])): ?>
-                            <div class="mt-2 small">Current document: <a href="<?= e(base_url($wrow['warranty_document'])) ?>" target="_blank">View</a></div>
-                        <?php endif; ?>
-                    </div>
-
-                    <div class="mt-3">
-                        <button type="button" id="generate-warranty-card" class="btn btn-outline-primary">Generate Warranty Card</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="col-lg-4">
-        <div class="card vk-card sticky-top" style="top:100px">
-            <div class="card-body d-grid gap-2">
-                <button type="submit" class="btn btn-primary btn-lg" id="save-product">Save product</button>
-                <a class="btn btn-link" href="<?= e(BASE_URL) ?>/modules/products/list.php">Cancel</a>
-            </div>
-        </div>
-    </div>
-</div>
-</form>
-
 <?php require_once dirname(__DIR__, 2) . '/includes/layout_end.php'; ?>

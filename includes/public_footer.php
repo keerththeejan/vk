@@ -66,10 +66,11 @@ $socials = [
                         </button>
                     </div>
                 </form>
-                <div class="vk-footer-apps d-flex flex-wrap gap-2">
-                    <a class="vk-app-badge" href="#" aria-label="Download on the App Store"><i data-lucide="apple"></i> App Store</a>
-                    <a class="vk-app-badge" href="#" aria-label="Get it on Google Play"><i data-lucide="smartphone"></i> Google Play</a>
-                </div>
+                <?php $appStoreUrl = trim((string) vk_app_setting('app_store_url', '')); $playStoreUrl = trim((string) vk_app_setting('google_play_url', '')); ?>
+                <?php if ($appStoreUrl !== '' || $playStoreUrl !== ''): ?><div class="vk-footer-apps d-flex flex-wrap gap-2">
+                    <?php if ($appStoreUrl !== ''): ?><a class="vk-app-badge" href="<?= e($appStoreUrl) ?>" target="_blank" rel="noopener noreferrer" aria-label="Download on the App Store"><i data-lucide="apple"></i> App Store</a><?php endif; ?>
+                    <?php if ($playStoreUrl !== ''): ?><a class="vk-app-badge" href="<?= e($playStoreUrl) ?>" target="_blank" rel="noopener noreferrer" aria-label="Get it on Google Play"><i data-lucide="smartphone"></i> Google Play</a><?php endif; ?>
+                </div><?php endif; ?>
             </div>
         </div>
         <div class="vk-footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 pt-4 mt-4 border-top border-secondary border-opacity-10">

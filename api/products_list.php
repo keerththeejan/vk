@@ -51,7 +51,7 @@ try {
     $where = [];
     $params = [];
     if ($q !== '') {
-        $searchCols = array_values(array_filter(['name', 'sku', 'barcode', 'category'], $has));
+        $searchCols = array_values(array_filter(['name', 'sku', 'description', 'barcode', 'category'], $has));
         $searchTerms = [];
         foreach ($searchCols as $index => $column) {
                 $key = ':q' . $index;
@@ -92,7 +92,7 @@ try {
         $where[] = 'p.brand_id = :brand';
         $params[':brand'] = (int) $brandFilter;
     }
-    $stockExpr = $has('opening_stock') ? 'COALESCE(p.opening_stock, 0)' : ($has('stock') ? 'COALESCE(p.stock, 0)' : '0');
+    $stockExpr = $has('stock') ? 'COALESCE(p.stock, 0)' : ($has('current_stock') ? 'COALESCE(p.current_stock, 0)' : ($has('opening_stock') ? 'COALESCE(p.opening_stock, 0)' : '0'));
     $minExpr = $has('min_stock') ? 'COALESCE(p.min_stock, 5)' : ($has('low_stock_threshold') ? 'COALESCE(p.low_stock_threshold, 5)' : '5');
     if ($stockFilter === 'out') $where[] = "$stockExpr <= 0";
     elseif ($stockFilter === 'low') $where[] = "$stockExpr > 0 AND $stockExpr <= $minExpr";
@@ -103,7 +103,7 @@ try {
     $count->execute($params);
     $total = (int) $count->fetchColumn();
 
-    $allStock = $has('opening_stock') ? 'COALESCE(opening_stock, 0)' : ($has('stock') ? 'COALESCE(stock, 0)' : '0');
+    $allStock = $has('stock') ? 'COALESCE(stock, 0)' : ($has('current_stock') ? 'COALESCE(current_stock, 0)' : ($has('opening_stock') ? 'COALESCE(opening_stock, 0)' : '0'));
     $allMin = $has('min_stock') ? 'COALESCE(min_stock, 5)' : ($has('low_stock_threshold') ? 'COALESCE(low_stock_threshold, 5)' : '5');
     $allPrice = $has('selling_price') ? 'COALESCE(selling_price, 0)' : ($has('price') ? 'COALESCE(price, 0)' : '0');
     $allStatus = $has('status') ? "COALESCE(status, 'active')" : "'active'";
@@ -116,7 +116,11 @@ try {
         'warehouse_name' => $warehouse, 'cost_price' => $select('cost_price', $select('price', '0')),
         'selling_price' => $select('selling_price', $select('price', '0')),
         'price' => $select('price', $select('selling_price', '0')), 'opening_stock' => $select('opening_stock', $select('stock', '0')),
-        'stock' => $select('stock', $select('opening_stock', '0')), 'min_stock' => $select('min_stock', $select('low_stock_threshold', '5')),
+        'stock' => $select('stock', $select('current_stock', $select('opening_stock', '0'))), 'current_stock' => $select('stock', $select('current_stock', $select('opening_stock', '0'))),
+        'description' => $select('description', $select('short_description', "''")),
+        'warranty_duration_days' => $select('warranty_duration_days', '0'),
+        'warranty_period' => $select('warranty_period', '0'),
+        'reorder_level' => $select('reorder_level', '0'), 'min_stock' => $select('min_stock', $select('low_stock_threshold', '5')),
         'low_stock_threshold' => $select('low_stock_threshold', $select('min_stock', '5')),
         'status' => $select('status', "'active'"), 'updated_at' => $select('updated_at', $select('created_at')),
         'image_path' => $select('image_path'), 'thumbnail_path' => $select('thumbnail_path'),

@@ -134,13 +134,14 @@ main.container-fluid:has(#vkProdApp) { padding: 6px 10px !important; }
 .vk-prod-panel { background: var(--vk-prod-card); border: 1px solid var(--vk-prod-border); border-radius: var(--vk-prod-r); overflow: hidden; box-shadow: var(--shadow); }
 .vk-prod-panel-scroll { overflow: auto; max-height: calc(100vh - 420px); }
 
-.vk-prod-table { table-layout: fixed; width: 100%; min-width: 1500px; border-collapse: separate; border-spacing: 0; background: var(--vk-prod-card); }
+.vk-prod-table { table-layout: fixed; width: 100%; min-width: 1120px; border-collapse: separate; border-spacing: 0; background: var(--vk-prod-card); }
 .vk-prod-admin .vk-prod-table.table > :not(caption) > * > * { padding: 6px 10px; vertical-align: middle; border-bottom: 1px solid var(--vk-prod-border-grid); }
 .vk-prod-table thead th { position: sticky; top: 0; z-index: 4; height: var(--vk-prod-head); background: var(--vk-prod-surface) !important; color: var(--vk-prod-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
 .vk-prod-table tbody tr { height: var(--vk-prod-row); transition: background var(--vk-prod-t); cursor: pointer; }
 .vk-prod-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--vk-prod-surface) 35%, var(--vk-prod-card)); }
 .vk-prod-table tbody tr:hover { background: var(--vk-prod-surface) !important; }
 .vk-prod-table tbody tr.is-filter-hidden { display: none; }
+.vk-prod-description { max-width: 1px; overflow: hidden; color: var(--vk-prod-muted); text-overflow: ellipsis; white-space: nowrap; }
 
 .vk-prod-sticky-col { position: sticky; z-index: 2; background: inherit; }
 .vk-prod-sticky-check { left: 0; }
@@ -195,6 +196,7 @@ main.container-fluid:has(#vkProdApp) { padding: 6px 10px !important; }
 .vk-prod-mobile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 11px; margin-bottom: 8px; }
 .vk-prod-mobile-grid dt { color: var(--vk-prod-muted); margin: 0; }
 .vk-prod-mobile-grid dd { margin: 0; font-weight: 600; text-align: right; }
+.vk-prod-mobile-card .vk-prod-description { max-width: none; margin: 0 0 8px; white-space: normal; overflow-wrap: anywhere; }
 
 @media (max-width: 991.98px) { .vk-prod-desktop-only { display: none !important; } .vk-prod-mobile-only { display: block !important; } }
 @media (min-width: 992px) { .vk-prod-mobile-only { display: none !important; } }

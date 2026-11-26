@@ -72,7 +72,7 @@
     }
 
     function getStock(p) {
-        return Number(p.opening_stock != null ? p.opening_stock : (p.stock != null ? p.stock : 0));
+        return Number(p.current_stock != null ? p.current_stock : (p.stock != null ? p.stock : (p.opening_stock != null ? p.opening_stock : 0)));
     }
 
     function getMinStock(p) {
@@ -179,7 +179,7 @@
         var msg = escapeHtml(message || 'No products match your filters.');
         var addUrl = baseUrl + '/modules/products/add.php';
         if (tableBody) {
-            tableBody.innerHTML = '<tr><td colspan="17"><div class="vk-prod-empty"><div class="vk-prod-empty-icon"><i class="bi bi-box-seam"></i></div><h3 class="h6">No products found.</h3><p class="small">' + msg + '</p><a href="' + escapeHtml(addUrl) + '" class="vk-prod-btn vk-prod-btn-primary mt-2"><i class="bi bi-plus-lg"></i> Add Product</a></div></td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="8"><div class="vk-prod-empty"><div class="vk-prod-empty-icon"><i class="bi bi-box-seam"></i></div><h3 class="h6">No products found.</h3><p class="small">' + msg + '</p><a href="' + escapeHtml(addUrl) + '" class="vk-prod-btn vk-prod-btn-primary mt-2"><i class="bi bi-plus-lg"></i> Add Product</a></div></td></tr>';
         }
         if (mobileList) {
             mobileList.innerHTML = '<div class="vk-prod-empty"><div class="vk-prod-empty-icon"><i class="bi bi-box-seam"></i></div><h3 class="h6">No products found.</h3><a href="' + escapeHtml(addUrl) + '" class="vk-prod-btn vk-prod-btn-primary mt-2"><i class="bi bi-plus-lg"></i> Add Product</a></div>';
@@ -219,119 +219,67 @@
     }
 
     function renderProducts(products) {
-        if (!tableBody) {
-            return;
-        }
+        if (!tableBody) return;
         tableBody.innerHTML = '';
-        if (!products || !products.length) {
-            return showEmpty();
-        }
+        if (!products || !products.length) return showEmpty();
         products.forEach(function (p) {
             var sm = stockMeta(p);
-            var sell = getSellPrice(p);
-            var cost = getCostPrice(p);
-            var brand = derivedBrand(p);
-            var supplier = derivedSupplier(p);
-            var unit = derivedUnit(p);
-            var warehouse = derivedWarehouse(p);
             var sku = p.sku || 'SKU-' + p.id;
-            var barcode = p.barcode || '—';
-            var cat = p.category_name || p.category || 'General';
-            var updated = p.updated_at ? String(p.updated_at).slice(0, 10) : '—';
-            var status = p.status || 'active';
-            var statusBadge = status === 'active' ? 'vk-prod-st-active' : 'vk-prod-st-inactive';
+            var description = p.description || p.short_description || '—';
+            var warranty = Number(p.warranty_duration_days || p.warranty_period || 0);
             var tr = document.createElement('tr');
             tr.dataset.id = p.id;
-            tr.dataset.brand = brand;
+            tr.dataset.brand = derivedBrand(p);
             tr.dataset.stockKey = sm.key;
-            tr.dataset.searchBlob = [p.name, sku, barcode, cat, brand, supplier, p.short_description || ''].join(' ').toLowerCase();
+            tr.dataset.searchBlob = [p.name, sku, description].join(' ').toLowerCase();
             tr.innerHTML =
-                '<td class="vk-prod-sticky-col vk-prod-sticky-check" onclick="event.stopPropagation()"><input class="form-check-input row-select" type="checkbox" value="' + p.id + '" aria-label="Select product"></td>' +
-                '<td class="vk-prod-sticky-col vk-prod-sticky-img"><img class="vk-prod-img" src="' + escapeHtml(imgUrl(p)) + '" alt="" loading="lazy" width="40" height="40" onerror="this.onerror=null;this.src=\'' + escapeHtml(baseUrl + '/assets/images/services/svc-computer.svg') + '\';"></td>' +
                 '<td><span class="vk-prod-sku">' + escapeHtml(sku) + '</span></td>' +
-                '<td><span class="vk-prod-barcode">' + escapeHtml(barcode) + '</span></td>' +
-                '<td><div class="vk-prod-name">' + escapeHtml(p.name) + '</div><div class="vk-prod-sku">' + escapeHtml(sku) + '</div></td>' +
-                '<td><span class="vk-prod-cat" title="' + escapeHtml(cat) + '">' + escapeHtml(cat) + '</span></td>' +
-                '<td class="vk-prod-col-hide-lg">' + escapeHtml(brand) + '</td>' +
-                '<td class="vk-prod-col-hide-md">' + escapeHtml(supplier) + '</td>' +
-                '<td class="vk-prod-col-hide-lg">' + escapeHtml(unit) + '</td>' +
-                '<td class="vk-prod-price">' + formatLkr(cost) + '</td>' +
-                '<td class="vk-prod-price">' + formatLkr(sell) + '</td>' +
+                '<td><div class="vk-prod-name">' + escapeHtml(p.name) + '</div></td>' +
+                '<td class="vk-prod-description" title="' + escapeHtml(description) + '">' + escapeHtml(description) + '</td>' +
+                '<td>' + (warranty > 0 ? warranty + ' days' : '—') + '</td>' +
+                '<td class="vk-prod-price">' + formatLkr(getCostPrice(p)) + '</td>' +
+                '<td class="vk-prod-price">' + formatLkr(getSellPrice(p)) + '</td>' +
                 '<td><div class="vk-prod-stock-wrap"><div class="vk-prod-stock-bar"><div class="vk-prod-stock-fill ' + sm.fill + '" style="width:' + sm.pct + '%"></div></div><span class="fw-semibold">' + sm.stock + '</span> <span class="vk-prod-badge ' + sm.badge + '">' + sm.label + '</span></div></td>' +
-                '<td class="vk-prod-col-hide-md text-end">' + getMinStock(p) + '</td>' +
-                '<td class="vk-prod-col-hide-lg">' + escapeHtml(warehouse) + '</td>' +
-                '<td><span class="vk-prod-badge ' + statusBadge + '">' + escapeHtml(status) + '</span></td>' +
-                '<td class="vk-prod-col-hide-md"><span class="vk-prod-sku">' + escapeHtml(updated) + '</span></td>' +
                 '<td onclick="event.stopPropagation()"><div class="vk-prod-actions">' +
                 actionBtn(baseUrl + '/modules/products/view.php?id=' + p.id, 'eye', 'View') +
                 actionBtn(baseUrl + '/modules/products/edit.php?id=' + p.id, 'pencil', 'Edit') +
-                actionBtn(baseUrl + '/modules/products/edit.php?id=' + p.id + '#stock', 'box-seam', 'Stock') +
-                '<span class="vk-prod-act" aria-disabled="true" data-bs-toggle="tooltip" title="History"><i class="bi bi-clock-history"></i></span>' +
-                '<span class="vk-prod-act" aria-disabled="true" data-bs-toggle="tooltip" title="Barcode"><i class="bi bi-upc-scan"></i></span>' +
-                '<span class="vk-prod-act" aria-disabled="true" data-bs-toggle="tooltip" title="Label"><i class="bi bi-tag"></i></span>' +
-                '<button type="button" class="vk-prod-act vk-prod-export-row" data-id="' + p.id + '" data-bs-toggle="tooltip" title="Export"><i class="bi bi-download"></i></button>' +
-                actionBtn(baseUrl + '/modules/products/add.php', 'copy', 'Duplicate') +
-                '<button type="button" class="vk-prod-act" onclick="window.print()" data-bs-toggle="tooltip" title="Print"><i class="bi bi-printer"></i></button>' +
                 '<a class="vk-prod-act vk-prod-act-danger" href="' + escapeHtml(baseUrl + '/modules/products/delete.php?id=' + p.id) + '" data-bs-toggle="tooltip" title="Delete" onclick="event.stopPropagation(); return confirm(\'Delete this product? This cannot be undone.\')"><i class="bi bi-trash"></i></a>' +
                 '</div></td>';
             tr.addEventListener('click', function (e) {
-                if (e.target.closest('.vk-prod-act, .row-select, a')) {
-                    return;
-                }
+                if (e.target.closest('.vk-prod-act, a')) return;
                 openDrawer(p.id);
             });
             tableBody.appendChild(tr);
         });
-        document.querySelectorAll('.row-select').forEach(function (cb) {
-            cb.addEventListener('change', updateBulkSelection);
-        });
-        document.querySelectorAll('.vk-prod-export-row').forEach(function (btn) {
-            btn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                exportOne(btn.getAttribute('data-id'));
-            });
-        });
     }
-
     function renderMobile(products) {
-        if (!mobileList) {
-            return;
-        }
+        if (!mobileList) return;
         mobileList.innerHTML = '';
-        if (!products || !products.length) {
-            return;
-        }
+        if (!products || !products.length) return;
         products.forEach(function (p) {
             var sm = stockMeta(p);
-            var sell = getSellPrice(p);
             var sku = p.sku || 'SKU-' + p.id;
-            var cat = p.category_name || p.category || 'General';
+            var warranty = Number(p.warranty_duration_days || p.warranty_period || 0);
             var card = document.createElement('article');
             card.className = 'vk-prod-mobile-card';
             card.dataset.id = p.id;
             card.dataset.brand = derivedBrand(p);
             card.dataset.stockKey = sm.key;
-            card.dataset.searchBlob = [p.name, sku, cat].join(' ').toLowerCase();
+            card.dataset.searchBlob = [p.name, sku, p.description || ''].join(' ').toLowerCase();
             card.innerHTML =
-                '<div class="d-flex align-items-center gap-2 mb-2">' +
-                '<img class="vk-prod-img" src="' + escapeHtml(imgUrl(p)) + '" alt="" loading="lazy" width="40" height="40">' +
-                '<div class="flex-grow-1 min-w-0"><div class="vk-prod-name">' + escapeHtml(p.name) + '</div><div class="vk-prod-sku">' + escapeHtml(sku) + ' · ' + escapeHtml(cat) + '</div></div>' +
+                '<div class="d-flex align-items-center gap-2 mb-2"><img class="vk-prod-img" src="' + escapeHtml(imgUrl(p)) + '" alt="" loading="lazy" width="40" height="40">' +
+                '<div class="flex-grow-1 min-w-0"><div class="vk-prod-name">' + escapeHtml(p.name) + '</div><div class="vk-prod-sku">' + escapeHtml(sku) + '</div></div>' +
                 '<span class="vk-prod-badge ' + sm.badge + '">' + sm.stock + '</span></div>' +
-                '<dl class="vk-prod-mobile-grid"><dt>Price</dt><dd>' + formatLkr(sell) + '</dd><dt>Stock</dt><dd>' + sm.label + '</dd></dl>' +
-                '<div class="vk-prod-actions">' +
-                actionBtn(baseUrl + '/modules/products/view.php?id=' + p.id, 'eye', 'View') +
-                actionBtn(baseUrl + '/modules/products/edit.php?id=' + p.id, 'pencil', 'Edit') +
-                '</div>';
+                '<p class="vk-prod-description">' + escapeHtml(p.description || '—') + '</p>' +
+                '<dl class="vk-prod-mobile-grid"><dt>Warranty</dt><dd>' + (warranty > 0 ? warranty + ' days' : '—') + '</dd><dt>Purchase</dt><dd>' + formatLkr(getCostPrice(p)) + '</dd><dt>Selling</dt><dd>' + formatLkr(getSellPrice(p)) + '</dd><dt>Current stock</dt><dd>' + sm.stock + '</dd></dl>' +
+                '<div class="vk-prod-actions">' + actionBtn(baseUrl + '/modules/products/view.php?id=' + p.id, 'eye', 'View') + actionBtn(baseUrl + '/modules/products/edit.php?id=' + p.id, 'pencil', 'Edit') + '</div>';
             card.addEventListener('click', function (e) {
-                if (e.target.closest('a')) {
-                    return;
-                }
+                if (e.target.closest('a')) return;
                 openDrawer(p.id);
             });
             mobileList.appendChild(card);
         });
     }
-
     function applyClientFilters() {
         var brand = filterBrand ? filterBrand.value : '';
         var stock = filterStock ? filterStock.value : '';

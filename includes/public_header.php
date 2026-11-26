@@ -97,8 +97,8 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         .vk-navbar-premium { background: rgba(7, 14, 26, .92); border-bottom: 1px solid rgba(148, 163, 184, .12); }
         .vk-public-logo-img { max-height: 40px; width: auto; height: auto; display: block; }
         .vk-public-site { background: #020617; }
-        .vk-home-hero { position: relative; overflow: hidden; background: linear-gradient(180deg, #060b17 0%, #070f1f 100%); color: #fff; min-height: 100vh; }
-        .vk-home-hero .vk-hero-inner { padding: clamp(2rem, 5vw, 4.5rem) 0; }
+        .vk-home-hero { position: relative; overflow: hidden; background: linear-gradient(180deg, #060b17 0%, #070f1f 100%); color: #fff; min-height: 0; }
+        .vk-home-hero .vk-hero-inner { padding: clamp(1rem, 2vw, 1.75rem) 0; }
         .vk-hero-title { font-size: clamp(2.5rem, 6vw, 3.8rem); line-height: 1.05; margin: .75rem 0; }
         .vk-hero-lead { max-width: 44rem; font-size: 1.03rem; line-height: 1.7; color: rgba(255, 255, 255, .82); }
         .vk-btn-hero-primary, .vk-btn-hero-secondary, .vk-nav-book-btn { transition: transform .22s ease, opacity .2s ease; }
@@ -107,7 +107,11 @@ if (!headers_sent() && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         .vk-reveal.is-visible { opacity: 1; transform: translateY(0); }
         .vk-hero-shine, .vk-hero-grain, .vk-hero-particles { display: none !important; }
         @media (min-width: 992px) { .vk-hero-shine, .vk-hero-grain, .vk-hero-particles { display: block !important; } }
-        @media (max-width: 767.98px) { .vk-hero-inner { padding-top: 2rem; padding-bottom: 2.8rem; } .vk-brand-strip { gap: .65rem; } }
+        @media (min-width: 992px) {
+            .vk-home-hero .row.align-items-center > .col-lg-7,
+            .vk-home-hero .row.align-items-center > .col-lg-5 { flex: 0 0 50%; max-width: 50%; }
+        }
+        @media (max-width: 767.98px) { .vk-hero-inner { padding-top: 1rem; padding-bottom: 1.25rem; } .vk-brand-strip { gap: .65rem; } }
         body.vk-public-site {
             --primary-color: <?= e((string) $themePrimary) ?>;
             --vk-pub-primary-mid: <?= e((string) $themePrimary) ?>;

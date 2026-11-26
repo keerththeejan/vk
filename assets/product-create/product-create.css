@@ -331,6 +331,23 @@
     }
 }
 
+/* Compact inventory-first product registration layout. */
+.pc-simple { max-width: 1360px; }
+.pc-simple-card { padding: clamp(16px, 2vw, 24px); }
+.pc-simple-section { padding-bottom: 18px; margin-bottom: 16px; }
+.pc-simple-section h2 { margin-bottom: 14px; }
+.pc-simple-actions { padding: 12px 0 20px; }
+.pc-simple .pc-toolbar { margin-bottom: 12px !important; }
+.pc-simple .pc-form .form-label { margin-bottom: 6px; }
+.pc-simple .pc-form textarea.form-control { min-height: 88px; }
+.pc-simple .pc-dropzone { padding: 16px !important; }
+@media (max-width: 575.98px) {
+    .pc-simple-card { padding: 14px; }
+    .pc-simple-section { padding-bottom: 14px; margin-bottom: 14px; }
+    .pc-simple-actions { display: grid; grid-template-columns: 1fr 1fr; }
+    .pc-simple-actions > * { width: 100%; }
+}
+
 /* Light mode ready */
 [data-bs-theme="light"] .pc-root {
     --pc-bg: #f8fafc;

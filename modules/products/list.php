@@ -231,23 +231,14 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
         <table id="products-table" class="table vk-prod-table mb-0" aria-label="Products data grid">
             <thead>
                 <tr>
-                    <th class="vk-prod-sticky-col vk-prod-sticky-check" style="width:34px"><input id="bulk-select-all" type="checkbox" class="form-check-input" aria-label="Select all"></th>
-                    <th class="vk-prod-sticky-col vk-prod-sticky-img" style="width:52px">Image</th>
-                    <th style="width:90px">SKU</th>
-                    <th class="vk-prod-col-hide-md" style="width:100px">Barcode</th>
-                    <th style="width:160px">Product</th>
-                    <th style="width:100px">Category</th>
-                    <th class="vk-prod-col-hide-lg" style="width:80px">Brand</th>
-                    <th class="vk-prod-col-hide-md" style="width:90px">Supplier</th>
-                    <th class="vk-prod-col-hide-lg" style="width:50px">Unit</th>
-                    <th style="width:90px">Purchase</th>
-                    <th style="width:90px">Selling</th>
-                    <th style="width:120px">Stock</th>
-                    <th class="vk-prod-col-hide-md" style="width:70px">Min</th>
-                    <th class="vk-prod-col-hide-lg" style="width:80px">Warehouse</th>
-                    <th style="width:70px">Status</th>
-                    <th class="vk-prod-col-hide-md" style="width:90px">Updated</th>
-                    <th style="width:300px">Actions</th>
+                    <th style="width:130px">Code</th>
+                    <th style="width:220px">Product Name</th>
+                    <th>Description</th>
+                    <th style="width:125px">Warranty</th>
+                    <th style="width:145px">Purchase Price</th>
+                    <th style="width:145px">Selling Price</th>
+                    <th style="width:150px">Current Stock</th>
+                    <th style="width:120px">Action</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -256,7 +247,6 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
     <div class="vk-prod-footer">
         <div class="d-flex align-items-center gap-2 flex-wrap">
             <span id="vkProdPageInfo">Showing 0 of 0</span>
-            <button id="bulk-delete" type="button" class="vk-prod-btn vk-prod-act-danger"><i class="bi bi-trash"></i> Delete selected</button>
         </div>
         <nav aria-label="Product pagination"><ul id="pagination" class="vk-prod-page-nav pagination pagination-sm mb-0"></ul></nav>
     </div>

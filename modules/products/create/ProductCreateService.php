@@ -87,13 +87,24 @@ final class ProductCreateService
         }
 
         $name = trim((string) ($_POST['name'] ?? ''));
-        $unitProvided = !empty($_POST['unit_id']) || !empty($_POST['unit_type']);
-        if ($name === '' || empty($_POST['category_id']) || !isset($_POST['cost_price'], $_POST['selling_price']) || !$unitProvided) {
+        $sku = trim((string) ($_POST['sku'] ?? ''));
+        $pricesValid = isset($_POST['cost_price'], $_POST['selling_price'])
+            && is_numeric($_POST['cost_price']) && is_numeric($_POST['selling_price'])
+            && (float) $_POST['cost_price'] >= 0 && (float) $_POST['selling_price'] >= 0;
+        $stockFields = ['opening_stock', 'current_stock', 'minimum_stock', 'reorder_level', 'warranty_period'];
+        $stockValid = true;
+        foreach ($stockFields as $field) {
+            if (isset($_POST[$field]) && (!is_numeric($_POST[$field]) || (float) $_POST[$field] < 0 || (float) $_POST[$field] !== (float) (int) $_POST[$field])) {
+                $stockValid = false;
+                break;
+            }
+        }
+        if ($name === '' || $sku === '' || !$pricesValid || !$stockValid) {
             $_SESSION[self::DRAFT_KEY] = ['data' => $draftPayload, 'saved_at' => time()];
             if ($this->isAjax()) {
-                $this->jsonResponse(['error' => 'Product name, category, unit, purchase price, and selling price are required.'], 422);
+                $this->jsonResponse(['error' => 'Enter a product code, product name, valid purchase and selling prices, and non-negative whole stock and warranty values.'], 422);
             }
-            flash_set('error', 'Product name, category, unit, purchase price, and selling price are required.');
+            flash_set('error', 'Enter a product code, product name, valid purchase and selling prices, and non-negative whole stock and warranty values.');
             redirect('/modules/products/add.php');
         }
 
@@ -114,7 +125,8 @@ final class ProductCreateService
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             $_SESSION[self::DRAFT_KEY] = ['data' => $draftPayload, 'saved_at' => time()];
             if ($this->isAjax()) {
-                $this->jsonResponse(['error' => $e->getMessage()], 500);
+                $code = str_contains(strtolower($e->getMessage()), 'already in use') ? 409 : 500;
+                $this->jsonResponse(['error' => $e->getMessage()], $code);
             }
             flash_set('error', 'Error creating product: ' . $e->getMessage());
             redirect('/modules/products/add.php');
@@ -124,79 +136,55 @@ final class ProductCreateService
     /** @param array<string, mixed> $post */
     private function persistProduct(array $post, string $name): int
     {
-        $sku = ProductForm::text($post, 'sku');
+        $sku = trim((string) ($post['sku'] ?? ''));
         $productColumns = ProductSchema::columns($this->pdo, 'products');
-        if (in_array('sku', $productColumns, true)) {
-            if ($sku === '') $sku = 'VK-' . strtoupper(bin2hex(random_bytes(4)));
-            $skuCheck = $this->pdo->prepare('SELECT id FROM products WHERE sku = ? LIMIT 1');
-            $skuCheck->execute([$sku]);
-            if ($skuCheck->fetchColumn()) throw new RuntimeException('That SKU is already in use.');
+        if (!in_array('sku', $productColumns, true)) {
+            throw new RuntimeException('Product codes require the products.sku column. No database changes were made.');
         }
-        $barcode = ProductForm::text($post, 'barcode');
-        if ($barcode !== '' && in_array('barcode', $productColumns, true)) {
-            $barcodeCheck = $this->pdo->prepare('SELECT id FROM products WHERE barcode = ? LIMIT 1');
-            $barcodeCheck->execute([$barcode]);
-            if ($barcodeCheck->fetchColumn()) throw new RuntimeException('That barcode is already in use.');
-        }
-        $slug = ProductForm::text($post, 'seo_url') ?: ProductForm::slug($name);
-        $warrantyStart = ProductForm::date($post, 'warranty_start_date');
-        $warrantyDuration = ProductForm::int($post, 'warranty_period', 12);
-        $warrantyUnit = (string) ($post['warranty_unit'] ?? 'months');
+        $skuCheck = $this->pdo->prepare('SELECT id FROM products WHERE sku = ? LIMIT 1');
+        $skuCheck->execute([$sku]);
+        if ($skuCheck->fetchColumn()) throw new RuntimeException('That product code is already in use.');
+        $slug = ProductForm::slug($name) . '-' . ProductForm::slug($sku);
+        $warrantyDuration = ProductForm::int($post, 'warranty_period', 0);
+        $warrantyUnit = 'days';
+        $warrantyStart = $warrantyDuration > 0 ? date('Y-m-d') : null;
         $warrantyEnd = null;
         if ($warrantyStart && $warrantyDuration > 0) {
             $date = new DateTime($warrantyStart);
-            $date->modify('+' . $warrantyDuration . ' ' . $warrantyUnit);
+            $date->modify('+' . $warrantyDuration . ' days');
             $warrantyEnd = $date->format('Y-m-d');
+        }
+        $openingStock = ProductForm::int($post, 'opening_stock');
+        $currentStock = ProductForm::int($post, 'current_stock', $openingStock);
+        $minimumStock = ProductForm::int($post, 'minimum_stock');
+        $serialNumber = trim((string) ($post['serial_number'] ?? ''));
+        $description = trim((string) ($post['description'] ?? ''));
+        if ($serialNumber !== '' && !in_array('serial_number', $productColumns, true)) {
+            $description = trim($description . ($description !== '' ? "\n" : '') . 'Serial Number: ' . $serialNumber);
         }
 
         $this->pdo->beginTransaction();
 
-        $categoryName = null;
-        if (in_array('category', $productColumns, true) && ProductSchema::tableExists($this->pdo, 'categories')) {
-            $categoryStmt = $this->pdo->prepare('SELECT name FROM categories WHERE id = ? LIMIT 1');
-            $categoryStmt->execute([ProductForm::nullableId($post, 'category_id')]);
-            $categoryName = $categoryStmt->fetchColumn() ?: null;
-        }
-
         $productId = ProductSchema::insertFiltered($this->pdo, 'products', [
             'sku' => $sku,
-            'barcode' => $barcode,
-            'qr_code' => ProductForm::text($post, 'qr_code'),
             'name' => $name,
-            'subtitle' => ProductForm::text($post, 'subtitle'),
             'slug' => $slug,
-            'product_type' => ProductForm::text($post, 'product_type') ?: 'simple',
-            'brand_id' => ProductForm::nullableId($post, 'brand_id'),
-            'category_id' => ProductForm::nullableId($post, 'category_id'),
-            'unit_id' => ProductForm::nullableId($post, 'unit_id'),
-            'subcategory_id' => ProductForm::nullableId($post, 'subcategory_id'),
-            'supplier_id' => ProductForm::nullableId($post, 'supplier_id'),
-            'manufacturer_id' => ProductForm::nullableId($post, 'manufacturer_id'),
-            'unit_type' => ProductForm::text($post, 'unit_type') ?: 'piece',
-            'hsn_sac_code' => ProductForm::text($post, 'hsn_sac_code'),
-            'country_of_origin' => ProductForm::text($post, 'country_of_origin'),
-            'short_description' => ProductForm::text($post, 'short_description'),
-            'description' => ProductForm::text($post, 'description'),
-            'meta_title' => ProductForm::text($post, 'meta_title'),
-            'meta_description' => ProductForm::text($post, 'meta_description'),
-            'meta_keywords' => ProductForm::text($post, 'meta_keywords'),
-            'seo_url' => $slug,
-            'status' => ProductForm::text($post, 'status') ?: 'active',
-            'featured' => !empty($post['featured']) ? 1 : 0,
-            'is_digital' => !empty($post['is_digital']) ? 1 : 0,
-            'requires_shipping' => !empty($post['requires_shipping']) ? 1 : 0,
-            'tax_class_id' => ProductForm::nullableId($post, 'tax_class_id'),
+            'description' => $description !== '' ? $description : null,
+            'serial_number' => $serialNumber !== '' ? $serialNumber : null,
+            'status' => 'active',
             'cost_price' => ProductForm::num($post, 'cost_price'),
             'price' => ProductForm::num($post, 'selling_price'),
             'selling_price' => ProductForm::num($post, 'selling_price'),
-            'wholesale_price' => ProductForm::num($post, 'wholesale_price'),
-            'currency' => ProductForm::text($post, 'currency') ?: 'USD',
-            'warranty_enabled' => !empty($post['warranty_enabled']) ? 1 : 0,
-            'warranty_duration_days' => !empty($post['warranty_enabled']) ? max(0, $warrantyDuration * 30) : null,
-            'opening_stock' => ProductForm::int($post, 'opening_stock'),
-            'stock' => ProductForm::int($post, 'opening_stock'),
-            'low_stock_threshold' => ProductForm::int($post, 'minimum_stock'),
-            'category' => $categoryName,
+            'warranty_enabled' => $warrantyDuration > 0 ? 1 : 0,
+            'warranty_period' => $warrantyDuration,
+            'warranty_duration_days' => $warrantyDuration,
+            'opening_stock' => $openingStock,
+            'stock' => $currentStock,
+            'current_stock' => $currentStock,
+            'min_stock' => $minimumStock,
+            'minimum_stock' => $minimumStock,
+            'low_stock_threshold' => $minimumStock,
+            'reorder_level' => ProductForm::int($post, 'reorder_level'),
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
@@ -233,7 +221,7 @@ final class ProductCreateService
                 'product_id' => $productId,
                 'warehouse_id' => ProductForm::nullableId($post, 'warehouse_id'),
                 'opening_stock' => ProductForm::int($post, 'opening_stock'),
-                'current_stock' => ProductForm::int($post, 'current_stock') ?: ProductForm::int($post, 'opening_stock'),
+                'current_stock' => ProductForm::int($post, 'current_stock', $openingStock),
                 'minimum_stock' => ProductForm::int($post, 'minimum_stock'),
                 'reorder_level' => ProductForm::int($post, 'reorder_level'),
                 'rack_location' => ProductForm::text($post, 'rack_location'),
@@ -247,7 +235,7 @@ final class ProductCreateService
             ]);
         }
 
-        if (!empty($post['warranty_enabled']) && ProductSchema::tableExists($this->pdo, 'product_warranty')) {
+        if ($warrantyDuration > 0 && ProductSchema::tableExists($this->pdo, 'product_warranty')) {
             $docPath = null;
             if (!empty($_FILES['warranty_document']['name']) && is_uploaded_file($_FILES['warranty_document']['tmp_name'])) {
                 $ext = pathinfo((string) $_FILES['warranty_document']['name'], PATHINFO_EXTENSION);
@@ -293,7 +281,10 @@ final class ProductCreateService
             }
         }
 
-        if (!empty($_FILES['images']['name']) && is_array($_FILES['images']['name'])) {
+        $imageNames = $_FILES['images']['name'] ?? [];
+        $hasImageUploads = is_array($imageNames)
+            && array_filter($imageNames, static fn($fileName): bool => trim((string) $fileName) !== '') !== [];
+        if ($hasImageUploads) {
             $hasImageTable = ProductSchema::tableExists($this->pdo, 'product_images');
             $hasImageColumn = in_array('image_path', $productColumns, true);
             if (!$hasImageTable && !$hasImageColumn) throw new RuntimeException('This product database has no image field configured.');
@@ -339,26 +330,8 @@ final class ProductCreateService
         $savedAt = $draft['saved_at'] ?? null;
         $completeness = ProductForm::completeness($form);
 
-        $categoryColumns = ProductSchema::columns($this->pdo, 'categories');
-        $categoryQuery = in_array('parent_id', $categoryColumns, true)
-            ? 'SELECT id, name, COALESCE(parent_id, 0) AS parent_id FROM categories ORDER BY name'
-            : 'SELECT id, name, 0 AS parent_id FROM categories ORDER BY name';
-        $unitColumns = ProductSchema::columns($this->pdo, 'units');
-        $unitQuery = in_array('symbol', $unitColumns, true)
-            ? 'SELECT id, name, symbol FROM units ORDER BY name'
-            : 'SELECT id, name, NULL AS symbol FROM units ORDER BY name';
-        $taxTable = ProductSchema::tableExists($this->pdo, 'tax_classes') ? 'tax_classes' : 'taxes';
-        $lookups = [
-            'brands' => ProductSchema::queryOptions($this->pdo, 'SELECT id, name FROM brands ORDER BY name'),
-            'categories' => ProductSchema::queryOptions($this->pdo, $categoryQuery),
-            'suppliers' => ProductSchema::queryOptions($this->pdo, 'SELECT id, name FROM suppliers ORDER BY name'),
-            'manufacturers' => ProductSchema::queryOptions($this->pdo, 'SELECT id, name FROM manufacturers ORDER BY name'),
-            'warehouses' => ProductSchema::queryOptions($this->pdo, 'SELECT id, name FROM warehouses ORDER BY name'),
-            'units' => ProductSchema::queryOptions($this->pdo, $unitQuery),
-            'taxClasses' => ProductSchema::queryOptions($this->pdo, 'SELECT id, name, COALESCE(rate, 0) AS rate FROM `' . $taxTable . '` ORDER BY name'),
-        ];
-
-        $pageTitle = 'Product Wizard — Create Product';
+        $lookups = [];
+        $pageTitle = 'Add Product';
         $pcBase = base_url('modules/products/add.php');
         $pcAsset = static fn(string $path): string => base_url('assets/product-create/' . $path) . '?v=' . (string) @filemtime(dirname(__DIR__, 3) . '/assets/product-create/' . $path);
 

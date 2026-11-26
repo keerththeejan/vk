@@ -13,34 +13,23 @@ declare(strict_types=1);
         <div class="pc-simple-card">
             <section class="pc-simple-section">
                 <h2>Basic information</h2>
-                <?php require __DIR__ . '/steps/step-01-information.php'; ?>
+                <?php require __DIR__ . '/steps/step-simple-basic.php'; ?>
             </section>
             <section class="pc-simple-section">
                 <h2>Pricing</h2>
-                <?php require __DIR__ . '/steps/step-02-pricing.php'; ?>
+                <?php require __DIR__ . '/steps/step-simple-pricing.php'; ?>
             </section>
             <section class="pc-simple-section">
                 <h2>Inventory</h2>
-                <?php require __DIR__ . '/steps/step-03-inventory.php'; ?>
+                <?php require __DIR__ . '/steps/step-simple-inventory.php'; ?>
             </section>
             <section class="pc-simple-section">
                 <h2>Product image</h2>
-                <?php require __DIR__ . '/steps/step-04-media.php'; ?>
+                <?php require __DIR__ . '/steps/step-simple-media.php'; ?>
             </section>
-            <details class="pc-simple-optional">
-                <summary>Additional information (optional)</summary>
-                <div class="pc-simple-section">
-                    <?php require __DIR__ . '/steps/step-05-shipping.php'; ?>
-                    <?php require __DIR__ . '/steps/step-06-seo.php'; ?>
-                    <?php require __DIR__ . '/steps/step-07-warranty.php'; ?>
-                    <?php require __DIR__ . '/steps/step-08-variants.php'; ?>
-                </div>
-            </details>
         </div>
         <div class="pc-simple-actions">
             <a class="btn btn-outline-secondary" href="<?= e(base_url('modules/products/list.php')) ?>">Cancel</a>
-            <button type="button" class="btn btn-outline-primary" data-intent="publish_new">Save &amp; Add Another</button>
-            <button type="button" class="btn btn-outline-primary" data-intent="publish_view">Save &amp; View Product</button>
             <button type="button" class="btn btn-primary" data-intent="publish"><i class="bi bi-check2-circle me-1"></i>Save Product</button>
         </div>
     </form>

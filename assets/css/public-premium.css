@@ -94,6 +94,18 @@ html[data-bs-theme="dark"] {
     }
 }
 
+/* Live homepage data components */
+.vk-live-week-chart { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); align-items:end; gap:clamp(.35rem,1.2vw,.8rem); height:112px; padding:14px 12px 0; border-bottom:1px solid var(--vk-pub-border,rgba(148,163,184,.18)); border-radius:12px 12px 0 0; background:linear-gradient(180deg,rgba(57,139,255,.08),transparent); }
+.vk-live-week-day { display:flex; min-width:0; height:100%; flex-direction:column; align-items:center; justify-content:flex-end; gap:7px; }
+.vk-live-week-bar { display:block; width:min(100%,28px); height:var(--bar-height); min-height:3px; border-radius:6px 6px 2px 2px; background:linear-gradient(180deg,#16d9f2,#398bff 68%,#783bfa); box-shadow:0 0 16px rgba(57,139,255,.2); }
+.vk-live-week-day small,.vk-live-week-caption { color:var(--vk-pub-muted,#a6b4ca); font-size:.68rem; }
+.vk-live-week-caption { padding:8px 12px 0; }
+.vk-team-empty { grid-column:1/-1; display:flex; min-height:210px; flex-direction:column; align-items:center; justify-content:center; gap:.8rem; padding:2rem; border:1px solid rgba(148,163,184,.16); border-radius:18px; background:rgba(23,34,56,.72); color:#a6b4ca; text-align:center; }
+.vk-team-empty i { color:#16d9f2; width:28px; height:28px; }
+.vk-team-empty strong { color:#f8faff; }
+.vk-testimonial-empty { display:flex; min-height:220px; flex-direction:column; justify-content:center; align-items:flex-start; }
+.vk-testimonial-empty h3 { color:#f8faff; }
+
 /* Homepage staff and owner portfolio */
 .vk-team-showcase-section {
     background:
@@ -6153,8 +6165,8 @@ body.vk-neo-site {
     }
 
     .vk-hero-inner {
-        padding-top: 1.6rem;
-        padding-bottom: 2rem;
+        padding-top: 1rem;
+        padding-bottom: 1.25rem;
     }
 
     .vk-hero-title {
@@ -6253,6 +6265,23 @@ body.vk-neo-site {
 
     .vk-back-to-top {
         display: none;
+    }
+}
+
+/* Keep the homepage on one centered grid across viewport sizes. */
+.vk-public-site main:has(.vk-home-hero) > section > .container {
+    width: min(calc(100% - 2rem), 1400px);
+    max-width: 1400px;
+    margin-inline: auto;
+}
+
+.vk-public-site main:has(.vk-home-hero) {
+    min-width: 0;
+}
+
+@media (max-width: 575.98px) {
+    .vk-public-site main:has(.vk-home-hero) > section > .container {
+        width: calc(100% - 1.25rem);
     }
 }
 
