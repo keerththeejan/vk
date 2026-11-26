@@ -1,12 +1,13 @@
-﻿-- Additive migration for the simplified VK Network product entry form.
--- Preserves all existing product columns and data; existing records keep a NULL code.
-ALTER TABLE products
-  ADD COLUMN sku VARCHAR(128) NULL,
-  ADD COLUMN description TEXT NULL,
-  ADD COLUMN cost_price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  ADD COLUMN warranty_duration_days INT UNSIGNED NOT NULL DEFAULT 0,
-  ADD COLUMN opening_stock INT UNSIGNED NOT NULL DEFAULT 0,
-  ADD COLUMN min_stock INT UNSIGNED NOT NULL DEFAULT 0,
-  ADD COLUMN reorder_level INT UNSIGNED NOT NULL DEFAULT 0,
-  ADD COLUMN serial_number VARCHAR(191) NULL,
-  ADD UNIQUE KEY uq_products_sku (sku);
+﻿-- Idempotent, additive migration for the simplified VK product entry form.
+-- Run this in phpMyAdmin on the site's selected database. It never drops or rewrites product rows.
+SET @vk_db = DATABASE();
+
+SET @ddl = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@vk_db AND TABLE_NAME='products' AND COLUMN_NAME='sku')=0, 'ALTER TABLE products ADD COLUMN sku VARCHAR(128) NULL', 'SELECT 1'); PREPARE vk_stmt FROM @ddl; EXECUTE vk_stmt; DEALLOCATE PREPARE vk_stmt;
+SET @ddl = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@vk_db AND TABLE_NAME='products' AND COLUMN_NAME='description')=0, 'ALTER TABLE products ADD COLUMN description TEXT NULL', 'SELECT 1'); PREPARE vk_stmt FROM @ddl; EXECUTE vk_stmt; DEALLOCATE PREPARE vk_stmt;
+SET @ddl = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@vk_db AND TABLE_NAME='products' AND COLUMN_NAME='cost_price')=0, 'ALTER TABLE products ADD COLUMN cost_price DECIMAL(12,2) NOT NULL DEFAULT 0.00', 'SELECT 1'); PREPARE vk_stmt FROM @ddl; EXECUTE vk_stmt; DEALLOCATE PREPARE vk_stmt;
+SET @ddl = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@vk_db AND TABLE_NAME='products' AND COLUMN_NAME='warranty_duration_days')=0, 'ALTER TABLE products ADD COLUMN warranty_duration_days INT UNSIGNED NOT NULL DEFAULT 0', 'SELECT 1'); PREPARE vk_stmt FROM @ddl; EXECUTE vk_stmt; DEALLOCATE PREPARE vk_stmt;
+SET @ddl = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@vk_db AND TABLE_NAME='products' AND COLUMN_NAME='opening_stock')=0, 'ALTER TABLE products ADD COLUMN opening_stock INT UNSIGNED NOT NULL DEFAULT 0', 'SELECT 1'); PREPARE vk_stmt FROM @ddl; EXECUTE vk_stmt; DEALLOCATE PREPARE vk_stmt;
+SET @ddl = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@vk_db AND TABLE_NAME='products' AND COLUMN_NAME='min_stock')=0, 'ALTER TABLE products ADD COLUMN min_stock INT UNSIGNED NOT NULL DEFAULT 0', 'SELECT 1'); PREPARE vk_stmt FROM @ddl; EXECUTE vk_stmt; DEALLOCATE PREPARE vk_stmt;
+SET @ddl = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@vk_db AND TABLE_NAME='products' AND COLUMN_NAME='reorder_level')=0, 'ALTER TABLE products ADD COLUMN reorder_level INT UNSIGNED NOT NULL DEFAULT 0', 'SELECT 1'); PREPARE vk_stmt FROM @ddl; EXECUTE vk_stmt; DEALLOCATE PREPARE vk_stmt;
+SET @ddl = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=@vk_db AND TABLE_NAME='products' AND COLUMN_NAME='serial_number')=0, 'ALTER TABLE products ADD COLUMN serial_number VARCHAR(191) NULL', 'SELECT 1'); PREPARE vk_stmt FROM @ddl; EXECUTE vk_stmt; DEALLOCATE PREPARE vk_stmt;
+SET @ddl = IF((SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=@vk_db AND TABLE_NAME='products' AND INDEX_NAME='uq_products_sku')=0, 'ALTER TABLE products ADD UNIQUE KEY uq_products_sku (sku)', 'SELECT 1'); PREPARE vk_stmt FROM @ddl; EXECUTE vk_stmt; DEALLOCATE PREPARE vk_stmt;

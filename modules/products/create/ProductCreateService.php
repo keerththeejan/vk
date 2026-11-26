@@ -139,7 +139,7 @@ final class ProductCreateService
         $sku = trim((string) ($post['sku'] ?? ''));
         $productColumns = ProductSchema::columns($this->pdo, 'products');
         if (!in_array('sku', $productColumns, true)) {
-            throw new RuntimeException('Product codes require the products.sku column. No database changes were made.');
+            throw new RuntimeException('The product database needs its one-time product entry upgrade. Apply sql/product_entry_simple_migration.sql to this site\'s database, then retry.');
         }
         $skuCheck = $this->pdo->prepare('SELECT id FROM products WHERE sku = ? LIMIT 1');
         $skuCheck->execute([$sku]);
