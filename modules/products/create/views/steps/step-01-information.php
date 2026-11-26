@@ -4,6 +4,7 @@ $brands = $lookups['brands'] ?? [];
 $categories = $lookups['categories'] ?? [];
 $suppliers = $lookups['suppliers'] ?? [];
 $manufacturers = $lookups['manufacturers'] ?? [];
+$units = $lookups['units'] ?? [];
 ?>
 <div class="row g-3">
     <div class="col-md-8">
@@ -44,8 +45,8 @@ $manufacturers = $lookups['manufacturers'] ?? [];
         </select>
     </div>
     <div class="col-md-4">
-        <label class="form-label" for="category_id">Category</label>
-        <select class="form-select pc-searchable" id="category_id" name="category_id" data-subtarget="subcategory_id">
+        <label class="form-label" for="category_id">Category <span class="text-danger">*</span></label>
+        <select class="form-select pc-searchable" id="category_id" name="category_id" required data-subtarget="subcategory_id">
             <option value="">Select category</option>
             <?php foreach ($categories as $row): ?>
             <?php if ((int) ($row['parent_id'] ?? 0) === 0): ?>
@@ -84,12 +85,19 @@ $manufacturers = $lookups['manufacturers'] ?? [];
         </select>
     </div>
     <div class="col-md-4">
-        <label class="form-label" for="unit_type">Unit</label>
-        <select class="form-select" id="unit_type" name="unit_type">
+        <label class="form-label" for="<?= $units ? 'unit_id' : 'unit_type' ?>">Unit <span class="text-danger">*</span></label>
+        <?php if ($units): ?>
+        <select class="form-select" id="unit_id" name="unit_id" required>
+            <option value="">Select unit</option>
+            <?php foreach ($units as $row): ?><option value="<?= (int) $row['id'] ?>" <?= ProductForm::selected($form, 'unit_id', (string) $row['id']) ?>><?= e((string) $row['name']) ?><?= !empty($row['symbol']) ? ' (' . e((string) $row['symbol']) . ')' : '' ?></option><?php endforeach; ?>
+        </select>
+        <?php else: ?>
+        <select class="form-select" id="unit_type" name="unit_type" required>
             <?php foreach (['piece' => 'Piece', 'kg' => 'Kilogram', 'liter' => 'Liter', 'box' => 'Box', 'pack' => 'Pack'] as $val => $label): ?>
             <option value="<?= e($val) ?>" <?= ProductForm::selected($form, 'unit_type', $val) ?>><?= e($label) ?></option>
             <?php endforeach; ?>
         </select>
+        <?php endif; ?>
     </div>
     <div class="col-md-4">
         <label class="form-label" for="country_of_origin">Country</label>

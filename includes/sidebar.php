@@ -4,12 +4,16 @@ $path = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
 function nav_active(string $needle): string
 {
     global $path;
-    return str_contains((string) $path, $needle) ? 'active' : '';
+    $moduleRelative = preg_replace('#^.*?/modules/#', '/', (string) $path) ?? (string) $path;
+    return str_contains((string) $path, $needle) || str_contains($moduleRelative, $needle) ? 'active' : '';
 }
 ?>
 <div class="offcanvas-lg offcanvas-start vk-sidebar text-white" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
     <div class="offcanvas-header d-lg-none border-bottom border-light border-opacity-10">
-        <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">Command menu</h5>
+        <div class="d-flex align-items-center gap-3">
+            <span class="vk-logo-sm rounded-circle d-flex align-items-center justify-content-center fw-bold text-white">VK</span>
+            <div class="vk-sidebar-brand-copy"><div class="vk-brand-red fw-bold lh-1">IT Network</div><small class="text-uppercase">Repair &middot; CCTV &middot; Hardware</small></div>
+        </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#sidebarOffcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body p-0 d-flex flex-column">
@@ -25,7 +29,7 @@ function nav_active(string $needle): string
                 </button>
             </div>
         </div>
-        <nav class="nav flex-column py-2 flex-grow-1">
+        <nav class="nav flex-column py-2 flex-grow-1 vk-sidebar-nav" aria-label="Main navigation">
             <span class="vk-nav-label">Command</span>
             <a class="nav-link px-3 py-2 <?= nav_active('/modules/dashboard.php') ?>" href="<?= e(BASE_URL) ?>/modules/dashboard.php"><i class="bi bi-speedometer2 me-2"></i><span>Dashboard</span></a>
             <a class="nav-link px-3 py-2 <?= nav_active('/bookings/') ?>" href="<?= e(BASE_URL) ?>/modules/bookings/list.php"><i class="bi bi-calendar2-check me-2"></i><span>Web bookings</span></a>
@@ -58,10 +62,10 @@ function nav_active(string $needle): string
             <a class="nav-link px-3 py-2 <?= nav_active('/products/') ?>" href="<?= e(BASE_URL) ?>/modules/products/list.php"><i class="bi bi-cpu me-2"></i><span>Parts &amp; products</span></a>
             <?php $quotationNavOpen = str_contains($path, '/quotations/'); ?>
             <div class="vk-nav-group">
-                <button class="nav-link px-3 py-2 w-100 text-start border-0 bg-transparent text-white d-flex align-items-center <?= $quotationNavOpen ? '' : 'collapsed' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#quotationMgmtNav" aria-controls="quotationMgmtNav" aria-expanded="<?= $quotationNavOpen ? 'true' : 'false' ?>">
+                <button class="nav-link px-3 py-2 w-100 text-start border-0 bg-transparent text-white d-flex align-items-center <?= $quotationNavOpen ? 'active' : 'collapsed' ?>" type="button" data-vk-nav-group="quotations" data-bs-toggle="collapse" data-bs-target="#quotationMgmtNav" aria-controls="quotationMgmtNav" aria-expanded="<?= $quotationNavOpen ? 'true' : 'false' ?>">
                     <i class="bi bi-file-earmark-ruled me-2"></i><span>Quotation Management</span><i class="bi bi-chevron-down ms-auto small"></i>
                 </button>
-                <div class="collapse <?= $quotationNavOpen ? 'show' : '' ?>" id="quotationMgmtNav">
+                <div class="collapse vk-subnav <?= $quotationNavOpen ? 'show' : '' ?>" id="quotationMgmtNav">
                     <a class="nav-link ps-5 py-2 small <?= nav_active('/quotations/dashboard.php') ?>" href="<?= e(BASE_URL) ?>/modules/quotations/dashboard.php"><span>Dashboard</span></a>
                     <a class="nav-link ps-5 py-2 small <?= nav_active('/quotations/create.php') ?>" href="<?= e(BASE_URL) ?>/modules/quotations/create.php"><span>Create Quotation</span></a>
                     <a class="nav-link ps-5 py-2 small <?= nav_active('/quotations/list.php') ?>" href="<?= e(BASE_URL) ?>/modules/quotations/list.php"><span>Quotation List</span></a>
@@ -79,10 +83,10 @@ function nav_active(string $needle): string
             </div>
             <?php $invoiceNavOpen = str_contains($path, '/invoices/'); ?>
             <div class="vk-nav-group">
-                <button class="nav-link px-3 py-2 w-100 text-start border-0 bg-transparent text-white d-flex align-items-center <?= $invoiceNavOpen ? '' : 'collapsed' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#invoiceMgmtNav" aria-controls="invoiceMgmtNav" aria-expanded="<?= $invoiceNavOpen ? 'true' : 'false' ?>">
+                <button class="nav-link px-3 py-2 w-100 text-start border-0 bg-transparent text-white d-flex align-items-center <?= $invoiceNavOpen ? 'active' : 'collapsed' ?>" type="button" data-vk-nav-group="invoices" data-bs-toggle="collapse" data-bs-target="#invoiceMgmtNav" aria-controls="invoiceMgmtNav" aria-expanded="<?= $invoiceNavOpen ? 'true' : 'false' ?>">
                     <i class="bi bi-receipt me-2"></i><span>Invoice Management</span><i class="bi bi-chevron-down ms-auto small"></i>
                 </button>
-                <div class="collapse <?= $invoiceNavOpen ? 'show' : '' ?>" id="invoiceMgmtNav">
+                <div class="collapse vk-subnav <?= $invoiceNavOpen ? 'show' : '' ?>" id="invoiceMgmtNav">
                     <a class="nav-link ps-5 py-2 small <?= nav_active('/invoices/list.php') ?>" href="<?= e(BASE_URL) ?>/modules/invoices/list.php"><span>Invoice List</span></a>
                     <a class="nav-link ps-5 py-2 small <?= nav_active('/invoices/create.php') ?>" href="<?= e(BASE_URL) ?>/modules/invoices/create.php"><span>Create Invoice</span></a>
                     <a class="nav-link ps-5 py-2 small <?= nav_active('/invoices/print_settings.php') ?>" href="<?= e(BASE_URL) ?>/modules/invoices/print_settings.php"><span>Invoice Print Settings</span></a>

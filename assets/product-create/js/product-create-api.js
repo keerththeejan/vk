@@ -12,6 +12,7 @@
 
         async request(formData, intent) {
             formData.set('intent', intent);
+            if (window.VK_CSRF_TOKEN && !formData.has('_csrf')) formData.set('_csrf', window.VK_CSRF_TOKEN);
             const res = await fetch(this.url, {
                 method: 'POST',
                 body: formData,

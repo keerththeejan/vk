@@ -64,10 +64,10 @@ try {
     $kpiNew = 0;
 }
 
-$kpiTodaySales = max(0, (int) round($kpiTotal * 0.08));
-$kpiSold = max(0, (int) round($kpiTotal * 1.4));
-$kpiTop = max(0, (int) round($kpiActive * 0.2));
-$kpiProfit = $kpiValue > 0 ? round($kpiValue * 0.22) : 0;
+$kpiTodaySales = 0;
+$kpiSold = 0;
+$kpiTop = 0;
+$kpiProfit = 0;
 
 $catChart = [];
 try {
@@ -115,18 +115,18 @@ require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 <div class="vk-prod-kpi-grid" role="region" aria-label="Inventory KPIs">
     <?php
     $kpis = [
-        ['blue', 'bi-box-seam', 'Total Products', 'stat-total', (int) $kpiTotal, '+4.2%', [40,55,48,62,58,70]],
-        ['green', 'bi-check-circle', 'Active Products', 'stat-active', (int) $kpiActive, '+2.1%', [30,42,38,50,55,60]],
-        ['orange', 'bi-exclamation-triangle', 'Low Stock', 'stat-low', (int) $kpiLow, '-1.3%', [20,18,22,16,14,12]],
-        ['red', 'bi-x-circle', 'Out of Stock', 'stat-out', (int) $kpiOut, '+0.8%', [8,10,9,11,10,12]],
-        ['purple', 'bi-currency-dollar', 'Inventory Value', 'stat-value', formatCurrency($kpiValue), '+6.5%', [50,58,54,66,72,78]],
-        ['teal', 'bi-graph-up-arrow', "Today's Sales", 'stat-today-sales', (int) $kpiTodaySales, '+12%', [20,28,32,40,38,45]],
-        ['blue', 'bi-cart-check', 'Products Sold', 'stat-sold', (int) $kpiSold, '+8.4%', [35,40,38,48,52,58]],
-        ['green', 'bi-plus-square', 'New Products', 'stat-new', (int) $kpiNew, '+3.0%', [10,12,14,16,18,20]],
+        ['blue', 'bi-box-seam', 'Total Products', 'stat-total', (int) $kpiTotal, '', [40,55,48,62,58,70]],
+        ['green', 'bi-check-circle', 'Active Products', 'stat-active', (int) $kpiActive, '', [30,42,38,50,55,60]],
+        ['orange', 'bi-exclamation-triangle', 'Low Stock', 'stat-low', (int) $kpiLow, '', [20,18,22,16,14,12]],
+        ['red', 'bi-x-circle', 'Out of Stock', 'stat-out', (int) $kpiOut, '', [8,10,9,11,10,12]],
+        ['purple', 'bi-currency-dollar', 'Inventory Value', 'stat-value', formatCurrency($kpiValue), '', [50,58,54,66,72,78]],
+        ['teal', 'bi-graph-up-arrow', "Today's Sales", 'stat-today-sales', (int) $kpiTodaySales, '', [20,28,32,40,38,45]],
+        ['blue', 'bi-cart-check', 'Products Sold', 'stat-sold', (int) $kpiSold, '', [35,40,38,48,52,58]],
+        ['green', 'bi-plus-square', 'New Products', 'stat-new', (int) $kpiNew, '', [10,12,14,16,18,20]],
         ['purple', 'bi-tags', 'Categories', 'stat-categories', (int) $kpiCategories, '', [25,30,28,32,35,38]],
         ['orange', 'bi-building', 'Suppliers', 'stat-suppliers', (int) $kpiSuppliers, '', [15,18,17,20,22,24]],
-        ['teal', 'bi-star', 'Top Selling', 'stat-top', (int) $kpiTop, '+5.2%', [45,50,48,55,60,65]],
-        ['green', 'bi-piggy-bank', 'Monthly Profit', 'stat-profit', formatCurrency($kpiProfit), '+9.1%', [30,35,40,44,48,52]],
+        ['teal', 'bi-star', 'Top Selling', 'stat-top', (int) $kpiTop, '', [45,50,48,55,60,65]],
+        ['green', 'bi-piggy-bank', 'Monthly Profit', 'stat-profit', formatCurrency($kpiProfit), '', [30,35,40,44,48,52]],
     ];
     foreach ($kpis as $k):
         [$tone, $icon, $label, $id, $val, $trend, $spark] = $k;

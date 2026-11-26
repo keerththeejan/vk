@@ -4,6 +4,7 @@ $pageTitle = $pageTitle ?? 'Dashboard';
 $extraHead = $extraHead ?? '';
 $vkAdminStyleVersion = vk_asset_mtime_version('assets/css/style.css');
 $vkAppStyleVersion = vk_asset_mtime_version('assets/css/vk-app.css');
+$vkSidebarStyleVersion = vk_asset_mtime_version('assets/css/sidebar.css');
 $vkAdminFavicon = getLogo('favicon');
 ?>
 <!DOCTYPE html>
@@ -34,6 +35,7 @@ $vkAdminFavicon = getLogo('favicon');
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= e($vkAdminStyleVersion) ?>">
     <link rel="stylesheet" href="<?= e(base_url('assets/css/vk-app.css')) ?>?v=<?= e($vkAppStyleVersion) ?>">
+    <link rel="stylesheet" href="<?= e(base_url('assets/css/sidebar.css')) ?>?v=<?= e($vkSidebarStyleVersion) ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">

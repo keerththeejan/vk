@@ -4,12 +4,12 @@ $taxClasses = $lookups['taxClasses'] ?? [];
 ?>
 <div class="row g-3">
     <div class="col-md-4">
-        <label class="form-label" for="cost_price">Cost Price</label>
-        <input type="number" step="0.01" min="0" class="form-control pc-calc" id="cost_price" name="cost_price" value="<?= e(ProductForm::value($form, 'cost_price', '0')) ?>">
+        <label class="form-label" for="cost_price">Purchase Price <span class="text-danger">*</span></label>
+        <input type="number" step="0.01" min="0" class="form-control pc-calc" id="cost_price" name="cost_price" required value="<?= e(ProductForm::value($form, 'cost_price', '0')) ?>">
     </div>
     <div class="col-md-4">
-        <label class="form-label" for="selling_price">Selling Price</label>
-        <input type="number" step="0.01" min="0" class="form-control pc-calc" id="selling_price" name="selling_price" value="<?= e(ProductForm::value($form, 'selling_price', '0')) ?>">
+        <label class="form-label" for="selling_price">Selling Price <span class="text-danger">*</span></label>
+        <input type="number" step="0.01" min="0" class="form-control pc-calc" id="selling_price" name="selling_price" required value="<?= e(ProductForm::value($form, 'selling_price', '0')) ?>">
     </div>
     <div class="col-md-4">
         <label class="form-label" for="wholesale_price">Wholesale</label>

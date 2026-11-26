@@ -1,4 +1,5 @@
 /* Enterprise Product Create — dark professional theme (Bootstrap 5.3 extension) */
+.pc-simple{max-width:1440px;margin:0 auto}.pc-simple .pc-layout{display:block}.pc-simple-card{background:var(--pc-surface);border:1px solid var(--pc-border);border-radius:14px;padding:clamp(16px,3vw,30px)}.pc-simple-section{padding:0 0 26px;margin:0 0 24px;border-bottom:1px solid var(--pc-border)}.pc-simple-section h2{font-size:1.05rem;font-weight:700;margin:0 0 18px;color:var(--pc-text)}.pc-simple-optional{padding:18px 0;color:var(--pc-text)}.pc-simple-optional summary{cursor:pointer;font-weight:650}.pc-simple-optional .pc-simple-section{margin-top:20px}.pc-simple-actions{display:flex;justify-content:flex-end;gap:10px;padding:18px 0 30px;flex-wrap:wrap}.pc-simple .pc-toolbar{background:var(--pc-surface);color:var(--pc-text)}.pc-simple .pc-title{font-size:1.6rem}.pc-simple .pc-form .form-text{color:var(--pc-muted)}.pc-simple .pc-form input,.pc-simple .pc-form select,.pc-simple .pc-form textarea{min-height:42px}.pc-simple .pc-form textarea{min-height:unset}
 :root {
     --pc-bg: #0f1419;
     --pc-surface: #1a2332;

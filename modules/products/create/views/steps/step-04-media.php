@@ -5,9 +5,9 @@ declare(strict_types=1);
     <div class="col-12">
         <div class="pc-dropzone border rounded p-4 text-center" id="pcDropzone" tabindex="0" role="button" aria-label="Upload product media">
             <i class="bi bi-cloud-arrow-up fs-1 text-secondary d-block mb-2" aria-hidden="true"></i>
-            <p class="mb-1">Drag &amp; drop images, video, or PDF</p>
+            <p class="mb-1">Upload a product image</p>
             <p class="small text-secondary mb-3">Supports JPG, PNG, WebP, MP4, PDF — max 10MB each</p>
-            <input type="file" class="visually-hidden" id="images" name="images[]" accept="image/*,video/mp4,application/pdf" multiple>
+            <input type="file" class="visually-hidden" id="images" name="images[]" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
             <button type="button" class="btn btn-outline-primary btn-sm" id="pcBrowseMedia">Browse Files</button>
         </div>
     </div>

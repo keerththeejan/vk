@@ -37,6 +37,11 @@ final class ProductCreateService
 
     private function handlePost(): void
     {
+        if (!csrf_verify(isset($_POST['_csrf']) ? (string) $_POST['_csrf'] : null)) {
+            if ($this->isAjax()) $this->jsonResponse(['error' => 'Your session expired. Refresh the page and try again.'], 419);
+            flash_set('error', 'Your session expired. Please try again.');
+            redirect('/modules/products/add.php');
+        }
         $intent = (string) ($_POST['intent'] ?? 'publish');
         $draftPayload = ProductForm::draftPayload($_POST);
 
@@ -82,12 +87,13 @@ final class ProductCreateService
         }
 
         $name = trim((string) ($_POST['name'] ?? ''));
-        if ($name === '') {
+        $unitProvided = !empty($_POST['unit_id']) || !empty($_POST['unit_type']);
+        if ($name === '' || empty($_POST['category_id']) || !isset($_POST['cost_price'], $_POST['selling_price']) || !$unitProvided) {
             $_SESSION[self::DRAFT_KEY] = ['data' => $draftPayload, 'saved_at' => time()];
             if ($this->isAjax()) {
-                $this->jsonResponse(['error' => 'Product name is required.'], 422);
+                $this->jsonResponse(['error' => 'Product name, category, unit, purchase price, and selling price are required.'], 422);
             }
-            flash_set('error', 'Product name is required.');
+            flash_set('error', 'Product name, category, unit, purchase price, and selling price are required.');
             redirect('/modules/products/add.php');
         }
 
@@ -97,12 +103,15 @@ final class ProductCreateService
             if ($this->isAjax()) {
                 $redirect = $intent === 'publish_new'
                     ? base_url('modules/products/add.php')
-                    : base_url('modules/products/list.php');
+                    : ($intent === 'publish_view'
+                        ? base_url('modules/products/view.php?id=' . $productId)
+                        : base_url('modules/products/list.php'));
                 $this->jsonResponse(['success' => true, 'id' => $productId, 'redirect' => $redirect]);
             }
             flash_set('success', 'Product created.');
-            redirect($intent === 'publish_new' ? '/modules/products/add.php' : '/modules/products/list.php');
+            redirect($intent === 'publish_new' ? '/modules/products/add.php' : ($intent === 'publish_view' ? '/modules/products/view.php?id=' . $productId : '/modules/products/list.php'));
         } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             $_SESSION[self::DRAFT_KEY] = ['data' => $draftPayload, 'saved_at' => time()];
             if ($this->isAjax()) {
                 $this->jsonResponse(['error' => $e->getMessage()], 500);
@@ -116,6 +125,19 @@ final class ProductCreateService
     private function persistProduct(array $post, string $name): int
     {
         $sku = ProductForm::text($post, 'sku');
+        $productColumns = ProductSchema::columns($this->pdo, 'products');
+        if (in_array('sku', $productColumns, true)) {
+            if ($sku === '') $sku = 'VK-' . strtoupper(bin2hex(random_bytes(4)));
+            $skuCheck = $this->pdo->prepare('SELECT id FROM products WHERE sku = ? LIMIT 1');
+            $skuCheck->execute([$sku]);
+            if ($skuCheck->fetchColumn()) throw new RuntimeException('That SKU is already in use.');
+        }
+        $barcode = ProductForm::text($post, 'barcode');
+        if ($barcode !== '' && in_array('barcode', $productColumns, true)) {
+            $barcodeCheck = $this->pdo->prepare('SELECT id FROM products WHERE barcode = ? LIMIT 1');
+            $barcodeCheck->execute([$barcode]);
+            if ($barcodeCheck->fetchColumn()) throw new RuntimeException('That barcode is already in use.');
+        }
         $slug = ProductForm::text($post, 'seo_url') ?: ProductForm::slug($name);
         $warrantyStart = ProductForm::date($post, 'warranty_start_date');
         $warrantyDuration = ProductForm::int($post, 'warranty_period', 12);
@@ -129,9 +151,16 @@ final class ProductCreateService
 
         $this->pdo->beginTransaction();
 
+        $categoryName = null;
+        if (in_array('category', $productColumns, true) && ProductSchema::tableExists($this->pdo, 'categories')) {
+            $categoryStmt = $this->pdo->prepare('SELECT name FROM categories WHERE id = ? LIMIT 1');
+            $categoryStmt->execute([ProductForm::nullableId($post, 'category_id')]);
+            $categoryName = $categoryStmt->fetchColumn() ?: null;
+        }
+
         $productId = ProductSchema::insertFiltered($this->pdo, 'products', [
             'sku' => $sku,
-            'barcode' => ProductForm::text($post, 'barcode'),
+            'barcode' => $barcode,
             'qr_code' => ProductForm::text($post, 'qr_code'),
             'name' => $name,
             'subtitle' => ProductForm::text($post, 'subtitle'),
@@ -139,6 +168,7 @@ final class ProductCreateService
             'product_type' => ProductForm::text($post, 'product_type') ?: 'simple',
             'brand_id' => ProductForm::nullableId($post, 'brand_id'),
             'category_id' => ProductForm::nullableId($post, 'category_id'),
+            'unit_id' => ProductForm::nullableId($post, 'unit_id'),
             'subcategory_id' => ProductForm::nullableId($post, 'subcategory_id'),
             'supplier_id' => ProductForm::nullableId($post, 'supplier_id'),
             'manufacturer_id' => ProductForm::nullableId($post, 'manufacturer_id'),
@@ -157,12 +187,16 @@ final class ProductCreateService
             'requires_shipping' => !empty($post['requires_shipping']) ? 1 : 0,
             'tax_class_id' => ProductForm::nullableId($post, 'tax_class_id'),
             'cost_price' => ProductForm::num($post, 'cost_price'),
+            'price' => ProductForm::num($post, 'selling_price'),
             'selling_price' => ProductForm::num($post, 'selling_price'),
             'wholesale_price' => ProductForm::num($post, 'wholesale_price'),
             'currency' => ProductForm::text($post, 'currency') ?: 'USD',
             'warranty_enabled' => !empty($post['warranty_enabled']) ? 1 : 0,
             'warranty_duration_days' => !empty($post['warranty_enabled']) ? max(0, $warrantyDuration * 30) : null,
             'opening_stock' => ProductForm::int($post, 'opening_stock'),
+            'stock' => ProductForm::int($post, 'opening_stock'),
+            'low_stock_threshold' => ProductForm::int($post, 'minimum_stock'),
+            'category' => $categoryName,
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
@@ -259,25 +293,38 @@ final class ProductCreateService
             }
         }
 
-        if (!empty($_FILES['images']['name']) && is_array($_FILES['images']['name']) && ProductSchema::tableExists($this->pdo, 'product_images')) {
+        if (!empty($_FILES['images']['name']) && is_array($_FILES['images']['name'])) {
+            $hasImageTable = ProductSchema::tableExists($this->pdo, 'product_images');
+            $hasImageColumn = in_array('image_path', $productColumns, true);
+            if (!$hasImageTable && !$hasImageColumn) throw new RuntimeException('This product database has no image field configured.');
             $uploadDir = dirname(__DIR__, 3) . '/uploads/products/' . $productId;
             if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
+                if (!mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) throw new RuntimeException('Unable to create the product image folder.');
             }
+            $mimeExt = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
             foreach ($_FILES['images']['name'] as $index => $nameFile) {
-                if (!is_uploaded_file($_FILES['images']['tmp_name'][$index])) {
-                    continue;
+                $tmp = (string) ($_FILES['images']['tmp_name'][$index] ?? '');
+                if ($tmp === '' || !is_uploaded_file($tmp)) continue;
+                if ((int) ($_FILES['images']['size'][$index] ?? 0) > 10 * 1024 * 1024) throw new RuntimeException('Product images must be 10 MB or smaller.');
+                $mime = $finfo->file($tmp);
+                if (!isset($mimeExt[$mime])) throw new RuntimeException('Use a JPG, PNG, WebP, or GIF product image.');
+                $filename = bin2hex(random_bytes(12)) . '.' . $mimeExt[$mime];
+                $target = $uploadDir . '/' . $filename;
+                if (!move_uploaded_file($tmp, $target)) throw new RuntimeException('Unable to save the product image.');
+                $path = 'uploads/products/' . $productId . '/' . $filename;
+                if ($hasImageTable) {
+                    ProductSchema::insertFiltered($this->pdo, 'product_images', [
+                        'product_id' => $productId,
+                        'path' => $path,
+                        'is_thumbnail' => $index === 0 ? 1 : 0,
+                        'sort_order' => $index,
+                        'created_at' => date('Y-m-d H:i:s'),
+                    ]);
+                } elseif ($index === 0) {
+                    $updateImage = $this->pdo->prepare('UPDATE products SET image_path = ? WHERE id = ?');
+                    $updateImage->execute([$path, $productId]);
                 }
-                $ext = pathinfo((string) $nameFile, PATHINFO_EXTENSION);
-                $target = $uploadDir . '/' . ($index + 1) . '.' . ($ext ?: 'jpg');
-                move_uploaded_file($_FILES['images']['tmp_name'][$index], $target);
-                ProductSchema::insertFiltered($this->pdo, 'product_images', [
-                    'product_id' => $productId,
-                    'path' => 'uploads/products/' . $productId . '/' . basename($target),
-                    'is_thumbnail' => $index === 0 ? 1 : 0,
-                    'sort_order' => $index,
-                    'created_at' => date('Y-m-d H:i:s'),
-                ]);
             }
         }
 
@@ -292,13 +339,23 @@ final class ProductCreateService
         $savedAt = $draft['saved_at'] ?? null;
         $completeness = ProductForm::completeness($form);
 
+        $categoryColumns = ProductSchema::columns($this->pdo, 'categories');
+        $categoryQuery = in_array('parent_id', $categoryColumns, true)
+            ? 'SELECT id, name, COALESCE(parent_id, 0) AS parent_id FROM categories ORDER BY name'
+            : 'SELECT id, name, 0 AS parent_id FROM categories ORDER BY name';
+        $unitColumns = ProductSchema::columns($this->pdo, 'units');
+        $unitQuery = in_array('symbol', $unitColumns, true)
+            ? 'SELECT id, name, symbol FROM units ORDER BY name'
+            : 'SELECT id, name, NULL AS symbol FROM units ORDER BY name';
+        $taxTable = ProductSchema::tableExists($this->pdo, 'tax_classes') ? 'tax_classes' : 'taxes';
         $lookups = [
             'brands' => ProductSchema::queryOptions($this->pdo, 'SELECT id, name FROM brands ORDER BY name'),
-            'categories' => ProductSchema::queryOptions($this->pdo, 'SELECT id, name, COALESCE(parent_id, 0) AS parent_id FROM categories ORDER BY name'),
+            'categories' => ProductSchema::queryOptions($this->pdo, $categoryQuery),
             'suppliers' => ProductSchema::queryOptions($this->pdo, 'SELECT id, name FROM suppliers ORDER BY name'),
             'manufacturers' => ProductSchema::queryOptions($this->pdo, 'SELECT id, name FROM manufacturers ORDER BY name'),
             'warehouses' => ProductSchema::queryOptions($this->pdo, 'SELECT id, name FROM warehouses ORDER BY name'),
-            'taxClasses' => ProductSchema::queryOptions($this->pdo, 'SELECT id, name, COALESCE(rate, 0) AS rate FROM tax_classes ORDER BY name'),
+            'units' => ProductSchema::queryOptions($this->pdo, $unitQuery),
+            'taxClasses' => ProductSchema::queryOptions($this->pdo, 'SELECT id, name, COALESCE(rate, 0) AS rate FROM `' . $taxTable . '` ORDER BY name'),
         ];
 
         $pageTitle = 'Product Wizard — Create Product';

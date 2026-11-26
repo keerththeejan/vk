@@ -64,7 +64,6 @@ require_once dirname(__DIR__) . '/includes/layout_start.php';
 <div id="vkDashLoadError" class="d-none mb-2" role="alert"></div>
 <div id="vkSmtpAlerts" class="d-none mb-2" aria-live="polite"></div>
 <div id="vkSchemaAlert" class="d-none mb-2"></div>
-<div id="vkEmergencyPanel" class="d-none mb-2"></div>
 
 <header class="vk-dash-exec" aria-label="Executive dashboard header">
     <div class="vk-dash-exec-brand">
@@ -144,6 +143,8 @@ require_once dirname(__DIR__) . '/includes/layout_start.php';
     </a>
     <?php endforeach; ?>
 </section>
+
+<div id="vkEmergencyPanel" class="d-none mb-3" aria-live="polite"></div>
 
 <section class="vk-dash-widget mb-2" data-widget-id="quick-actions" aria-label="Quick actions">
     <div class="vk-dash-widget-head">

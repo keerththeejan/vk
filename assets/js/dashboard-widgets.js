@@ -263,35 +263,42 @@
 
     function renderEmergency(bookings, repairs) {
         var host = document.getElementById("vkEmergencyPanel");
-        if (!host || (!bookings.length && !repairs.length)) {
+        if (!host) return;
+        var total = bookings.length + repairs.length;
+        if (!total) {
+            host.classList.add("d-none");
+            host.innerHTML = "";
             return;
         }
-        var rows = bookings
-            .map(function (eb) {
-                return (
-                    '<tr class="table-danger"><td>Booking</td><td><code>' + esc(eb.booking_number) + "</code></td>" +
-                    "<td>" + esc(eb.customer_name) + " · " + esc(eb.phone) + '</td><td class="text-end">' +
-                    '<a class="btn btn-sm btn-dark" href="' + esc(baseUrl() + "/modules/bookings/view.php?id=" + eb.id) + '">Open</a></td></tr>'
-                );
-            })
-            .concat(
-                repairs.map(function (er) {
-                    return (
-                        '<tr class="table-warning"><td>Repair job</td><td><code>' + esc(er.job_number) + "</code></td>" +
-                        "<td>" + esc(er.customer_name) + '</td><td class="text-end">' +
-                        '<a class="btn btn-sm btn-warning text-dark" href="' + esc(baseUrl() + "/modules/repairs/view.php?id=" + er.id) + '">Open</a></td></tr>'
-                    );
-                })
-            )
-            .join("");
-        host.className = "card border-danger mb-3 shadow-sm";
-        host.innerHTML =
-            '<div class="card-header bg-danger text-white fw-semibold"><i class="bi bi-exclamation-octagon me-2"></i>Emergency &amp; high priority</div>' +
-            '<div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0">' +
-            '<thead class="table-light"><tr><th>Type</th><th>Ref</th><th>Customer</th><th></th></tr></thead>' +
-            "<tbody>" + rows + "</tbody></table></div></div>";
-    }
 
+        function bookingItem(item) {
+            return { type: "Emergency booking", ref: item.booking_number, customer: item.customer_name, extra: item.phone,
+                href: baseUrl() + "/modules/bookings/view.php?id=" + item.id, icon: "bi-calendar2-check", tone: "is-emergency" };
+        }
+        function repairItem(item) {
+            return { type: "Priority repair", ref: item.job_number, customer: item.customer_name, extra: "",
+                href: baseUrl() + "/modules/repairs/view.php?id=" + item.id, icon: "bi-wrench-adjustable", tone: "is-priority" };
+        }
+        function renderItems(items) {
+            return items.map(function (item) {
+                var detail = [item.ref, item.customer, item.extra].filter(Boolean).map(esc).join(" · ");
+                return '<a class="vk-dash-critical-item ' + item.tone + '" href="' + esc(item.href) + '">' +
+                    '<span class="vk-dash-critical-icon"><i class="bi ' + item.icon + '" aria-hidden="true"></i></span>' +
+                    '<span class="vk-dash-critical-copy"><strong>' + esc(item.type) + '</strong><small>' + detail + '</small></span>' +
+                    '<i class="bi bi-arrow-up-right vk-dash-critical-open" aria-hidden="true"></i></a>';
+            }).join("");
+        }
+
+        var preview = bookings.slice(0, 3).map(bookingItem).concat(repairs.slice(0, 2).map(repairItem));
+        var remaining = bookings.slice(3).map(bookingItem).concat(repairs.slice(2).map(repairItem));
+        host.className = "vk-dash-critical-alerts mb-3";
+        host.innerHTML =
+            '<div class="vk-dash-critical-head"><div class="vk-dash-critical-heading"><span class="vk-dash-critical-heading-icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>' +
+            '<div><h2>Emergency &amp; high priority</h2><p>' + bookings.length + ' emergency booking' + (bookings.length === 1 ? '' : 's') + ' · ' + repairs.length + ' priority repair' + (repairs.length === 1 ? '' : 's') + '</p></div></div>' +
+            '<span class="vk-dash-critical-count">' + total + ' active</span></div>' +
+            '<div class="vk-dash-critical-list">' + renderItems(preview) + '</div>' +
+            (remaining.length ? '<details class="vk-dash-critical-more"><summary>View all ' + total + ' active items</summary><div class="vk-dash-critical-list">' + renderItems(remaining) + '</div></details>' : '');
+    }
     function renderSmtpAlerts(flag) {
         var host = document.getElementById("vkSmtpAlerts");
         if (!host || !flag) return;

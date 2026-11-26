@@ -352,7 +352,10 @@
 
     function addFiles(files) {
         Array.from(files).forEach((file) => {
-            if (!file.type.startsWith('image/') && file.type !== 'video/mp4' && file.type !== 'application/pdf') return;
+            if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type) || file.size > 10 * 1024 * 1024) {
+                toast('Choose a JPG, PNG, WebP, or GIF image up to 10 MB.', 'error');
+                return;
+            }
             mediaFiles.push({ file, preview: URL.createObjectURL(file) });
         });
         renderGallery();

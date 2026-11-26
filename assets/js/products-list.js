@@ -153,23 +153,21 @@
         var category = encodeURIComponent(filterCategory ? filterCategory.value || '' : '');
         var status = encodeURIComponent(filterStatus ? filterStatus.value || '' : '');
         limit = parseInt(perPageEl && perPageEl.value ? perPageEl.value : '25', 10) || 25;
-        var url = baseUrl + '/api/products_list.php?q=' + q + '&status=' + status + '&limit=' + limit + '&page=' + page + '&category=' + category;
+        var brand = encodeURIComponent(filterBrand ? filterBrand.value || '' : '');
+        var stock = encodeURIComponent(filterStock ? filterStock.value || '' : '');
+        var url = baseUrl + '/api/products_list.php?q=' + q + '&status=' + status + '&limit=' + limit + '&page=' + page + '&category=' + category + '&brand=' + brand + '&stock=' + stock;
         try {
             var res = await fetch(url);
-            if (!res.ok) {
-                return showEmpty('Failed to load products');
-            }
             var js = await res.json();
-            if (js.error) {
-                return showEmpty(js.error);
+            if (!res.ok || js.error) {
+                return showEmpty(js.error || 'Failed to load products (HTTP ' + res.status + ').');
             }
             total = js.total != null ? js.total : (js.data ? js.data.length : 0);
             lastRows = js.data || [];
             renderProducts(lastRows);
             renderMobile(lastRows);
             renderPagination(js.page || page, js.limit || limit, total);
-            updateStats(lastRows);
-            applyClientFilters();
+            updateStats(js.stats || {});
             app.classList.remove('vk-prod-skeleton');
             initTooltips();
         } catch (err) {
@@ -194,35 +192,21 @@
         }
     }
 
-    function updateStats(rows) {
-        var totals = { low: 0, out: 0, value: 0, active: 0 };
-        rows.forEach(function (r) {
-            var sm = stockMeta(r);
-            if (sm.key === 'low') {
-                totals.low++;
-            }
-            if (sm.key === 'out') {
-                totals.out++;
-            }
-            totals.value += sm.stock * getSellPrice(r);
-            if ((r.status || 'active') === 'active') {
-                totals.active++;
-            }
-        });
+    function updateStats(totals) {
         if (statEls.total) {
             statEls.total.textContent = String(total);
         }
         if (statEls.low) {
-            statEls.low.textContent = String(totals.low);
+            statEls.low.textContent = String(Number(totals.low_stock) || 0);
         }
         if (statEls.out) {
-            statEls.out.textContent = String(totals.out);
+            statEls.out.textContent = String(Number(totals.out_of_stock) || 0);
         }
         if (statEls.value) {
-            statEls.value.textContent = formatLkr(totals.value);
+            statEls.value.textContent = formatLkr(totals.inventory_value);
         }
-        if (statEls.active && total > 0) {
-            statEls.active.textContent = String(Math.max(totals.active, Math.round(total * 0.85)));
+        if (statEls.active) {
+            statEls.active.textContent = String(Number(totals.active) || 0);
         }
     }
 
@@ -288,7 +272,7 @@
                 '<button type="button" class="vk-prod-act vk-prod-export-row" data-id="' + p.id + '" data-bs-toggle="tooltip" title="Export"><i class="bi bi-download"></i></button>' +
                 actionBtn(baseUrl + '/modules/products/add.php', 'copy', 'Duplicate') +
                 '<button type="button" class="vk-prod-act" onclick="window.print()" data-bs-toggle="tooltip" title="Print"><i class="bi bi-printer"></i></button>' +
-                actionBtn(baseUrl + '/modules/products/delete.php?id=' + p.id, 'trash', 'Delete', 'vk-prod-act-danger') +
+                '<a class="vk-prod-act vk-prod-act-danger" href="' + escapeHtml(baseUrl + '/modules/products/delete.php?id=' + p.id) + '" data-bs-toggle="tooltip" title="Delete" onclick="event.stopPropagation(); return confirm(\'Delete this product? This cannot be undone.\')"><i class="bi bi-trash"></i></a>' +
                 '</div></td>';
             tr.addEventListener('click', function (e) {
                 if (e.target.closest('.vk-prod-act, .row-select, a')) {
@@ -528,10 +512,10 @@
         perPageEl.addEventListener('change', function () { page = 1; fetchProducts(); });
     }
     if (filterBrand) {
-        filterBrand.addEventListener('change', applyClientFilters);
+        filterBrand.addEventListener('change', function () { page = 1; fetchProducts(); });
     }
     if (filterStock) {
-        filterStock.addEventListener('change', applyClientFilters);
+        filterStock.addEventListener('change', function () { page = 1; fetchProducts(); });
     }
     var resetBtn = document.getElementById('reset-filters');
     if (resetBtn) {
@@ -600,7 +584,7 @@
             fetch(baseUrl + '/api/product_delete.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'ids=' + encodeURIComponent(ids.join(',')),
+                body: 'ids=' + encodeURIComponent(ids.join(',')) + '&_csrf=' + encodeURIComponent(window.VK_CSRF_TOKEN || ''),
             }).then(function (r) { return r.json(); }).then(function (j) {
                 if (j.success) {
                     fetchProducts();
