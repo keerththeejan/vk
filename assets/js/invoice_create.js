@@ -26,8 +26,9 @@
     }
 
     function num(v) {
-        var n = parseFloat(v);
-        return isNaN(n) ? 0 : n;
+        if (v == null || String(v).trim() === '') return 0;
+        var n = Number(v);
+        return Number.isFinite(n) ? n : 0;
     }
 
     function calcLine(qty, price, discType, discVal, taxPct) {
@@ -272,7 +273,8 @@
         if (mode === 'edit' && cfg.paidAmount != null) {
             paid = num(cfg.paidAmount);
         }
-        var balance = Math.round((grand - paid) * 100) / 100;
+        paid = Math.round(paid * 100) / 100;
+        var balance = Math.max(0, Math.round((grand - paid) * 100) / 100);
 
         setText('disp_subtotal', money(sub));
         setText('disp_item_discount', money(itemDisc));
@@ -310,18 +312,21 @@
                 itemCount += parseInt(el.value, 10) || 0;
             });
         }
-        var change = totalPaying > grand ? totalPaying - grand : 0;
-        var balance = grand > totalPaying ? grand - totalPaying : 0;
+        totalPaying = Math.round(totalPaying * 100) / 100;
+        var change = Math.max(0, Math.round((totalPaying - grand) * 100) / 100);
+        var balance = Math.max(0, Math.round((grand - totalPaying) * 100) / 100);
         if (mode === 'edit' && cfg.paidAmount != null) {
-            balance = Math.max(0, grand - num(cfg.paidAmount));
-            totalPaying = num(cfg.paidAmount);
-            change = 0;
+            totalPaying = Math.round(num(cfg.paidAmount) * 100) / 100;
+            balance = Math.max(0, Math.round((grand - totalPaying) * 100) / 100);
+            change = Math.max(0, Math.round((totalPaying - grand) * 100) / 100);
         }
         setText('pay_total_items', String(itemCount));
         setText('pay_total_payable', money(grand));
         setText('pay_total_paying', money(totalPaying));
         setText('pay_change_return', money(change));
         setText('pay_balance_due', money(balance));
+        var status = totalPaying <= 0 ? 'UNPAID' : (balance <= 0 ? 'PAID' : 'PARTIAL');
+        setText('pay_payment_status', status);
     }
 
     /* ─── Payment rows ───────────────────────────────────────────── */
@@ -574,6 +579,10 @@
     });
 
     form.addEventListener('submit', function (e) {
+        if (form.dataset.submitting === '1') {
+            e.preventDefault();
+            return;
+        }
         var action = (document.getElementById('form_action') || {}).value || 'create';
         if (!customerId || !customerId.value) {
             e.preventDefault();
@@ -613,6 +622,10 @@
             var discType = (row.querySelector('.discount-type') || {}).value || 'percent';
             var discVal = num(row.querySelector('.discount-value') && row.querySelector('.discount-value').value);
             var c = calcLine(qty, price, discType, discVal, 0);
+            if ((discType === 'percent' && discVal > 100) || (discType === 'fixed' && discVal > c.gross + 0.001)) {
+                err = 'Discount exceeds the allowed amount on line ' + (idx + 1);
+                return;
+            }
             if (c.discAmt > c.gross + 0.001) {
                 err = 'Discount exceeds line total on line ' + (idx + 1);
                 return;
@@ -632,28 +645,47 @@
         }
 
         if (action !== 'draft' && mode !== 'edit') {
-            var grand = num((document.getElementById('disp_grand') || {}).textContent);
-            var totalPaying = 0;
             var payValid = true;
+            var payError = '';
             document.querySelectorAll('.payment-row').forEach(function (row) {
-                var amt = num(row.querySelector('.pay-amount') && row.querySelector('.pay-amount').value);
+                var amountInput = row.querySelector('.pay-amount');
+                var rawAmount = amountInput ? amountInput.value.trim() : '';
+                var amt = rawAmount === '' ? 0 : Number(rawAmount);
                 var method = (row.querySelector('.pay-method') || {}).value || '';
+                if (rawAmount !== '' && (!Number.isFinite(amt) || amt < 0)) payError = 'Enter a valid non-negative payment amount.';
                 if (amt > 0 && !method) payValid = false;
-                totalPaying += amt;
             });
+            var discountInput = document.getElementById('invoice_discount_value');
+            var rawDiscount = discountInput ? discountInput.value.trim() : '';
+            var discountTypeInput = document.getElementById('invoice_discount_type');
+            var discountType = discountTypeInput ? discountTypeInput.value : 'fixed';
+            if (rawDiscount !== '' && (!Number.isFinite(Number(rawDiscount)) || Number(rawDiscount) < 0)) {
+                payError = 'Enter a valid non-negative invoice discount.';
+            }
+            if (discountType === 'percent' && rawDiscount !== '' && Number(rawDiscount) > 100) {
+                payError = 'Percentage discount cannot exceed 100%.';
+            }
+            document.querySelectorAll('.line-row .discount-value').forEach(function (input) {
+                var raw = input.value.trim();
+                if (raw !== '' && (!Number.isFinite(Number(raw)) || Number(raw) < 0)) {
+                    payError = 'Enter valid non-negative line discounts.';
+                }
+            });
+            if (payError) {
+                e.preventDefault();
+                if (window.showToast) window.showToast(payError, 'danger');
+                return;
+            }
             if (!payValid) {
                 e.preventDefault();
                 if (window.showToast) window.showToast('Select a payment method for each payment amount.', 'danger');
                 return;
             }
-            if (totalPaying > grand + 0.01) {
-                e.preventDefault();
-                if (window.showToast) window.showToast('Total payment exceeds grand total.', 'danger');
-                return;
-            }
         }
 
         // Loading indicator
+        form.dataset.submitting = '1';
+        form.querySelectorAll('button[type="submit"]').forEach(function (button) { button.disabled = true; });
         form.classList.add('vk-loading');
     });
 

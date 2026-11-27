@@ -17,6 +17,22 @@ function vk_ensure_payments_table(PDO $pdo): void
                 error_log('vk_ensure_payments_table add customer_id: ' . $e->getMessage());
             }
         }
+        // Additive fields used by invoice payment receipts and safe retry handling.
+        foreach ([
+            'reference_number' => 'ALTER TABLE payments ADD COLUMN reference_number VARCHAR(128) DEFAULT NULL',
+            'received_by' => 'ALTER TABLE payments ADD COLUMN received_by INT UNSIGNED DEFAULT NULL',
+            'request_token' => 'ALTER TABLE payments ADD COLUMN request_token CHAR(48) DEFAULT NULL',
+        ] as $column => $ddl) {
+            if (!db_column_exists($pdo, 'payments', $column)) {
+                try { $pdo->exec($ddl); } catch (Throwable $e) { error_log('vk_ensure_payments_table add ' . $column . ': ' . $e->getMessage()); }
+            }
+        }
+        try {
+            $idx = $pdo->query("SHOW INDEX FROM payments WHERE Key_name = 'uq_payments_request_token'")->fetch();
+            if (!$idx && db_column_exists($pdo, 'payments', 'request_token')) {
+                $pdo->exec('ALTER TABLE payments ADD UNIQUE KEY uq_payments_request_token (request_token)');
+            }
+        } catch (Throwable $e) { error_log('vk_ensure_payments_table request token index: ' . $e->getMessage()); }
         return;
     }
     try {
@@ -34,10 +50,14 @@ function vk_ensure_payments_table(PDO $pdo): void
               method ENUM(\'cash\',\'card\',\'bank\',\'online\') NOT NULL DEFAULT \'cash\',
               paid_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
               note VARCHAR(255) DEFAULT NULL,
+              reference_number VARCHAR(128) DEFAULT NULL,
+              received_by INT UNSIGNED DEFAULT NULL,
+              request_token CHAR(48) DEFAULT NULL,
               INDEX idx_payments_invoice (invoice_id),
               INDEX idx_payments_repair (repair_job_id),
               INDEX idx_payments_cctv (cctv_job_id),
               INDEX idx_payments_customer (customer_id),
+              UNIQUE KEY uq_payments_request_token (request_token),
               CONSTRAINT fk_payments_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE RESTRICT,
               CONSTRAINT fk_payments_repair FOREIGN KEY (repair_job_id) REFERENCES repair_jobs(id) ON DELETE RESTRICT,
               CONSTRAINT fk_payments_cctv FOREIGN KEY (cctv_job_id) REFERENCES cctv_installations(id) ON DELETE RESTRICT,

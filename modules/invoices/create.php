@@ -48,11 +48,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/modules/invoices/create.php');
     }
 
+    $submitToken = trim((string) ($_POST['_invoice_submit_token'] ?? ''));
+    $processedInvoices = $_SESSION['_vk_invoice_create_results'] ?? [];
+    if (!is_array($processedInvoices)) $processedInvoices = [];
+    if (preg_match('/^[a-f0-9]{48}$/', $submitToken) !== 1) {
+        flash_set('error', 'This invoice form expired. Refresh the page and try again.');
+        redirect('/modules/invoices/create.php');
+    }
+    if (isset($processedInvoices[$submitToken])) {
+        redirect('/modules/invoices/view.php?id=' . (int) $processedInvoices[$submitToken]);
+    }
+
+    $action = (string) ($_POST['form_action'] ?? 'create');
+    $discountRaw = trim((string) ($_POST['invoice_discount_value'] ?? $_POST['discount'] ?? '0'));
+    $discountTypeRaw = strtolower(trim((string) ($_POST['invoice_discount_type'] ?? 'fixed')));
+    if ($action !== 'draft' && $discountRaw !== '') {
+        if (!is_numeric($discountRaw) || !is_finite((float) $discountRaw) || (float) $discountRaw < 0) {
+            flash_set('error', 'Invoice discount must be a valid non-negative amount.');
+            redirect('/modules/invoices/create.php');
+        }
+        if ($discountTypeRaw === 'percent' && (float) $discountRaw > 100) {
+            flash_set('error', 'Percentage discount cannot exceed 100%.');
+            redirect('/modules/invoices/create.php');
+        }
+    }
+    $lineDiscounts = $_POST['discount_value'] ?? [];
+    $lineDiscountTypes = $_POST['discount_type'] ?? [];
+    if ($action !== 'draft' && is_array($lineDiscounts)) {
+        foreach ($lineDiscounts as $index => $lineDiscount) {
+            $raw = trim((string) $lineDiscount);
+            $lineType = strtolower(trim((string) (is_array($lineDiscountTypes) ? ($lineDiscountTypes[$index] ?? 'percent') : 'percent')));
+            if ($raw !== '' && (!is_numeric($raw) || !is_finite((float) $raw) || (float) $raw < 0)) {
+                flash_set('error', 'Line discounts must be valid non-negative amounts.');
+                redirect('/modules/invoices/create.php');
+            }
+            if ($lineType === 'percent' && $raw !== '' && (float) $raw > 100) {
+                flash_set('error', 'Line percentage discount cannot exceed 100%.');
+                redirect('/modules/invoices/create.php');
+            }
+        }
+    }
+
     $header = vk_invoice_header_from_post($_POST);
     $header['repair_job_id'] = (int) ($_POST['repair_job_id'] ?? 0);
     $header['cctv_job_id'] = (int) ($_POST['cctv_job_id'] ?? 0);
     $lines = vk_invoice_parse_lines_from_post($_POST);
-    $action = (string) ($_POST['form_action'] ?? 'create');
     $header['is_draft'] = ($action === 'draft');
 
     // Payments
@@ -60,9 +100,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $payMethods = $_POST['pay_method'] ?? [];
     $payNotes = $_POST['pay_note'] ?? [];
     $paymentRows = [];
+    if ($action !== 'draft' && array_key_exists('pay_amount', $_POST) && !is_array($payAmounts)) {
+        flash_set('error', 'Payment amounts are invalid.');
+        redirect('/modules/invoices/create.php');
+    }
     $nPay = is_array($payAmounts) ? count($payAmounts) : 0;
     for ($i = 0; $i < $nPay; $i++) {
-        $amt = round((float) ($payAmounts[$i] ?? 0), 2);
+        $rawAmount = trim((string) ($payAmounts[$i] ?? ''));
+        if ($action !== 'draft' && $rawAmount !== '' && (!is_numeric($rawAmount) || !is_finite((float) $rawAmount) || (float) $rawAmount < 0)) {
+            flash_set('error', 'Paid amount must be a valid non-negative number.');
+            redirect('/modules/invoices/create.php');
+        }
+        $amt = $rawAmount === '' ? 0.0 : round((float) $rawAmount, 2);
         $method = trim((string) ($payMethods[$i] ?? ''));
         if ($amt <= 0) {
             continue;
@@ -80,6 +129,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         $invoiceId = vk_invoice_create($pdo, $header, $lines, $header['is_draft'] ? [] : $paymentRows);
+        $processedInvoices[$submitToken] = $invoiceId;
+        if (count($processedInvoices) > 20) {
+            $processedInvoices = array_slice($processedInvoices, -20, null, true);
+        }
+        $_SESSION['_vk_invoice_create_results'] = $processedInvoices;
         $inv = vk_invoice_get($pdo, $invoiceId);
         $msg = $header['is_draft']
             ? 'Draft invoice ' . ($inv['invoice_number'] ?? '') . ' saved.'
@@ -96,6 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Create invoice';
+$invoiceSubmitToken = bin2hex(random_bytes(24));
 $canViewCost = !empty($perms['view_cost']);
 $staff = [];
 try {
@@ -114,7 +169,7 @@ $extraScripts = '<script>window.VK_INVOICE_CFG=' . json_encode([
     'productsUrl' => BASE_URL . '/api/invoices_products.php',
     'customersUrl' => BASE_URL . '/api/customers_search.php',
 ], JSON_THROW_ON_ERROR) . ';</script>'
-    . '<script src="' . e(BASE_URL) . '/assets/js/invoice_create.js?v=3"></script>';
+    . '<script src="' . e(BASE_URL) . '/assets/js/invoice_create.js?v=4"></script>';
 
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 
@@ -136,6 +191,7 @@ $notesPrefill = $prefillRepair
 
 <form method="post" id="invoiceForm" data-loading class="row g-3 vk-invoice-form" autocomplete="off">
     <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+    <input type="hidden" name="_invoice_submit_token" value="<?= e($invoiceSubmitToken) ?>">
     <input type="hidden" name="form_action" id="form_action" value="create">
     <input type="hidden" name="repair_job_id" value="<?= $prefillRepairId > 0 ? (string) $prefillRepairId : '' ?>">
     <input type="hidden" name="cctv_job_id" value="<?= $prefillCctvId > 0 ? (string) $prefillCctvId : '' ?>">
@@ -287,7 +343,7 @@ $notesPrefill = $prefillRepair
                             <div class="row g-2 align-items-end payment-row mb-2" data-payment-row="0">
                                 <div class="col-12 col-sm-3">
                                     <label class="form-label small mb-1">Amount</label>
-                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm pay-amount" name="pay_amount[]" placeholder="0.00">
+                                    <input type="number" inputmode="decimal" step="0.01" min="0" class="form-control form-control-sm pay-amount" name="pay_amount[]" placeholder="0.00">
                                 </div>
                                 <div class="col-12 col-sm-3">
                                     <label class="form-label small mb-1">Method</label>
@@ -313,9 +369,10 @@ $notesPrefill = $prefillRepair
                                 <dl class="vk-invoice-total-list vk-payment-total-list mb-0">
                                     <div class="vk-total-row"><dt>Total Items</dt><dd id="pay_total_items">0</dd></div>
                                     <div class="vk-total-row"><dt>Total Payable</dt><dd id="pay_total_payable">0.00</dd></div>
-                                    <div class="vk-total-row"><dt>Total Paying</dt><dd class="text-success" id="pay_total_paying">0.00</dd></div>
+                                    <div class="vk-total-row"><dt>Paid Amount</dt><dd class="text-success" id="pay_total_paying">0.00</dd></div>
                                     <div class="vk-total-row"><dt>Change Return</dt><dd class="text-info" id="pay_change_return">0.00</dd></div>
                                     <div class="vk-total-row vk-total-row-balance"><dt>Balance Due</dt><dd class="text-danger" id="pay_balance_due">0.00</dd></div>
+                                    <div class="vk-total-row"><dt>Payment Status</dt><dd class="fw-semibold" id="pay_payment_status">UNPAID</dd></div>
                                 </dl>
                             </div>
                         </div>

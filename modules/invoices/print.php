@@ -88,7 +88,10 @@ $items = $pdo->prepare(
 );
 $items->execute([$id]);
 $lines = $items->fetchAll();
-$due = (float) $inv['grand_total'] - (float) $inv['paid_amount'];
+$grandAmount = round(max(0, (float) $inv['grand_total']), 2);
+$paidAmount = round(max(0, (float) $inv['paid_amount']), 2);
+$due = max(0, round($grandAmount - $paidAmount, 2));
+$change = max(0, round($paidAmount - $grandAmount, 2));
 $itemDiscTotal = (float) ($inv['item_discount_total'] ?? 0);
 $invDiscAmt = (float) ($inv['invoice_discount_amount'] ?? $inv['discount'] ?? 0);
 $shippingAmt = (float) ($inv['shipping_amount'] ?? 0);
@@ -120,8 +123,8 @@ $qrUrl = is_file($qrPath)
     ? base_url('assets/images/invoice-qr.png')
     : 'https://api.qrserver.com/v1/create-qr-code/?size=55x55&margin=1&data=' . rawurlencode('https://www.vkitnet.info');
 
-$isPaid = $due <= 0.0001;
-$isPartial = !$isPaid && (float) $inv['paid_amount'] > 0.0001;
+$isPaid = $paidAmount > 0 && (int) round($paidAmount * 100) >= (int) round($grandAmount * 100);
+$isPartial = !$isPaid && $paidAmount > 0.0001;
 $paymentLabel = $isPaid ? 'PAID' : ($isPartial ? 'PARTIALLY PAID' : 'UNPAID');
 $fmtAmount = static function ($amount): string {
     return number_format((float) $amount, 2, '.', ',');
@@ -435,8 +438,9 @@ $showFooterQr = !empty($ipsSettings['footer_qr_enabled']);
                         <?php if (abs($adjustAmt) > 0.0001): ?><div class="row"><span>Adjustment</span><span><?= e($fmtAmount($adjustAmt)) ?></span></div><?php endif; ?>
                         <div class="row"><span>Tax</span><span><?= e($fmtAmount($inv['tax'])) ?></span></div>
                         <?php if (abs($roundOffAmt) > 0.0001): ?><div class="row"><span>Round Off</span><span><?= e($fmtAmount($roundOffAmt)) ?></span></div><?php endif; ?>
-                        <div class="row grand"><span>Grand Total</span><span><?= e($fmtAmount($inv['grand_total'])) ?></span></div>
-                        <div class="row"><span>Paid</span><span><?= e($fmtAmount($inv['paid_amount'])) ?></span></div>
+                        <div class="row grand"><span>Grand Total</span><span><?= e($fmtAmount($grandAmount)) ?></span></div>
+                        <div class="row"><span>Paid</span><span><?= e($fmtAmount($paidAmount)) ?></span></div>
+                        <?php if ($change > 0): ?><div class="row"><span>Change</span><span><?= e($fmtAmount($change)) ?></span></div><?php endif; ?>
                         <div class="row balance"><span>Balance</span><span><?= e($fmtAmount($due)) ?></span></div>
                     </div>
                 </section>

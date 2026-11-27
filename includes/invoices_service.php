@@ -20,6 +20,7 @@ function vk_invoice_permissions(?string $role = null): array
     return [
         'view' => $isViewer,
         'create' => $isSales || $isCashier || $isAdmin,
+        'collect_payment' => $isSales || $isCashier || $isAdmin,
         'edit' => $isSales || $isManager,
         'edit_draft' => $isSales || $isManager || $isCashier,
         'delete' => $isManager,
@@ -188,7 +189,8 @@ function vk_invoice_calc_totals(array $lines, array $header = []): array
     }
 
     $paid = max(0, (float) ($header['paid_amount'] ?? 0));
-    $balance = round($grand - $paid, 2);
+    $balance = max(0.0, round($grand - $paid, 2));
+    $change = max(0.0, round($paid - $grand, 2));
 
     // Legacy columns: discount = invoice-level discount amount; tax = tax total
     return [
@@ -207,6 +209,7 @@ function vk_invoice_calc_totals(array $lines, array $header = []): array
             'grand_total' => $grand,
             'paid_amount' => $paid,
             'balance' => $balance,
+            'change' => $change,
         ],
     ];
 }
@@ -316,6 +319,14 @@ function vk_invoice_validate(array $lines, array $header, bool $requireProducts 
         return 'Add at least one product or service line.';
     }
 
+    $invoiceDiscount = $header['invoice_discount_value'] ?? $header['discount'] ?? 0;
+    if (!is_numeric($invoiceDiscount) || !is_finite((float) $invoiceDiscount) || (float) $invoiceDiscount < 0) {
+        return 'Invoice discount must be a valid non-negative amount.';
+    }
+    if (($header['invoice_discount_type'] ?? 'fixed') === 'percent' && (float) $invoiceDiscount > 100) {
+        return 'Percentage discount cannot exceed 100%.';
+    }
+
     $valid = [];
     foreach ($lines as $i => $ln) {
         $qty = (float) ($ln['quantity'] ?? 0);
@@ -325,6 +336,20 @@ function vk_invoice_validate(array $lines, array $header, bool $requireProducts 
         }
         if ($price < 0) {
             return 'Price cannot be negative on line ' . ($i + 1) . '.';
+        }
+        $lineDiscount = $ln['discount_value'] ?? 0;
+        if (!is_numeric($lineDiscount) || !is_finite((float) $lineDiscount) || (float) $lineDiscount < 0) {
+            return 'Discount must be a valid non-negative amount on line ' . ($i + 1) . '.';
+        }
+        $lineDiscountType = strtolower((string) ($ln['discount_type'] ?? 'percent'));
+        if (!in_array($lineDiscountType, ['percent', 'fixed'], true)) {
+            return 'Invalid discount type on line ' . ($i + 1) . '.';
+        }
+        if ($lineDiscountType === 'percent' && (float) $lineDiscount > 100) {
+            return 'Percentage discount cannot exceed 100% on line ' . ($i + 1) . '.';
+        }
+        if ($lineDiscountType === 'fixed' && (float) $lineDiscount > round((float) $ln['quantity'] * (float) $ln['unit_price'], 2) + 0.001) {
+            return 'Discount cannot exceed line total on line ' . ($i + 1) . '.';
         }
         $type = (string) ($ln['item_type'] ?? 'product');
         if ($type === 'product' && empty($ln['product_id'])) {
@@ -505,6 +530,50 @@ function vk_invoice_enrich_lines(PDO $pdo, array $lines, bool $lockPriceFromProd
 }
 
 /**
+ * Normalize tender rows and derive all invoice payment totals in integer cents.
+ * @param list<array<string,mixed>> $paymentRows
+ * @return array{rows:list<array{amount:float,method:string,note:string}>,paid:float,balance:float,change:float,status:string}
+ */
+function vk_invoice_payment_summary(array $paymentRows, float $grandTotal, bool $draft = false): array
+{
+    $grandCents = max(0, (int) round($grandTotal * 100));
+    $paidCents = 0;
+    $rows = [];
+    if (!$draft) {
+        foreach ($paymentRows as $row) {
+            if (!is_array($row)) {
+                throw new InvalidArgumentException('Invalid payment row.');
+            }
+            $amount = $row['amount'] ?? null;
+            if (!is_numeric($amount) || !is_finite((float) $amount) || (float) $amount < 0) {
+                throw new InvalidArgumentException('Paid amount must be a valid non-negative number.');
+            }
+            $amountCents = (int) round((float) $amount * 100);
+            if ($amountCents <= 0) continue;
+            if ($amountCents > 99999999999999 || $paidCents > 99999999999999 - $amountCents) {
+                throw new InvalidArgumentException('Total paid amount exceeds the supported invoice limit.');
+            }
+            $method = strtolower(trim((string) ($row['method'] ?? '')));
+            if (!in_array($method, ['cash', 'card', 'bank', 'online'], true)) {
+                throw new InvalidArgumentException('Select a valid payment method for each payment amount.');
+            }
+            $rows[] = [
+                'amount' => $amountCents / 100,
+                'method' => $method,
+                'note' => trim((string) ($row['note'] ?? '')),
+            ];
+            $paidCents += $amountCents;
+        }
+    }
+
+    $paid = $paidCents / 100;
+    $balance = max(0, $grandCents - $paidCents) / 100;
+    $change = max(0, $paidCents - $grandCents) / 100;
+    $status = $draft ? 'draft' : ($paidCents <= 0 ? 'unpaid' : ($paidCents >= $grandCents ? 'paid' : 'partial'));
+    return ['rows' => $rows, 'paid' => $paid, 'balance' => $balance, 'change' => $change, 'status' => $status];
+}
+
+/**
  * Create invoice with optional payments. Returns invoice id.
  *
  * @param array<string,mixed> $header
@@ -556,15 +625,11 @@ function vk_invoice_create(PDO $pdo, array $header, array $lines, array $payment
         throw new InvalidArgumentException('Link either a repair job or a CCTV job, not both.');
     }
 
-    $totalPaid = 0.0;
-    foreach ($paymentRows as $pr) {
-        $totalPaid += (float) $pr['amount'];
-    }
-    $totalPaid = round($totalPaid, 2);
     $grand = (float) $totals['grand_total'];
-    if (!$isDraft && $totalPaid > $grand + 0.01) {
-        throw new InvalidArgumentException('Total payment exceeds grand total.');
-    }
+    $paymentSummary = vk_invoice_payment_summary($paymentRows, $grand, $isDraft);
+    $paymentRows = $paymentSummary['rows'];
+    $totalPaid = $paymentSummary['paid'];
+    $status = $paymentSummary['status'];
 
     $source = 'manual';
     if ($repairJobId > 0) {
@@ -574,15 +639,8 @@ function vk_invoice_create(PDO $pdo, array $header, array $lines, array $payment
         $source = 'cctv';
     }
 
-    $status = 'unpaid';
     if ($isDraft) {
-        $status = 'draft';
         $totalPaid = 0.0;
-        $paymentRows = [];
-    } elseif ($totalPaid > 0 && $totalPaid >= $grand - 0.01) {
-        $status = 'paid';
-    } elseif ($totalPaid > 0) {
-        $status = 'partial';
     }
 
     $pdo->beginTransaction();
@@ -816,12 +874,6 @@ function vk_invoice_update(PDO $pdo, int $invoiceId, array $header, array $lines
     $calcLines = $calc['lines'];
     $grand = (float) $totals['grand_total'];
     $paid = (float) $old['paid_amount'];
-    if ($paid > $grand + 0.01 && !$isDraft) {
-        throw new InvalidArgumentException(
-            'Grand total (' . formatCurrency($grand) . ') cannot be less than paid amount (' . formatCurrency($paid) . ').'
-        );
-    }
-
     $oldItems = vk_invoice_items($pdo, $invoiceId);
     $reason = $header['edit_reason'] ?? null;
 
@@ -867,7 +919,7 @@ function vk_invoice_update(PDO $pdo, int $invoiceId, array $header, array $lines
         } elseif ($publishing || !$wasDraft) {
             if ($paid <= 0.0001) {
                 $status = 'unpaid';
-            } elseif ($paid >= $grand - 0.01) {
+            } elseif ((int) round($paid * 100) >= (int) round($grand * 100)) {
                 $status = 'paid';
             } else {
                 $status = 'partial';

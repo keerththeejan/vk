@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
 require_once dirname(__DIR__, 2) . '/includes/invoices_service.php';
+require_once dirname(__DIR__, 2) . '/includes/invoice_payment_service.php';
 vk_ensure_finance_schemas($pdo);
 vk_invoice_require_perm('view');
 
@@ -22,9 +23,12 @@ $paySt = $pdo->prepare(
     'SELECT * FROM payments WHERE invoice_id = ? ORDER BY paid_at DESC'
 );
 $paySt->execute([$id]);
-$payments = $paySt->fetchAll();
+$payments = array_map(static fn(array $p): array => vk_invoice_payment_details($pdo, $p), $paySt->fetchAll(PDO::FETCH_ASSOC) ?: []);
 
-$due = (float) $inv['grand_total'] - (float) $inv['paid_amount'];
+$grandAmount = round(max(0, (float) $inv['grand_total']), 2);
+$paidAmount = round(max(0, (float) $inv['paid_amount']), 2);
+$due = max(0, round($grandAmount - $paidAmount, 2));
+$change = max(0, round($paidAmount - $grandAmount, 2));
 $itemDisc = (float) ($inv['item_discount_total'] ?? 0);
 $invDisc = (float) ($inv['invoice_discount_amount'] ?? $inv['discount'] ?? 0);
 $shipping = (float) ($inv['shipping_amount'] ?? 0);
@@ -139,9 +143,13 @@ $isDraft = !empty($inv['is_draft']) || ($inv['status'] ?? '') === 'draft';
                                 <dd class="col-6 text-end"><?= e(formatCurrency($roundOff)) ?></dd>
                             <?php endif; ?>
                             <dt class="col-6 fw-bold">Grand total</dt>
-                            <dd class="col-6 text-end fw-bold"><?= e(formatCurrency($inv['grand_total'])) ?></dd>
+                            <dd class="col-6 text-end fw-bold"><?= e(formatCurrency($grandAmount)) ?></dd>
                             <dt class="col-6">Paid</dt>
-                            <dd class="col-6 text-end"><?= e(formatCurrency($inv['paid_amount'])) ?></dd>
+                            <dd class="col-6 text-end"><?= e(formatCurrency($paidAmount)) ?></dd>
+                            <?php if ($change > 0): ?>
+                                <dt class="col-6">Change</dt>
+                                <dd class="col-6 text-end"><?= e(formatCurrency($change)) ?></dd>
+                            <?php endif; ?>
                             <dt class="col-6 text-danger">Balance</dt>
                             <dd class="col-6 text-end text-danger fw-semibold"><?= e(formatCurrency($due)) ?></dd>
                         </dl>
@@ -176,12 +184,15 @@ $isDraft = !empty($inv['is_draft']) || ($inv['status'] ?? '') === 'draft';
                 <?php else: ?>
                     <ul class="list-group list-group-flush small">
                         <?php foreach ($payments as $p): ?>
-                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <li class="list-group-item d-flex justify-content-between align-items-start gap-2">
                                 <div>
-                                    <div class="fw-semibold"><?= e(formatCurrency($p['amount'])) ?> · <?= e($p['method']) ?></div>
-                                    <div class="text-muted"><?= e($p['paid_at']) ?></div>
+                                    <div class="fw-semibold"><?= e($p['reference']) ?> · <?= e(formatCurrency($p['amount'])) ?></div>
+                                    <div class="text-muted"><?= e($p['payment_date']) ?> · <?= e(ucfirst($p['method'])) ?></div>
+                                    <div class="text-muted">Received by <?= e($p['received_by']) ?></div>
+                                    <?php if ($p['transaction_reference']): ?><div>Ref: <?= e($p['transaction_reference']) ?></div><?php endif; ?>
                                     <?php if ($p['note']): ?><div><?= e($p['note']) ?></div><?php endif; ?>
                                 </div>
+                                <a class="btn btn-sm btn-outline-secondary" target="_blank" href="<?= e(BASE_URL) ?>/modules/payments/receipt.php?id=<?= (int) $p['id'] ?>">Receipt</a>
                             </li>
                         <?php endforeach; ?>
                     </ul>

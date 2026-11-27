@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/includes/layout_init.php';
 require_once dirname(__DIR__, 2) . '/includes/invoices_service.php';
+require_once dirname(__DIR__, 2) . '/includes/invoice_payment_service.php';
 vk_ensure_finance_schemas($pdo);
 
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
@@ -77,6 +78,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $items = vk_invoice_items($pdo, $id);
+$paymentRows = $pdo->prepare('SELECT id, invoice_id, amount, method, paid_at, reference_number, note, received_by FROM payments WHERE invoice_id = ? ORDER BY paid_at DESC, id DESC');
+$paymentRows->execute([$id]);
+$paymentHistory = array_map(static fn(array $p): array => vk_invoice_payment_details($pdo, $p), $paymentRows->fetchAll(PDO::FETCH_ASSOC) ?: []);
+$paymentSummary = vk_invoice_payment_snapshot($inv);
+$canCollectPayment = !empty($perms['collect_payment']) && !$isDraft && ($paymentSummary['balance'] > 0);
+$canCollectDraftPayment = !empty($perms['collect_payment']) && $isDraft && ($paymentSummary['balance'] > 0);
+$paymentRequestToken = bin2hex(random_bytes(24));
 $canViewCost = !empty($perms['view_cost']);
 $pageTitle = 'Edit invoice ' . $inv['invoice_number'];
 
@@ -117,7 +125,8 @@ $extraScripts = '<script>window.VK_INVOICE_CFG=' . json_encode([
     'customersUrl' => BASE_URL . '/api/customers_search.php',
     'existingLines' => $existingLines,
 ], JSON_THROW_ON_ERROR) . ';</script>'
-    . '<script src="' . e(BASE_URL) . '/assets/js/invoice_create.js?v=3"></script>';
+    . '<script src="' . e(BASE_URL) . '/assets/js/invoice_create.js?v=4"></script>'
+    . '<script src="' . e(BASE_URL) . '/assets/js/invoice-payment-collect.js?v=1" defer></script>';
 
 require_once dirname(__DIR__, 2) . '/includes/layout_start.php';
 
@@ -139,7 +148,7 @@ $discValue = (float) ($inv['invoice_discount_value'] ?? $inv['discount'] ?? 0);
         <p class="text-muted mb-0">
             <span class="fw-semibold text-body"><?= e($inv['invoice_number']) ?></span>
             <span class="badge text-bg-secondary ms-1">Rev <?= (int) ($inv['revision_no'] ?? 0) ?></span>
-            <span class="badge text-bg-<?= $isDraft ? 'warning' : 'primary' ?> ms-1"><?= e($inv['status']) ?></span>
+            <span class="badge text-bg-<?= $isDraft ? 'warning' : 'primary' ?> ms-1" id="invoiceStatusBadge"><?= e($inv['status']) ?></span>
         </p>
         <p class="small text-muted mb-0">Invoice number and ID cannot be changed.</p>
     </div>
@@ -327,11 +336,14 @@ $discValue = (float) ($inv['invoice_discount_value'] ?? $inv['discount'] ?? 0);
                         <dd><input type="number" step="0.01" class="form-control form-control-sm text-end" name="round_off" id="round_off" value="<?= e((string) ($inv['round_off'] ?? 0)) ?>"></dd>
                     </div>
                     <div class="vk-total-row vk-total-row-grand"><dt>Grand Total</dt><dd id="disp_grand">0.00</dd></div>
-                    <div class="vk-total-row"><dt>Paid</dt><dd><?= e(formatCurrency($inv['paid_amount'])) ?></dd></div>
+                    <div class="vk-total-row"><dt>Paid</dt><dd id="invoicePaidAmount"><?= e(formatCurrency($inv['paid_amount'])) ?></dd></div>
                     <div class="vk-total-row vk-total-row-balance"><dt>Balance</dt><dd id="disp_balance">0.00</dd></div>
                 </dl>
                 <div class="d-grid gap-2 mt-3">
-                    <button type="submit" class="btn btn-primary btn-lg" data-action="update"><i class="bi bi-check2-circle me-1"></i>Update Invoice</button>
+                    <?php if ($canCollectPayment || $canCollectDraftPayment): ?>
+                        <button type="button" class="btn btn-success" id="collectPaymentButton" data-bs-toggle="modal" data-bs-target="#collectPaymentModal"><i class="bi bi-cash-coin me-1"></i>Collect Payment</button>
+                    <?php endif; ?>
+                    <button type="submit" class="btn btn-primary btn-lg" data-action="update"><i class="bi bi-check2-circle me-1"></i><?= $isDraft ? 'Confirm & Update Invoice' : 'Update Invoice' ?></button>
                     <?php if ($isDraft): ?>
                         <button type="submit" class="btn btn-outline-secondary" data-action="draft"><i class="bi bi-file-earmark me-1"></i>Save Draft</button>
                     <?php endif; ?>
@@ -358,6 +370,46 @@ $discValue = (float) ($inv['invoice_discount_value'] ?? $inv['discount'] ?? 0);
         </div>
     </div>
 </form>
+
+<section class="card vk-card mt-3" id="invoicePaymentHistory">
+    <div class="card-header bg-transparent d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="fw-semibold">Payment history</span>
+        <span class="small text-muted">Recorded total: <strong id="paymentHistoryTotal"><?= e(formatCurrency(array_sum(array_column($paymentHistory, 'amount')))) ?></strong></span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-light"><tr><th>Receipt</th><th>Date</th><th>Method</th><th>Reference</th><th>Received by</th><th class="text-end">Amount</th><th></th></tr></thead>
+            <tbody id="invoicePaymentHistoryRows">
+            <?php if (!$paymentHistory): ?><tr class="payment-history-empty"><td colspan="7" class="text-muted text-center py-3">No payments recorded.</td></tr><?php endif; ?>
+            <?php foreach ($paymentHistory as $payment): ?>
+                <tr><td><?= e($payment['reference']) ?></td><td><?= e($payment['payment_date']) ?></td><td><?= e(ucfirst($payment['method'])) ?></td><td><?= e($payment['transaction_reference'] ?: '—') ?></td><td><?= e($payment['received_by']) ?></td><td class="text-end"><?= e(formatCurrency($payment['amount'])) ?></td><td class="text-end"><a class="btn btn-sm btn-outline-secondary" target="_blank" href="<?= e(BASE_URL) ?>/modules/payments/receipt.php?id=<?= (int) $payment['id'] ?>">Receipt</a></td></tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<?php if ($canCollectPayment || $canCollectDraftPayment): ?>
+<div class="modal fade" id="collectPaymentModal" tabindex="-1" aria-hidden="true" data-collect-payment
+     data-api="<?= e(BASE_URL) ?>/api/invoice_collect_payment.php" data-invoice-id="<?= $id ?>"
+     data-invoice-number="<?= e($inv['invoice_number']) ?>" data-customer="<?= e($inv['customer_name']) ?>"
+     data-grand-total="<?= e((string) $inv['grand_total']) ?>" data-paid="<?= e((string) $inv['paid_amount']) ?>"
+     data-token="<?= e($paymentRequestToken) ?>">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <form id="collectPaymentForm">
+            <div class="modal-header"><div><h5 class="modal-title mb-1">Collect invoice payment</h5><div class="small text-muted"><?= e($inv['invoice_number']) ?> · <?= e($inv['customer_name']) ?></div></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body">
+                <div class="row g-2 mb-3"><div class="col-4"><div class="small text-muted">Total</div><strong id="collectGrandTotal"><?= e(formatCurrency($inv['grand_total'])) ?></strong></div><div class="col-4"><div class="small text-muted">Paid</div><strong id="collectPreviouslyPaid"><?= e(formatCurrency($inv['paid_amount'])) ?></strong></div><div class="col-4"><div class="small text-muted">Outstanding</div><strong class="text-danger" id="collectOutstanding"><?= e(formatCurrency($paymentSummary['balance'])) ?></strong></div></div>
+                <div class="d-flex gap-2 mb-3"><button class="btn btn-sm btn-outline-primary" type="button" data-payment-amount="full">Pay full balance</button><button class="btn btn-sm btn-outline-secondary" type="button" data-payment-amount="partial">Partial</button></div>
+                <div class="mb-3"><label class="form-label" for="collectPaymentAmount">Amount (LKR)</label><input class="form-control" id="collectPaymentAmount" name="amount" type="number" min="0.01" step="0.01" required max="<?= e(number_format($paymentSummary['balance'], 2, '.', '')) ?>" value="<?= e(number_format($paymentSummary['balance'], 2, '.', '')) ?>"></div>
+                <div class="row g-3"><div class="col-md-6"><label class="form-label" for="collectPaymentMethod">Payment method</label><select class="form-select" id="collectPaymentMethod" name="method" required><option value="cash">Cash</option><option value="card">Card</option><option value="bank">Bank transfer</option><option value="online">Online payment</option></select></div><div class="col-md-6"><label class="form-label" for="collectPaymentDate">Payment date</label><input class="form-control" type="date" id="collectPaymentDate" name="payment_date" value="<?= date('Y-m-d') ?>" required></div><div class="col-12"><label class="form-label" for="collectPaymentReference">Transaction reference <span class="text-muted">(optional)</span></label><input class="form-control" id="collectPaymentReference" name="reference_number" maxlength="128"></div><div class="col-12"><label class="form-label" for="collectPaymentNote">Note <span class="text-muted">(optional)</span></label><input class="form-control" id="collectPaymentNote" name="note" maxlength="255"></div></div>
+                <div class="small text-muted mt-3">Received by: <?= e((string) ($currentUser['fullname'] ?? $currentUser['username'] ?? 'Staff')) ?></div><div class="alert d-none mt-3 mb-0" id="collectPaymentMessage" role="alert"></div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-success" id="submitCollectPayment"><i class="bi bi-check2-circle me-1"></i>Record payment</button></div>
+        </form>
+    </div></div>
+</div>
+<?php endif; ?>
 
 <div class="modal fade" id="productPickerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
